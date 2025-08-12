@@ -13,10 +13,10 @@ return [
     |
     */
 
-    'defaults' => [
-        'guard' => 'api',
-        'passwords' => 'users',
-    ],
+    // 'defaults' => [
+    //     'guard' => 'api',
+    //     'passwords' => 'users',
+    // ],
 
     /*
     |--------------------------------------------------------------------------
@@ -38,11 +38,15 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'admins',
         ],
         'api' => [
             'driver' => 'sanctum',
-            'provider' => 'tbl_admin',
+            'provider' => 'admins',
+        ],
+        'admin-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'admins',
         ],
         'cashier' => [
             'driver' => 'session',
@@ -50,7 +54,7 @@ return [
         ],
         'cashier-api' => [
             'driver' => 'sanctum',
-            'provider' => 'tbl_cashier',
+            'provider' => 'cashiers',
         ],
         'kitchen' => [
             'driver' => 'session',
@@ -58,7 +62,7 @@ return [
         ],
         'kitchen-api' => [
             'driver' => 'sanctum',
-            'provider' => 'tbl_kitchen',
+            'provider' => 'kitchens',
         ],
         'barista' => [
             'driver' => 'session',
@@ -66,12 +70,12 @@ return [
         ],
         'barista-api' => [
             'driver' => 'sanctum',
-            'provider' => 'tbl_barista',
+            'provider' => 'baristas',
         ],
     ],
 
     'providers' => [
-        'users' => [
+        'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\AdminModel::class,
         ],
@@ -90,8 +94,8 @@ return [
     ],
 
     'passwords' => [
-        'users' => [
-            'provider' => 'users',
+        'admins' => [
+            'provider' => 'admins',
             'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,
