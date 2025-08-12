@@ -13,7 +13,16 @@ return [
     |
     */
 
-    'stateful' => [],
+    'stateful' => [
+        'localhost',
+        'poofsa-vent.vercel.app',
+        'poofsa-tend.vercel.app',
+        'poofsa-kitch.vercel.app',
+        'poofsa-bris.vercel.app',
+        'poofsa-des.vercel.app',
+        'poofsa-stom.vercel.app',
+        'poofsa-yals.vercel.app',
+    ],
 
     /*
     |--------------------------------------------------------------------------

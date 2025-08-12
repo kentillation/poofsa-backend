@@ -17,7 +17,6 @@ class CorsMiddleware
             'https://poofsa-tend.vercel.app',
             'https://poofsa-kitch.vercel.app',
             'https://poofsa-bris.vercel.app',
-            'https://poofsa-cook.vercel.app',
             'https://poofsa-des.vercel.app',
             'https://poofsa-stom.vercel.app',
             'https://poofsa-yals.vercel.app',
