@@ -29,7 +29,7 @@ class AdminController extends Controller
     public function getShopBranches()
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             if (!Auth::check()) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
@@ -129,7 +129,7 @@ class AdminController extends Controller
     public function getBranchDetails($branchName)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             if (!Auth::check()) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
@@ -165,7 +165,7 @@ class AdminController extends Controller
     public function getProducts($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $data = ProductsModel::select(
                 'tbl_products.product_id',
                 'tbl_products.product_name',
@@ -208,8 +208,8 @@ class AdminController extends Controller
     public function getProductAlone($product_id)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
-            $branchId = Auth::guard('admin-api')->user()->branch_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
+            $branchId = Auth::guard('api')->user()->branch_id;
             $data = ProductsModel::select(
                 'tbl_products.product_id',
                 'tbl_products.product_name',
@@ -252,7 +252,7 @@ class AdminController extends Controller
     public function getStocksNameBasedId($branchId, $stockId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $productIds = IngredientsModel::where('stock_id', $stockId)
                 ->pluck('product_id')
                 ->toArray();
@@ -294,7 +294,7 @@ class AdminController extends Controller
     public function getStocksList($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $data = StocksModel::select(
                 'tbl_stocks.stock_id',
                 'tbl_stocks.stock_ingredient',
@@ -321,7 +321,7 @@ class AdminController extends Controller
     public function getStocks($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $data = StocksModel::select(
                 'tbl_stocks.stock_id',
                 'tbl_stocks.stock_ingredient',
@@ -361,7 +361,7 @@ class AdminController extends Controller
     public function getStocksReport($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $dateType = $request->query('date_filter');
 
             // First, get only stocks that exist in transaction orders
@@ -480,7 +480,7 @@ class AdminController extends Controller
     public function getStockNotifQty()
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $lowStocks = StocksModel::with('branches')
                 ->where('shop_id', $shopId)
                 ->whereColumn('stock_in', '<=', 'stock_alert_qty')
@@ -573,6 +573,7 @@ class AdminController extends Controller
     public function updateStock(Request $request, $stock_id)
     {
         try {
+            $userId = Auth::guard('api')->user()->admin_id;
             $validated = $request->validate([
                 'stock_id' => 'required|integer',
                 'stock_ingredient' => 'required|string',
@@ -601,7 +602,6 @@ class AdminController extends Controller
                 $newStockId = $stock->stock_id;
                 $shopId = $stock->shop_id;
                 $branchId = $stock->branch_id;
-                $userId = Auth::user()->admin_id;
                 $changes = [];
                 foreach ($validated as $key => $value) {
                     if ($originalValues[$key] != $value) {
@@ -707,7 +707,7 @@ class AdminController extends Controller
     public function getStocksHistory($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $data = StocksHistoryModel::select(
                 'tbl_stocks.stock_ingredient',
                 'tbl_stocks_history.manage_id',
@@ -796,7 +796,7 @@ class AdminController extends Controller
 
     public function saveProductIngredients(Request $request)
     {
-        $shopId = Auth::guard('admin-api')->user()->shop_id;
+        $shopId = Auth::guard('api')->user()->shop_id;
         $request->validate([
             '*.shop_id' => 'required|integer',
             '*.branch_id' => 'required|integer',
@@ -834,8 +834,8 @@ class AdminController extends Controller
     public function getIngredientsByProduct($product_id)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
-            $branchId = Auth::guard('admin-api')->user()->branch_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
+            $branchId = Auth::guard('api')->user()->branch_id;
             $data = IngredientsModel::select(
                 'tbl_product_ingredient.product_ingredient_id',
                 'tbl_product_ingredient.product_id',
@@ -892,6 +892,7 @@ class AdminController extends Controller
         ]);
 
         try {
+            $userId = Auth::guard('api')->user()->admin_id;
             $product = ProductsModel::findOrFail($product_id);
             $originalValues = $product->getOriginal();
             if ($validated['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
@@ -915,7 +916,6 @@ class AdminController extends Controller
             $newProductId = $product->product_id;
             $shopId = $product->shop_id;
             $branchId = $product->branch_id;
-            $userId = $request->user()->admin_id;
             $changes = [];
             foreach ($validated as $key => $value) {
                 if ($originalValues[$key] != $value) {
@@ -992,6 +992,7 @@ class AdminController extends Controller
             'ingredient_capital' => 'required|numeric',
         ]);
         try {
+            $userId = Auth::guard('api')->user()->admin_id;
             $ingredient = IngredientsModel::findOrFail($ingredient_id);
             $originalValues = $ingredient->getOriginal();
             $ingredient->update($validated);
@@ -999,7 +1000,6 @@ class AdminController extends Controller
             $newProductId = $ingredient->product_id;
             $shopId = $ingredient->shop_id;
             $branchId = $ingredient->branch_id;
-            $userId = $request->user()->admin_id;
             $changes = [];
             foreach ($validated as $key => $value) {
                 if ($originalValues[$key] != $value) {
@@ -1057,7 +1057,7 @@ class AdminController extends Controller
     public function getProductsHistory($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $data = ProductsHistoryModel::select(
                 'tbl_products.product_name',
                 'tbl_products_history.manage_id',
@@ -1088,7 +1088,7 @@ class AdminController extends Controller
     public function getOrdersByDateType($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $dateType = $request->query('date_filter');
 
             $query = TransactionModel::select(
@@ -1164,7 +1164,7 @@ class AdminController extends Controller
     public function getOrdersOnly($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $dateType = $request->query('date_filter'); // added
             // $totalOrders to $query
             $query = TransactionModel::select(
@@ -1200,7 +1200,7 @@ class AdminController extends Controller
     public function getProductsOnly($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $totalProducts = ProductsModel::select(
                 DB::raw('COUNT(tbl_products.product_id) as total_products')
             )
@@ -1226,7 +1226,7 @@ class AdminController extends Controller
     public function getStocksOnly($branchId)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $totalStocks = StocksModel::select(
                 DB::raw('COUNT(tbl_stocks.stock_id) as total_stocks')
             )
@@ -1252,7 +1252,7 @@ class AdminController extends Controller
     public function getGrossSalesOnly($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $dateType = $request->query('date_filter');
             $query = TransactionModel::select(
                 DB::raw('SUM(tbl_transaction.total_due) as total_sales'),
@@ -1285,7 +1285,7 @@ class AdminController extends Controller
     public function getSalesByDateType($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $dateType = $request->query('date_filter');
             $query = TransactionOrdersModel::select(
                 'tbl_transaction_orders.product_id',
@@ -1400,7 +1400,7 @@ class AdminController extends Controller
     public function getSalesByMonth($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $year = $request->query('year', date('Y'));
             $dateType = $request->query('date_filter');
             $day = $request->query('day', date('d'));
@@ -1435,7 +1435,7 @@ class AdminController extends Controller
     public function getVoid($branchId, Request $request)
     {
         try {
-            $shopId = Auth::guard('admin-api')->user()->shop_id;
+            $shopId = Auth::guard('api')->user()->shop_id;
             $dateType = $request->query('date_filter');
             $voids = TransactionVoidModel::select(
                 'tbl_transaction_void.transaction_void_id',
@@ -1505,6 +1505,7 @@ class AdminController extends Controller
     public function updateVoidOrder($branchId, Request $request)
     {
         try {
+            $shopId = Auth::guard('api')->user()->shop_id;
             $input = $request->all();
             $validator = Validator::make($input, [
                 'referenceNumber' => 'required|string|exists:tbl_transaction_void,reference_number',
@@ -1520,6 +1521,7 @@ class AdminController extends Controller
             }
             $transaction = TransactionVoidModel::where('transaction_void_id', $input['transactionVoidID'])
                 ->where('reference_number', $input['referenceNumber'])
+                ->where('shop_id', $shopId)
                 ->where('branch_id', $branchId)
                 ->first();
             if (!$transaction) {

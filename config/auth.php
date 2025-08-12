@@ -15,6 +15,10 @@ return [
             'driver' => 'sanctum',
             'provider' => 'admins',
         ],
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
         'cashier' => [
             'driver' => 'session',
             'provider' => 'cashiers',
