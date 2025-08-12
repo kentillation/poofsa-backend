@@ -25,6 +25,14 @@ class AdminModel extends Authenticatable
         'admin_mpin',
         'shop_id',
     ];
+
+    protected $passwordField = 'admin_password';
+
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['admin_password'] = $value;
+    }
+
     public function getAuthPassword()
     {
         return $this->admin_password;
