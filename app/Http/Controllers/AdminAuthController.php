@@ -26,6 +26,8 @@ class AdminAuthController extends Controller
             'device_name' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $remember = $request->boolean('remember');
+
         $user = \App\Models\AdminModel::where('admin_email', $validated['admin_email'])->first();
 
         if (!$user || !Hash::check($validated['admin_password'], $user->admin_password)) {
@@ -43,19 +45,13 @@ class AdminAuthController extends Controller
         RateLimiter::clear($this->throttleKey($request));
 
         return response()->json([
-            'message' => 'Login successful',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'expires_in' => 60 * 24 * ($remember ? 30 : 7),
             'shop_id' => $user->shop_id,
             'shop_name' => $shopName,
             'user_id' => $user->admin_id,
-        ])->cookie(
-            'auth_token',
-            $token,
-            $request->boolean('remember') ? 60 * 24 * 30 : 60 * 24 * 7, // minutes
-            null,
-            null,
-            true,  // secure
-            true   // httpOnly
-        );
+        ]);
     }
 
     public function logout(Request $request)
