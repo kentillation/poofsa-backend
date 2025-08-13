@@ -101,11 +101,6 @@ Route::middleware('auth:sanctum')->get('/open/get-qr/{referenceNumber}', [OpenCo
 Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
 Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
 
-// Route::post('/test-message', function (Request $request) {
-//     event(new \App\Events\RealTimeMessage($request->order_status_id));
-//     return ['status' => 'Message sent!'];
-// });
-
 Route::post('/registerAccount', function (Request $request) {
     $validated = $request->validate([
         'shop_id' => 'required|integer|min:1',
