@@ -12,7 +12,7 @@ use App\Models\TransactionModel;
 use App\Models\IngredientsModel;
 use App\Models\StocksModel;
 use App\Models\ProductsModel;
-use App\Events\NewOrderSubmitted;
+// use App\Events\NewOrderSubmitted;
 
 class BaristaController extends Controller
 {
@@ -144,7 +144,7 @@ class BaristaController extends Controller
     public function updateBaristaProductStatus(Request $request)
     {
         // Real-time
-        event(new NewOrderSubmitted('Wow! Real-time update works!'));
+        // event(new NewOrderSubmitted('Wow! Real-time update works!'));
         try {
             $input = $request->all();
             $validator = Validator::make($input, [

@@ -346,7 +346,7 @@ class OpenController extends Controller
                 ->whereColumn('stock_in', '<=', 'stock_alert_qty')
                 ->count();
             // Realtime
-            event(new NewOrderSubmitted('Hello, world!'));
+            event(new NewOrderSubmitted('Wow! Real-time update works!'));
 
             return response()->json([
                 'status' => true,

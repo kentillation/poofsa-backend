@@ -58,6 +58,8 @@ class CashierController extends Controller
 
     public function updateOrderStatus(Request $request)
     {
+        // Real-time
+        event(new NewOrderSubmitted('Wow! Real-time update works!'));
         try {
             $shopId = Auth::user()->shop_id;
             $branchId = Auth::user()->branch_id;
@@ -205,7 +207,7 @@ class CashierController extends Controller
             ];
 
             // Real-time
-            event(new NewOrderSubmitted('Wow! Real-time update works!'));
+            // event(new NewOrderSubmitted('Wow! Real-time update works!'));
             // event(new NewOrderSubmitted($user->shop_id, $user->branch_id, $transactionData));
 
             $transaction = DB::transaction(function () use ($dbTransactionData, $products) {
