@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\TransactionModel;
 use App\Models\TransactionOrdersModel;
 use App\Models\TransactionVoidModel;
+use App\Models\StocksModel;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\QrCode;
 use App\Events\NewOrderSubmitted;
+use App\Events\LowStockLevel;
 
 class CashierController extends Controller
 {
@@ -228,7 +230,16 @@ class CashierController extends Controller
 
             // Real-time
             event(new NewOrderSubmitted('New order received. Reload it!'));
-            // event(new NewOrderSubmitted($user->shop_id, $user->branch_id, $transactionData));
+
+            $count = StocksModel::where('branch_id', $user->branch_id)
+                ->where('shop_id', $user->shop_id)
+                ->whereColumn('stock_in', '<=', 'stock_alert_qty')
+                ->count();
+            if ($count) {
+                event(new LowStockLevel(
+                    $count . ($count == 1 ? ' stock has' : ' stocks have') . ' low level!'
+                ));
+            }
 
             return response()->json([
                 'status' => true,

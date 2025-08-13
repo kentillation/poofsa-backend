@@ -8,34 +8,28 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewOrderSubmitted implements ShouldBroadcast
+class LowStockLevel implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    // public $shopId;
-    // public $branchId;
-    // public $orderData;
-    public $message;
+    public $alert;
 
-    public function __construct($message)
+    public function __construct($alert)
     {
-        // $this->shopId = $shopId;
-        // $this->branchId = $branchId;
-        // $this->orderData = $orderData;
-        $this->message = $message;
+        $this->alert = $alert;
     }
 
     public function broadcastWith(): array
     {
         return [
-            'message' => $this->message,
+            'message' => $this->alert,
         ];
     }
 
-    public function broadcastOn()
+    public function broadcastOn(): array
     {
         return [
-            new Channel('testChannel'),
+            new Channel('lowStockLevelChannel'),
         ];
     }
 }
