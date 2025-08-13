@@ -192,58 +192,58 @@ class CashierController extends Controller
             ], 422);
         }
         try {
-            // $user = $request->user();
-            // $dbTransactionData = [
-            //     'shop_id' => $user->shop_id,
-            //     'branch_id' => $user->branch_id,
-            //     'reference_number' => $transactionData['reference_number'],
-            //     'table_number' => $transactionData['table_number'],
-            //     'customer_name' => $transactionData['customer_name'],
-            //     'total_quantity' => $transactionData['total_quantity'],
-            //     'customer_cash' => $transactionData['customer_cash'],
-            //     'customer_charge' => $transactionData['customer_charge'],
-            //     'customer_change' => $transactionData['customer_change'],
-            //     'customer_discount' => $transactionData['customer_discount'],
-            //     'total_due' => $transactionData['total_due'],
-            //     'computed_discount' => $transactionData['computed_discount'],
-            //     'order_status_id' => 1,
-            //     'user_id' => $user->cashier_id,
-            // ];
+            $user = $request->user();
+            $dbTransactionData = [
+                'shop_id' => $user->shop_id,
+                'branch_id' => $user->branch_id,
+                'reference_number' => $transactionData['reference_number'],
+                'table_number' => $transactionData['table_number'],
+                'customer_name' => $transactionData['customer_name'],
+                'total_quantity' => $transactionData['total_quantity'],
+                'customer_cash' => $transactionData['customer_cash'],
+                'customer_charge' => $transactionData['customer_charge'],
+                'customer_change' => $transactionData['customer_change'],
+                'customer_discount' => $transactionData['customer_discount'],
+                'total_due' => $transactionData['total_due'],
+                'computed_discount' => $transactionData['computed_discount'],
+                'order_status_id' => 1,
+                'user_id' => $user->cashier_id,
+            ];
 
             // Real-time
             event(new NewOrderSubmitted('Hello, world!'));
             // event(new NewOrderSubmitted($user->shop_id, $user->branch_id, $transactionData));
 
-            // $transaction = DB::transaction(function () use ($dbTransactionData, $products) {
-            //     $transaction = TransactionModel::create($dbTransactionData);
-            //     $transactionItems = array_map(function ($product) use ($transaction) {
-            //         return [
-            //             'transaction_id' => $transaction->transaction_id,
-            //             'product_id' => $product['product_id'],
-            //             'station_id' => $product['station_id'],
-            //             'quantity' => $product['quantity'],
-            //             'station_status_id' => 1,
-            //             'shop_id' => $transaction->shop_id,
-            //             'branch_id' => $transaction->branch_id,
-            //             'created_at' => now(),
-            //             'updated_at' => now(),
-            //         ];
-            //     }, $products);
-            //     TransactionOrdersModel::insert($transactionItems);
-            //     return $transaction;
-            // });
-            // $newReference = $transaction->reference_number;
-            // $qr_text = "https://poofsa-tend.vercel.app/reference/{$newReference}";
-            // $qr_code = new QrCode($qr_text);
-            // $qr_code -> getSize(300);
-            // $qr_code -> getMargin(10);
-            // $qr_writer = new PngWriter();
-            // $qr_result = $qr_writer->write($qr_code);
-            // $qrCodePath = '../../qr-codes/' . $newReference . '.png';
-            // if (!file_exists(dirname($qrCodePath))) {
-            //     mkdir(dirname($qrCodePath), 0755, true);
-            // }
-            // $qr_result->saveToFile($qrCodePath);
+            $transaction = DB::transaction(function () use ($dbTransactionData, $products) {
+                $transaction = TransactionModel::create($dbTransactionData);
+                $transactionItems = array_map(function ($product) use ($transaction) {
+                    return [
+                        'transaction_id' => $transaction->transaction_id,
+                        'product_id' => $product['product_id'],
+                        'station_id' => $product['station_id'],
+                        'quantity' => $product['quantity'],
+                        'station_status_id' => 1,
+                        'shop_id' => $transaction->shop_id,
+                        'branch_id' => $transaction->branch_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }, $products);
+                TransactionOrdersModel::insert($transactionItems);
+                return $transaction;
+            });
+            $newReference = $transaction->reference_number;
+            $qr_text = "https://poofsa-tend.vercel.app/reference/{$newReference}";
+            $qr_code = new QrCode($qr_text);
+            $qr_code -> getSize(300);
+            $qr_code -> getMargin(10);
+            $qr_writer = new PngWriter();
+            $qr_result = $qr_writer->write($qr_code);
+            $qrCodePath = '../../qr-codes/' . $newReference . '.png';
+            if (!file_exists(dirname($qrCodePath))) {
+                mkdir(dirname($qrCodePath), 0755, true);
+            }
+            $qr_result->saveToFile($qrCodePath);
             return response()->json([
                 'status' => true,
                 'message' => 'Transaction created successfully',
