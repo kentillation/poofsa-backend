@@ -15,6 +15,8 @@ use App\Models\OrderStatusModel;
 use App\Models\TransactionModel;
 use App\Models\TransactionVoidModel;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Auth;
+use App\Events\NewOrderSubmitted;
 
 class OpenController extends Controller
 {
@@ -31,12 +33,11 @@ class OpenController extends Controller
     public function getShopBranches()
     {
         try {
-            if (!auth()->check()) {
+            if (!Auth::check()) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
-            if (!auth()->user()->shop_id) {
-                return response()->json(['error' => 'Shop ID not found'], 400);
-            }
+            // $shopId = Auth::guard('api')->user()->shop_id;
+            // $branchId = Auth::guard('api')->user()->branch_id;
             $shopId = auth()->user()->shop_id;
             $branchId = auth()->user()->branch_id;
             $branches = BranchModel::where('shop_id', $shopId)
@@ -67,6 +68,8 @@ class OpenController extends Controller
     public function getProducts()
     {
         try {
+            // $shopId = Auth::guard('api')->user()->shop_id;
+            // $branchId = Auth::guard('api')->user()->branch_id;
             $shopId = auth()->user()->shop_id;
             $branchId = auth()->user()->branch_id;
             $data = ProductsModel::select(
@@ -110,7 +113,7 @@ class OpenController extends Controller
         }
     }
 
-    public function getStocks($branch_id)
+    public function getStocks($branchId)
     {
         try {
             $data = StocksModel::select(
@@ -129,7 +132,7 @@ class OpenController extends Controller
             )
                 ->join('tbl_unit', 'tbl_stocks.stock_unit', '=', 'tbl_unit.unit_id')
                 ->join('tbl_availability', 'tbl_stocks.availability_id', '=', 'tbl_availability.availability_id')
-                ->where('tbl_stocks.branch_id', $branch_id)
+                ->where('tbl_stocks.branch_id', $branchId)
                 ->orderBy('tbl_stocks.stock_ingredient')
                 ->get();
 
@@ -142,72 +145,6 @@ class OpenController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Error fetching stocks!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getProductTemperatures()
-    {
-        try {
-            $data = TemperatureModel::all();
-            return response()->json($data);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    public function getProductSizes()
-    {
-        try {
-            $data = SizeModel::all();
-            return response()->json($data);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    public function getProductCategories()
-    {
-        try {
-            $data = CategoryModel::orderBy('category_label', 'asc')->get();
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching categories!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getProductAvailabilities()
-    {
-        try {
-            $data = AvailabilityModel::all();
-            return response()->json($data);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    public function getOrderStatus()
-    {
-        try {
-            $data = OrderStatusModel::all();
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No order statuses found!' : 'Order statuses fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching order statuses!',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -342,6 +279,8 @@ class OpenController extends Controller
 
     public function getVoid()
     {
+        // $shopId = Auth::guard('api')->user()->shop_id;
+        // $branchId = Auth::guard('api')->user()->branch_id;
         $shopId = auth()->user()->shop_id;
         $branchId = auth()->user()->branch_id;
         $voids = TransactionVoidModel::select(
@@ -401,10 +340,14 @@ class OpenController extends Controller
     {
         try {
             $shopId = auth()->user()->shop_id;
+            // $shopId = Auth::user()->shop_id;
             $count = StocksModel::where('branch_id', $branch_id)
                 ->where('shop_id', $shopId)
                 ->whereColumn('stock_in', '<=', 'stock_alert_qty')
                 ->count();
+            // Realtime
+            event(new NewOrderSubmitted('Hello, world!'));
+
             return response()->json([
                 'status' => true,
                 'message' => 'Low stock count fetched successfully!',
@@ -418,4 +361,73 @@ class OpenController extends Controller
             ], 500);
         }
     }
+
+    /* PRE-DEFINED ITEMS */
+
+    public function getProductTemperatures()
+    {
+        try {
+            $data = TemperatureModel::all();
+            return response()->json($data);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getProductSizes()
+    {
+        try {
+            $data = SizeModel::all();
+            return response()->json($data);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getProductCategories()
+    {
+        try {
+            $data = CategoryModel::orderBy('category_label', 'asc')->get();
+            return response()->json([
+                'status' => true,
+                'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching categories!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getProductAvailabilities()
+    {
+        try {
+            $data = AvailabilityModel::all();
+            return response()->json($data);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getOrderStatus()
+    {
+        try {
+            $data = OrderStatusModel::all();
+            return response()->json([
+                'status' => true,
+                'message' => $data->isEmpty() ? 'No order statuses found!' : 'Order statuses fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching order statuses!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
