@@ -42,9 +42,6 @@ class CashierController extends Controller
                 ->get()
                 ->unique('transaction_id'); // Avoid duplicates
 
-            // Real-time
-            event(new NewOrderSubmitted('Hello, world!'));
-
             return response()->json([
                 'status' => true,
                 'message' => $data->isEmpty() ? 'No current orders found!' : 'Current orders fetched successfully!',
