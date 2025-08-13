@@ -205,7 +205,7 @@ class CashierController extends Controller
             ];
 
             // Real-time
-            event(new NewOrderSubmitted('Hello, world!'));
+            event(new NewOrderSubmitted('Wow! Real-time update works!'));
             // event(new NewOrderSubmitted($user->shop_id, $user->branch_id, $transactionData));
 
             $transaction = DB::transaction(function () use ($dbTransactionData, $products) {
