@@ -172,7 +172,7 @@ class BaristaController extends Controller
             $nextStatus = $currentStatus % 2 + 1;
             $transactionOrders->station_status_id = $nextStatus;
             $transactionOrders->updated_at = now();
-            // $transactionOrders->save();
+            $transactionOrders->save();
             if ($nextStatus == 2) {
                 $shopId = $transactionOrders->shop_id;
                 $branchId = $transactionOrders->branch_id;
