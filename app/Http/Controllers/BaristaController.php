@@ -12,7 +12,6 @@ use App\Models\TransactionModel;
 use App\Models\IngredientsModel;
 use App\Models\StocksModel;
 use App\Models\ProductsModel;
-// use App\Events\NewOrderSubmitted;
 
 class BaristaController extends Controller
 {
@@ -143,8 +142,6 @@ class BaristaController extends Controller
 
     public function updateBaristaProductStatus(Request $request)
     {
-        // Real-time
-        // event(new NewOrderSubmitted('Wow! Real-time update works!'));
         try {
             $input = $request->all();
             $validator = Validator::make($input, [
@@ -214,15 +211,6 @@ class BaristaController extends Controller
                         ->where('branch_id', $branchId)
                         ->update(['availability_id' => 2]);
                 }
-
-                // $user = $request->user();
-                // event(new NewOrderSubmitted(
-                //     $user->shop_id,
-                //     $user->branch_id,
-                //     $request->transaction_id,
-                //     $request->product_id,
-                //     $request->new_status
-                // ));
             }
 
             $transaction = TransactionModel::where('transaction_id', $input['transactionId'])->first();

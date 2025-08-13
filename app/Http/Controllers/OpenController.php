@@ -16,7 +16,6 @@ use App\Models\TransactionModel;
 use App\Models\TransactionVoidModel;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Auth;
-use App\Events\NewOrderSubmitted;
 
 class OpenController extends Controller
 {
@@ -345,8 +344,6 @@ class OpenController extends Controller
                 ->where('shop_id', $shopId)
                 ->whereColumn('stock_in', '<=', 'stock_alert_qty')
                 ->count();
-            // Realtime
-            event(new NewOrderSubmitted('Wow! Real-time update works!'));
 
             return response()->json([
                 'status' => true,

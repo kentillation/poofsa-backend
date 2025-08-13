@@ -58,8 +58,6 @@ class CashierController extends Controller
 
     public function updateOrderStatus(Request $request)
     {
-        // Real-time
-        event(new NewOrderSubmitted('Wow! Real-time update works!'));
         try {
             $shopId = Auth::user()->shop_id;
             $branchId = Auth::user()->branch_id;
@@ -109,9 +107,6 @@ class CashierController extends Controller
                 ], 400);
             }
 
-            // Update the order status
-            // Cycle through order statuses: 1 → 2 → 3 → 1
-            // Assuming order_status_id is 1 for 'Pending', 2 for 'In Progress', and 3 for 'Completed'
             if ($transaction->order_status_id == 1) {
                 $transaction->order_status_id = 2; // Move to 'In Progress'
             } elseif ($transaction->order_status_id == 2) {
@@ -119,14 +114,8 @@ class CashierController extends Controller
             } else {
                 $transaction->order_status_id = 1; // Reset to 'Pending'
             }
-            // Save the updated transaction
-            $transaction->updated_at = now(); // Update the timestamp
+            $transaction->updated_at = now();
             $transaction->save();
-
-            // $currentStatus = $transaction->order_status_id;
-            // $nextStatus = $currentStatus % 3 + 1; // This cycles 1→2→3→1
-            // $transaction->order_status_id = $nextStatus;
-            // $transaction->save();
             
             return response()->json([
                 'status' => true,
@@ -206,10 +195,6 @@ class CashierController extends Controller
                 'user_id' => $user->cashier_id,
             ];
 
-            // Real-time
-            // event(new NewOrderSubmitted('Wow! Real-time update works!'));
-            // event(new NewOrderSubmitted($user->shop_id, $user->branch_id, $transactionData));
-
             $transaction = DB::transaction(function () use ($dbTransactionData, $products) {
                 $transaction = TransactionModel::create($dbTransactionData);
                 $transactionItems = array_map(function ($product) use ($transaction) {
@@ -240,6 +225,11 @@ class CashierController extends Controller
                 mkdir(dirname($qrCodePath), 0755, true);
             }
             $qr_result->saveToFile($qrCodePath);
+
+            // Real-time
+            event(new NewOrderSubmitted('New order received. Reload it!'));
+            // event(new NewOrderSubmitted($user->shop_id, $user->branch_id, $transactionData));
+
             return response()->json([
                 'status' => true,
                 'message' => 'Transaction created successfully',
