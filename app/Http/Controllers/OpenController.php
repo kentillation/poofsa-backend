@@ -171,7 +171,12 @@ class OpenController extends Controller
                 ], 404);
             }
 
-            $formattedOrders = $transaction->orders->map(function ($order) use ($transaction) {
+            // Filter out orders with 0 quantity before mapping
+            $filteredOrders = $transaction->orders->filter(function ($order) {
+                return $order->quantity > 0;
+            });
+
+            $formattedOrders = $filteredOrders->map(function ($order) use ($transaction) {
                 return [
                     'transaction_order_id' => $order->transaction_order_id ?? 'N/A',
                     'transaction_id' => $order->transaction_id ?? 'N/A',

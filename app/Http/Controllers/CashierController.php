@@ -35,11 +35,11 @@ class CashierController extends Controller
             )
                 ->join('tbl_order_status', 'tbl_transaction.order_status_id', '=', 'tbl_order_status.order_status_id')
                 ->join('tbl_transaction_orders', 'tbl_transaction.transaction_id', '=', 'tbl_transaction_orders.transaction_id')
+                ->where('tbl_transaction.total_quantity', '!=', 0)
                 ->where('tbl_transaction.shop_id', $shopId)
                 ->where('tbl_transaction.branch_id', $branchId)
                 ->whereDate('tbl_transaction.updated_at', $currentDate)
                 ->where('tbl_transaction_orders.station_id', 1)
-                // ->where('tbl_transaction.order_status_id', 1) // Only pending orders
                 ->orderBy('tbl_transaction.table_number', 'desc')
                 ->get()
                 ->unique('transaction_id'); // Avoid duplicates
@@ -231,7 +231,7 @@ class CashierController extends Controller
             $qr_result->saveToFile($qrCodePath);
 
             // Real-time
-            // event(new NewOrderSubmitted('New order received. Reload it!'));
+            event(new NewOrderSubmitted('New order received. Reload it!'));
 
             $count = StocksModel::where('branch_id', $user->branch_id)
                 ->where('shop_id', $user->shop_id)
@@ -269,15 +269,15 @@ class CashierController extends Controller
         ]);
 
         $exists = TransactionVoidModel::where([
+            'reference_number' => $request->reference_number,
             'transaction_id' => $request->transaction_id,
             'product_id'     => $request->product_id,
-            'reference_number' => $request->reference_number
         ])->exists();
 
         if ($exists) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Void is already Ready.'
+                'message' => 'Void is already in progress.'
             ], 409);
         }
 
@@ -343,8 +343,7 @@ class CashierController extends Controller
                 $newTotalDue = $newSubTotalAfterReduction - $newComputedDiscount;
 
                 // Update the main transaction
-                DB::table('tbl_transaction')
-                    ->where('transaction_id', $request->transaction_id)
+                TransactionModel::where('transaction_id', $request->transaction_id)
                     ->update([
                         'total_quantity' => DB::raw('total_quantity - ' . $quantityReduction),
                         'customer_charge' => $newSubTotalAfterReduction,
@@ -353,6 +352,14 @@ class CashierController extends Controller
                         'customer_change' => DB::raw('customer_cash - ' . $newTotalDue),
                         'updated_at' => now()
                     ]);
+
+                TransactionOrdersModel::where('transaction_id', $request->transaction_id)
+                    ->where('quantity', 0)
+                    ->delete();
+
+                TransactionModel::where('transaction_id', $request->transaction_id)
+                    ->where('total_quantity', 0)
+                    ->delete();
             });
 
             return response()->json([
