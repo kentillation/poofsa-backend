@@ -35,7 +35,7 @@ class NewOrderSubmitted implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel('testChannel'),
+            new Channel('newOrderChannel'),
         ];
     }
 }
