@@ -90,37 +90,34 @@ class CashierController extends Controller
                 ->where('tbl_transaction.reference_number', $input['referenceNumber'])
                 ->where('tbl_transaction.shop_id', $shopId)
                 ->where('tbl_transaction.branch_id', $branchId)
-                ->where('tbl_transaction_orders.station_status_id', 2) // Only update if the order is in 'In Progress' status
                 ->first();
+
+            // Check if some product still undone
+            if ($transaction->order_status_id == 1) {
+                if (TransactionOrdersModel::where('transaction_id', $transaction->transaction_id)
+                    ->where('station_status_id', 1)
+                    ->exists()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Station still has pending products."
+                    ], 400);
+                } else {
+                    $transaction->order_status_id = 2; // Move to 'Ready'
+                }
+            }
             
-            // Check if order exists
-            if (!$transaction) {
-                return response()->json([
-                    'status' => false,
-                    'message' => "There's an order not yet ready!"
-                ], 400);
+            elseif ($transaction->order_status_id == 2) {
+                $transaction->order_status_id = 3; // Move to 'Served'
             }
 
-            // Check if the order is already completed
-            if ($transaction->order_status_id == 3) {
+            // Check if the order is already Served
+            elseif ($transaction->order_status_id == 3) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Order is already served!'
                 ], 400);
             }
-
-            if ($transaction->order_status_id == 1) {
-                // Insert code for: Unable to set order_status_id = 2 if there are pending product in Barista/Kitchen/Dessert Station
-                if () {
-                    
-                } else {
-                    $transaction->order_status_id = 2; // Move to 'In Progress'
-                }
-            } elseif ($transaction->order_status_id == 2) {
-                $transaction->order_status_id = 3; // Move to 'Completed'
-            } else {
-                $transaction->order_status_id = 1; // Reset to 'Pending'
-            }
+            
             $transaction->updated_at = now();
             $transaction->save();
             
@@ -280,7 +277,7 @@ class CashierController extends Controller
         if ($exists) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Void is already in progress.'
+                'message' => 'Void is already Ready.'
             ], 409);
         }
 
