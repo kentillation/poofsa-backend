@@ -13,6 +13,7 @@ class CorsMiddleware
         $allowedOrigins = [
             'http://localhost:8080',
             'http://localhost:8081',
+            'http://localhost:8082',
             'https://poofsa-vent.vercel.app',
             'https://poofsa-tend.vercel.app',
             'https://poofsa-kitch.vercel.app',

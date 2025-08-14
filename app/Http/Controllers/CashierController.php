@@ -39,7 +39,6 @@ class CashierController extends Controller
                 ->where('tbl_transaction.shop_id', $shopId)
                 ->where('tbl_transaction.branch_id', $branchId)
                 ->whereDate('tbl_transaction.updated_at', $currentDate)
-                ->where('tbl_transaction_orders.station_id', 1)
                 ->orderBy('tbl_transaction.table_number', 'desc')
                 ->get()
                 ->unique('transaction_id'); // Avoid duplicates
@@ -92,14 +91,14 @@ class CashierController extends Controller
                 ->where('tbl_transaction.branch_id', $branchId)
                 ->first();
 
-            // Check if some product still undone
+            // Check if station has still pending products
             if ($transaction->order_status_id == 1) {
                 if (TransactionOrdersModel::where('transaction_id', $transaction->transaction_id)
                     ->where('station_status_id', 1)
                     ->exists()) {
                     return response()->json([
                         'status' => false,
-                        'message' => "Station still has pending products."
+                        'message' => "Station has still pending products."
                     ], 400);
                 } else {
                     $transaction->order_status_id = 2; // Move to 'Ready'
