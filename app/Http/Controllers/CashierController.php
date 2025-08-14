@@ -267,18 +267,18 @@ class CashierController extends Controller
             'to_quantity' => 'required|integer',
         ]);
 
-        $exists = TransactionVoidModel::where([
-            'reference_number' => $request->reference_number,
-            'transaction_id' => $request->transaction_id,
-            'product_id'     => $request->product_id,
-        ])->exists();
+        // $exists = TransactionVoidModel::where([
+        //     'reference_number' => $request->reference_number,
+        //     'transaction_id' => $request->transaction_id,
+        //     'product_id'     => $request->product_id,
+        // ])->exists();
 
-        if ($exists) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Void is already in progress.'
-            ], 409);
-        }
+        // if ($exists) {
+        //     return response()->json([
+        //         'status'  => false,
+        //         'message' => 'Void is already in progress.'
+        //     ], 409);
+        // }
 
         try {
             DB::transaction(function () use ($request) {
