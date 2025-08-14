@@ -173,6 +173,7 @@ class OpenController extends Controller
 
             $formattedOrders = $transaction->orders->map(function ($order) use ($transaction) {
                 return [
+                    'transaction_order_id' => $order->transaction_order_id ?? 'N/A',
                     'transaction_id' => $order->transaction_id ?? 'N/A',
                     'table_number' => $transaction->table_number ?? 'N/A',
                     'product_id' => $order->product->product_id ?? 'N/A',

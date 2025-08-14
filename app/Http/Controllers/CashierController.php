@@ -92,6 +92,8 @@ class CashierController extends Controller
                 ->where('tbl_transaction.branch_id', $branchId)
                 ->where('tbl_transaction_orders.station_status_id', 2) // Only update if the order is in 'In Progress' status
                 ->first();
+            
+            // UNABLE TO "order_status_id = 2" if there are pending product in Barista/Kitchen/Dessert Station
 
             // Check if order exists
             if (!$transaction) {
@@ -229,7 +231,7 @@ class CashierController extends Controller
             $qr_result->saveToFile($qrCodePath);
 
             // Real-time
-            event(new NewOrderSubmitted('New order received. Reload it!'));
+            // event(new NewOrderSubmitted('New order received. Reload it!'));
 
             $count = StocksModel::where('branch_id', $user->branch_id)
                 ->where('shop_id', $user->shop_id)

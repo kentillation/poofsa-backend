@@ -155,10 +155,19 @@ class AdminController extends Controller
                 'tbl_shop_branch.m_name',
                 'tbl_shop_branch.m_email',
                 'tbl_shop_branch.contact',
-                'tbl_admin.admin_name'
+                'tbl_admin.admin_name',
+                'tbl_cashier.cashier_name',
+                'tbl_cashier.cashier_email',
+                'tbl_barista.barista_name',
+                'tbl_barista.barista_email',
+                'tbl_kitchen.kitchen_name',
+                'tbl_kitchen.kitchen_email',
             )
                 ->join('tbl_shop', 'tbl_shop_branch.shop_id', '=', 'tbl_shop.shop_id')
                 ->join('tbl_admin', 'tbl_shop.shop_id', '=', 'tbl_admin.shop_id')
+                ->join('tbl_cashier', 'tbl_shop.shop_id', '=', 'tbl_cashier.shop_id')
+                ->join('tbl_barista', 'tbl_shop.shop_id', '=', 'tbl_barista.shop_id')
+                ->join('tbl_kitchen', 'tbl_shop.shop_id', '=', 'tbl_kitchen.shop_id')
                 ->where('tbl_shop_branch.branch_name', urldecode($branchName))
                 ->where('tbl_shop_branch.shop_id', $shopId)
                 ->first();
@@ -235,7 +244,7 @@ class AdminController extends Controller
         }
     }
 
-    public function updateProduct(Request $request, $product_id)
+    public function updateProduct(Request $request, $productId)
     {
         $validated = $request->validate([
             'availability_id' => 'required|integer',
@@ -251,15 +260,18 @@ class AdminController extends Controller
 
         try {
             $userId = Auth::guard('api')->user()->admin_id;
-            $product = ProductsModel::findOrFail($product_id);
+            $branchId = $validated['branch_id'];
+            $product = ProductsModel::findOrFail($productId);
             $originalValues = $product->getOriginal();
             if ($validated['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
-                $ingredientStockIds = IngredientsModel::where('product_id', $product_id)
+                $ingredientStockIds = IngredientsModel::where('product_id', $productId)
+                    ->where('branch_id', $branchId)
                     ->pluck('stock_id')
                     ->toArray();
                 if (!empty($ingredientStockIds)) {
                     $unavailableStocks = StocksModel::whereIn('stock_id', $ingredientStockIds)
                         ->where('availability_id', '!=', 1)
+                        ->where('branch_id', $branchId)
                         ->exists();
                     if ($unavailableStocks) {
                         return response()->json([
@@ -600,7 +612,6 @@ class AdminController extends Controller
     {
         try {
             $shopId = Auth::guard('api')->user()->shop_id;
-            $branchId = Auth::guard('api')->user()->branch_id;
             $data = IngredientsModel::select(
                 'tbl_product_ingredient.product_ingredient_id',
                 'tbl_product_ingredient.product_id',
@@ -623,7 +634,6 @@ class AdminController extends Controller
                 ->join('tbl_availability', 'tbl_stocks.availability_id', '=', 'tbl_availability.availability_id')
                 ->join('tbl_unit', 'tbl_stocks.stock_unit', '=', 'tbl_unit.unit_id')
                 ->where('tbl_product_ingredient.shop_id', $shopId)
-                ->where('tbl_product_ingredient.branch_id', $branchId)
                 ->where('tbl_product_ingredient.product_id', $product_id)
                 ->orderBy('tbl_stocks.stock_ingredient')
                 ->get();
