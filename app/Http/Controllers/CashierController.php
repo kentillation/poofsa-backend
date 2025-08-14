@@ -93,8 +93,6 @@ class CashierController extends Controller
                 ->where('tbl_transaction_orders.station_status_id', 2) // Only update if the order is in 'In Progress' status
                 ->first();
             
-            // UNABLE TO "order_status_id = 2" if there are pending product in Barista/Kitchen/Dessert Station
-
             // Check if order exists
             if (!$transaction) {
                 return response()->json([
@@ -112,7 +110,12 @@ class CashierController extends Controller
             }
 
             if ($transaction->order_status_id == 1) {
-                $transaction->order_status_id = 2; // Move to 'In Progress'
+                // Insert code for: Unable to set order_status_id = 2 if there are pending product in Barista/Kitchen/Dessert Station
+                if () {
+                    
+                } else {
+                    $transaction->order_status_id = 2; // Move to 'In Progress'
+                }
             } elseif ($transaction->order_status_id == 2) {
                 $transaction->order_status_id = 3; // Move to 'Completed'
             } else {
