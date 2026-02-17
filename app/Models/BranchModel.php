@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class BranchModel extends Model
+{
+    use HasFactory;
+
+    protected $table = 'tbl_shop_branch';
+
+    protected $primaryKey = 'branch_id';
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
+
+    protected $fillable = [
+        'shop_id',
+        'branch_name',
+        'branch_address',
+        'branch_manager_name',
+        'branch_contact_number',
+        'is_active',
+    ];
+
+    public function shop()
+    {
+        return $this->belongsTo(ShopModel::class, 'shop_id');
+    }
+}
