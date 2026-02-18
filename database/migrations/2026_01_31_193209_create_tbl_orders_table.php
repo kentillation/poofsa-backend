@@ -21,6 +21,7 @@ class CreateTblOrdersTable extends Migration
             $table->enum('order_status', ['OPEN', 'PREPARING', 'SERVED', 'CANCELLED']);
             $table->string('table_number')->nullable();
             $table->string('order_note')->nullable();
+            $table->integer('total_quantity')();
             $table->unsignedBigInteger('shop_id');
             $table->unsignedBigInteger('branch_id');
             $table->unsignedBigInteger('user_id');

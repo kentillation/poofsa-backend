@@ -9,17 +9,18 @@ class UnitModel extends Model
 {
     use HasFactory;
 
-    protected $table = 'tbl_unit';
+    protected $table = 'tbl_ingredient_unit';
 
-    protected $guarded = [];
-
-    protected $primaryKey = 'unit_id';
+    protected $primaryKey = 'ingredient_unit';
 
     protected $fillable = [
-        'unit_id', 'unit_label', 'unit_avb'
+        'ingredient_unit',
+        'unit_label',
+        'unit_avb'
     ];
 
-    protected $visible = [
-        'unit_id', 'unit_label', 'unit_avb'
+    protected $hidden = [
+        'created_at',
+        'updated_at'
     ];
 }

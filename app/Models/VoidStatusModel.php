@@ -19,6 +19,6 @@ class VoidStatusModel extends Model
 
     public function transactions()
     {
-        return $this->hasMany(OrdersVoidModel::class, 'void_status_id', 'void_status_id');
+        return $this->hasMany(VoidOrdersModel::class, 'void_status_id', 'void_status_id');
     }
 }

@@ -22,7 +22,7 @@ use App\Models\UnitModel;
 use App\Models\StationModel;
 use App\Models\OrdersModel;
 use App\Models\OrderItemsModel;
-use App\Models\OrdersVoidModel;
+use App\Models\VoidOrdersModel;
 use App\Models\VoidStatusModel;
 Use App\Models\SalesModel;
 Use App\Models\IngredientsModel;
@@ -105,6 +105,7 @@ class AdminController extends Controller
         }
     }
 
+    // UPDATED
     public function getShopBranches()
     {
         try {
@@ -356,14 +357,14 @@ class AdminController extends Controller
                 'tbl_product_temp.temp_label',
                 'tbl_product_size.size_label',
                 'tbl_product_category.category_label',
-                'tbl_product_availability.availability_label',
+                'tbl_availability.availability_label',
                 'tbl_products.branch_id',
                 'tbl_products.shop_id',
             )
                 ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
                 ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
                 ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
-                ->join('tbl_product_availability', 'tbl_products.availability_id', '=', 'tbl_product_availability.product_availability_id')
+                ->join('tbl_availability', 'tbl_products.availability_id', '=', 'tbl_availability.availability_id')
                 ->where('tbl_products.shop_id', $shopId)
                 ->where('tbl_products.branch_id', $branchId)
                 ->orderByDesc('tbl_products.updated_at')
@@ -396,15 +397,15 @@ class AdminController extends Controller
                 'tbl_products.updated_at',
                 'tbl_products.product_category_id',
                 'tbl_products.availability_id',
-                'tbl_temp.temp_label',
-                'tbl_size.size_label',
+                'tbl_product_temp.temp_label',
+                'tbl_product_size.size_label',
                 'tbl_category.category_label',
                 'tbl_availability.availability_label',
                 'tbl_products.branch_id',
                 'tbl_products.shop_id',
             )
-                ->join('tbl_temp', 'tbl_products.product_temp_id', '=', 'tbl_temp.temp_id')
-                ->join('tbl_size', 'tbl_products.product_size_id', '=', 'tbl_size.size_id')
+                ->join('tbl_product_temp', 'tbl_products.product_temp_id', '=', 'tbl_product_temp.temp_id')
+                ->join('tbl_product_size', 'tbl_products.product_size_id', '=', 'tbl_product_size.size_id')
                 ->join('tbl_category', 'tbl_products.product_category_id', '=', 'tbl_category.category_id')
                 ->join('tbl_availability', 'tbl_products.availability_id', '=', 'tbl_availability.availability_id')
                 ->where('tbl_products.shop_id', $shopId)
@@ -603,20 +604,20 @@ class AdminController extends Controller
                 'tbl_product_ingredient.ingredient_capital',
                 'tbl_product_ingredient.updated_at',
                 'tbl_products.product_name',
-                'tbl_temp.temp_label',
-                'tbl_size.size_label',
+                'tbl_product_temp.temp_label',
+                'tbl_product_size.size_label',
                 'tbl_stocks.stock_id',
                 'tbl_stocks.branch_id',
                 'tbl_stocks.stock_ingredient',
                 'tbl_availability.availability_label',
-                'tbl_unit.unit_avb',
+                'tbl_ingredient_unit.unit_avb',
             )
                 ->join('tbl_products', 'tbl_product_ingredient.product_id', '=', 'tbl_products.product_id')
-                ->join('tbl_temp', 'tbl_products.product_temp_id', '=', 'tbl_temp.temp_id')
-                ->join('tbl_size', 'tbl_products.product_size_id', '=', 'tbl_size.size_id')
+                ->join('tbl_product_temp', 'tbl_products.product_temp_id', '=', 'tbl_product_temp.temp_id')
+                ->join('tbl_product_size', 'tbl_products.product_size_id', '=', 'tbl_product_size.size_id')
                 ->join('tbl_stocks', 'tbl_product_ingredient.stock_id', '=', 'tbl_stocks.stock_id')
                 ->join('tbl_availability', 'tbl_stocks.availability_id', '=', 'tbl_availability.availability_id')
-                ->join('tbl_unit', 'tbl_stocks.stock_unit', '=', 'tbl_unit.unit_id')
+                ->join('tbl_ingredient_unit', 'tbl_stocks.stock_unit', '=', 'tbl_ingredient_unit.unit_id')
                 ->where('tbl_product_ingredient.shop_id', $shopId)
                 ->where('tbl_product_ingredient.product_id', $product_id)
                 ->orderBy('tbl_stocks.stock_ingredient')
@@ -829,30 +830,32 @@ class AdminController extends Controller
         }
     }
 
+    // UPDATED
     public function getStocks($branchId)
     {
         try {
             $shopId = auth()->user()->shop_id;
-            $data = StocksModel::select(
-                'tbl_stocks.stock_id',
-                'tbl_stocks.stock_ingredient',
-                'tbl_stocks.stock_unit',
-                'tbl_stocks.stock_in',
-                'tbl_stocks.stock_alert_qty',
-                'tbl_stocks.stock_unit_cost',
-                'tbl_stocks.availability_id',
-                'tbl_stocks.shop_id',
-                'tbl_stocks.branch_id',
-                'tbl_stocks.updated_at',
-                'tbl_unit.unit_label',
-                'tbl_unit.unit_avb',
+            $data = IngredientsModel::select(
+                'tbl_ingredients.ingredient_id',
+                'tbl_ingredients.ingredient_name',
+                'tbl_ingredients.base_unit_id',
+                'tbl_ingredients.alert_quantity',
+                'tbl_ingredients.availability_id',
+                'tbl_ingredients.shop_id',
+                'tbl_ingredients.branch_id',
+                'tbl_ingredients.updated_at',
+                'tbl_stock_batches.quantity_remaining',
+                'tbl_stock_batches.unit_cost',
+                'tbl_ingredient_unit.unit_label',
+                'tbl_ingredient_unit.unit_avb',
                 'tbl_availability.availability_label'
             )
-                ->join('tbl_unit', 'tbl_stocks.stock_unit', '=', 'tbl_unit.unit_id')
-                ->join('tbl_availability', 'tbl_stocks.availability_id', '=', 'tbl_availability.availability_id')
-                ->where('tbl_stocks.shop_id', $shopId)
-                ->where('tbl_stocks.branch_id', $branchId)
-                ->orderByDesc('tbl_stocks.updated_at')
+                ->join('tbl_stock_batches', 'tbl_ingredients.ingredient_id', '=', 'tbl_stock_batches.ingredient_id')
+                ->join('tbl_ingredient_unit', 'tbl_ingredients.base_unit_id', '=', 'tbl_ingredient_unit.ingredient_unit_id')
+                ->join('tbl_availability', 'tbl_ingredients.availability_id', '=', 'tbl_availability.availability_id')
+                ->where('tbl_ingredients.shop_id', $shopId)
+                ->where('tbl_ingredients.branch_id', $branchId)
+                ->orderByDesc('tbl_ingredients.updated_at')
                 ->get();
 
             return response()->json([
@@ -1245,7 +1248,7 @@ class AdminController extends Controller
             )
                 ->where('tbl_orders.shop_id', $shopId)
                 ->where('tbl_orders.branch_id', $branchId)
-                ->where('tbl_orders.order_status', 'SERVED');
+                ->where('tbl_orders.order_status_id', 3);
             if ($dateType) {
                 $query->whereMonth('tbl_orders.updated_at', $dateType)
                     ->whereYear('tbl_orders.updated_at', date('Y'));
@@ -1267,6 +1270,7 @@ class AdminController extends Controller
         }
     }
 
+    // UPDATED
     public function getSalesByDateType($branchId, Request $request)
     {
         try {
@@ -1277,33 +1281,36 @@ class AdminController extends Controller
                 DB::raw('SUM(tbl_order_items.quantity) as total_quantity'),
                 DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price) as gross_sales'),
                 DB::raw('MAX(tbl_order_items.updated_at) as updated_at'),
+                'tbl_orders.order_id',
                 'tbl_products.product_name',
                 'tbl_products.base_price',
-                'tbl_products.product_category_id',
+                'tbl_products.category_id',
                 'tbl_products.shop_id as shop_id',
                 'tbl_products.branch_id as branch_id',
-                'tbl_category.category_label',
-                'tbl_temp.temp_label',
-                'tbl_size.size_label',
+                'tbl_product_category.category_label',
+                'tbl_product_temp.temp_label',
+                'tbl_product_size.size_label',
             )
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
+                ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
                 ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
-                ->join('tbl_temp', 'tbl_products.product_temp_id', '=', 'tbl_temp.temp_id')
-                ->join('tbl_size', 'tbl_products.product_size_id', '=', 'tbl_size.size_id')
-                ->join('tbl_category', 'tbl_products.product_category_id', '=', 'tbl_category.category_id')
+                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
+                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
+                ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
                 ->where('tbl_products.shop_id', $shopId)
                 ->where('tbl_products.branch_id', $branchId)
                 ->where('tbl_orders.order_status_id', 3)
                 ->groupBy(
                     'tbl_order_items.product_id',
+                    'tbl_orders.order_id',
                     'tbl_products.product_name',
                     'tbl_products.base_price',
-                    'tbl_products.product_category_id',
+                    'tbl_products.category_id',
                     'tbl_products.shop_id',
                     'tbl_products.branch_id',
-                    'tbl_category.category_label',
-                    'tbl_temp.temp_label',
-                    'tbl_size.size_label',
+                    'tbl_product_category.category_label',
+                    'tbl_product_temp.temp_label',
+                    'tbl_product_size.size_label',
                 );
             if ($dateType) {
                 switch ($dateType) {
@@ -1331,9 +1338,10 @@ class AdminController extends Controller
                 }
             }
             $totalSalesQuery = OrderItemsModel::select(
-                DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_orders.customer_discount/100)) as discounted_sales')
+                DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales')
             )
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
+                ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
                 ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
                 ->where('tbl_products.shop_id', $shopId)
                 ->where('tbl_products.branch_id', $branchId)
@@ -1452,61 +1460,61 @@ class AdminController extends Controller
         }
     }
 
-    public function getVoid($branchId, Request $request)
+    // UPDATED
+    public function getVoidOrders($branchId, Request $request)
     {
         try {
             $shopId = auth()->user()->shop_id;
             $dateType = $request->query('date_filter');
-            $voids = OrdersVoidModel::select(
-                'tbl_orders_void.order_void_id',
-                'tbl_orders_void.reference_number',
-                'tbl_orders_void.order_id',
-                'tbl_orders_void.table_number',
-                'tbl_orders_void.void_status_id',
+            $voids = VoidOrdersModel::select(
+                'tbl_void_orders.void_order_id',
+                'tbl_void_orders.reference_number',
+                'tbl_void_orders.from_quantity',
+                'tbl_void_orders.to_quantity',
+                'tbl_void_orders.updated_at',
+                'tbl_orders.table_number',
                 'tbl_products.product_name',
-                'tbl_temp.temp_label',
-                'tbl_size.size_label',
-                'tbl_orders_void.from_quantity',
-                'tbl_orders_void.to_quantity',
+                'tbl_product_temp.temp_label',
+                'tbl_product_size.size_label',
                 'tbl_void_status.void_status',
-                'tbl_orders_void.updated_at',
             )
-                ->join('tbl_products', 'tbl_orders_void.product_id', '=', 'tbl_products.product_id')
-                ->join('tbl_temp', 'tbl_products.product_temp_id', '=', 'tbl_temp.temp_id')
-                ->join('tbl_size', 'tbl_products.product_size_id', '=', 'tbl_size.size_id')
-                ->join('tbl_void_status', 'tbl_orders_void.void_status_id', '=', 'tbl_void_status.void_status_id')
-                ->where('tbl_orders_void.shop_id', $shopId)
-                ->where('tbl_orders_void.branch_id', $branchId);
+                ->join('tbl_orders', 'tbl_void_orders.order_id', '=', 'tbl_orders.order_id')
+                ->join('tbl_products', 'tbl_void_orders.product_id', '=', 'tbl_products.product_id')
+                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
+                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
+                ->join('tbl_void_status', 'tbl_void_orders.void_status_id', '=', 'tbl_void_status.void_status_id')
+                ->where('tbl_void_orders.shop_id', $shopId)
+                ->where('tbl_void_orders.branch_id', $branchId);
 
             if ($dateType) {
                 switch ($dateType) {
                     case 1: // Today
-                        $voids->whereDate('tbl_orders_void.updated_at', now());
+                        $voids->whereDate('tbl_void_orders.updated_at', now());
                         break;
                     case 2: // Yesterday
-                        $voids->whereDate('tbl_orders_void.updated_at', now()->subDay());
+                        $voids->whereDate('tbl_void_orders.updated_at', now()->subDay());
                         break;
                     case 3: // Last 2 days
-                        $voids->whereDate('tbl_orders_void.updated_at', '>=', now()->subDays(2));
+                        $voids->whereDate('tbl_void_orders.updated_at', '>=', now()->subDays(2));
                         break;
                     case 4: // Last 3 days
-                        $voids->whereDate('tbl_orders_void.updated_at', '>=', now()->subDays(3));
+                        $voids->whereDate('tbl_void_orders.updated_at', '>=', now()->subDays(3));
                         break;
                     case 5: // Last 4 days
-                        $voids->whereDate('tbl_orders_void.updated_at', '>=', now()->subDays(4));
+                        $voids->whereDate('tbl_void_orders.updated_at', '>=', now()->subDays(4));
                         break;
                     case 6: // Last 5 days
-                        $voids->whereDate('tbl_orders_void.updated_at', '>=', now()->subDays(5));
+                        $voids->whereDate('tbl_void_orders.updated_at', '>=', now()->subDays(5));
                         break;
                     case 7: // Last 6 days
-                        $voids->whereDate('tbl_orders_void.updated_at', '>=', now()->subDays(6));
+                        $voids->whereDate('tbl_void_orders.updated_at', '>=', now()->subDays(6));
                         break;
                     case 8: // Last 7 days
-                        $voids->whereDate('tbl_orders_void.updated_at', '>=', now()->subDays(7));
+                        $voids->whereDate('tbl_void_orders.updated_at', '>=', now()->subDays(7));
                         break;
                 }
             }
-            $voids = $voids->orderBy('tbl_orders_void.table_number', 'desc')->get();
+            $voids = $voids->orderBy('tbl_orders.table_number', 'desc')->get();
             return response()->json([
                 'status' => true,
                 'message' => 'Voids fetched successfully',
@@ -1527,8 +1535,8 @@ class AdminController extends Controller
             $shopId = auth()->user()->shop_id;
             $input = $request->all();
             $validator = Validator::make($input, [
-                'orderVoidID' => 'required|integer|exists:tbl_orders_void,order_void_id',
-                'referenceNumber' => 'required|string|exists:tbl_orders_void,reference_number',
+                'orderVoidID' => 'required|integer|exists:tbl_void_orders,order_void_id',
+                'referenceNumber' => 'required|string|exists:tbl_void_orders,reference_number',
             ]);
             if ($validator->fails()) {
                 return response()->json([
@@ -1537,7 +1545,7 @@ class AdminController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            $ordersVoid = OrdersVoidModel::where('order_void_id', $input['orderVoidID'])
+            $ordersVoid = VoidOrdersModel::where('order_void_id', $input['orderVoidID'])
                 ->where('reference_number', $input['referenceNumber'])
                 ->where('shop_id', $shopId)
                 ->where('branch_id', $branchId)
@@ -1588,7 +1596,7 @@ class AdminController extends Controller
         ]);
     }
 
-    /* Options */
+    // UPDATED
     public function getStockUnits()
     {
         try {
@@ -1633,7 +1641,7 @@ class AdminController extends Controller
     }
 
     // UPDATED
-    public function getProductAvailabilities()
+    public function getAvailabilities()
     {
         try {
             $data = AvailabilityModel::all();
@@ -1654,6 +1662,7 @@ class AdminController extends Controller
         }
     }
 
+    // UPDATED
     public function getVoidStatus()
     {
         try {

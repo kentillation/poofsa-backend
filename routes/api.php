@@ -89,12 +89,12 @@ Route::middleware('auth:sanctum')->get('/admin/sales-by-month/{branchId}', [Admi
 Route::middleware('auth:sanctum')->get('/admin/orders-only/{branchId}', [AdminController::class, 'getOrdersOnly']);
 Route::middleware('auth:sanctum')->get('/admin/products-only/{branchId}', [AdminController::class, 'getProductsOnly']);
 Route::middleware('auth:sanctum')->get('/admin/stocks-only/{branchId}', [AdminController::class, 'getStocksOnly']);
-Route::middleware('auth:sanctum')->get('/admin/void-orders/{branchId}', [AdminController::class, 'getVoid']);
+Route::middleware('auth:sanctum')->get('/admin/void-orders/{branchId}', [AdminController::class, 'getVoidOrders']);
 Route::middleware('auth:sanctum')->get('/admin/void-status', [AdminController::class, 'getVoidStatus']);
 Route::middleware('auth:sanctum')->get('/admin/product-temperature-option', [AdminController::class, 'getProductTemperatures']);
 Route::middleware('auth:sanctum')->get('/admin/product-size-option', [AdminController::class, 'getProductSizes']);
 Route::middleware('auth:sanctum')->get('/admin/product-category-option', [AdminController::class, 'getProductCategories']);
-Route::middleware('auth:sanctum')->get('/admin/product-availability-option', [AdminController::class, 'getProductAvailabilities']);
+Route::middleware('auth:sanctum')->get('/admin/product-availability-option', [AdminController::class, 'getAvailabilities']); // to change
 Route::middleware('auth:sanctum')->get('/admin/product-station-option', [AdminController::class, 'getProductStation']);
 Route::middleware('auth:sanctum')->get('/admin/stock-unit-option', [AdminController::class, 'getStockUnits']);
 

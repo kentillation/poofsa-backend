@@ -18,6 +18,7 @@ class CreateTblIngredientsTable extends Migration
             $table->string('ingredient_name');
             $table->unsignedBigInteger('base_unit_id'); // grams, ml, pcs
             $table->decimal('alert_quantity', 10, 3);
+            $table->integer('availability_id', 12)->index();
             $table->integer('shop_id', 12)->index();
             $table->integer('branch_id', 12)->index();
             $table->timestamps();

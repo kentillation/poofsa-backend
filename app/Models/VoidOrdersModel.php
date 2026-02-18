@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class OrdersVoidModel extends Model
+class VoidOrdersModel extends Model
 {
     use HasFactory;
 
-    protected $table = 'tbl_orders_void';
+    protected $table = 'tbl_void_orders';
 
-    protected $primaryKey = 'order_void_id';
+    protected $primaryKey = 'void_order_id';
 
     protected $keyType = 'int';
 
@@ -19,13 +19,17 @@ class OrdersVoidModel extends Model
 
     protected $fillable = [
         'order_id',
+        'product_id',
+        'reference_number',
         'void_reason',
         'void_notes',
         'voided_by',
         'voided_at',
-        'void_status',
+        'void_status_id',
         'from_quantity',
         'to_quantity',
+        'shop_id',
+        'branch_id',
     ];
 
     public function orders()

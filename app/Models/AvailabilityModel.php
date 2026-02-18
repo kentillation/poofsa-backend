@@ -9,12 +9,12 @@ class AvailabilityModel extends Model
 {
     use HasFactory;
 
-    protected $table = 'tbl_product_availability';
+    protected $table = 'tbl_availability';
 
-    protected $primaryKey = 'product_availability_id';
+    protected $primaryKey = 'availability_id';
 
     protected $fillable = [
-        'product_availability_id', 'availability_label',
+        'availability_id', 'availability_label',
     ];
 
     protected $hidden = [
