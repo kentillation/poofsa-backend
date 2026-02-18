@@ -29,7 +29,9 @@ Use App\Models\IngredientsModel;
 
 class AdminController extends Controller
 {
-    /* Branch */
+
+    /**** Branch ****/
+
     public function saveBranch(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -73,7 +75,7 @@ class AdminController extends Controller
                     $newStock->created_at = now();
                     $newStock->updated_at = now();
                     $newStock->save();
-                    $stockMap[$stock->stock_id] = $newStock->stock_id;
+                    $stockMap[$stock->ingredient_id] = $newStock->ingredient_id;
                 }
 
                 $products = ProductsModel::where('branch_id', $newBranchId)->get();
@@ -93,7 +95,7 @@ class AdminController extends Controller
                     $newIngredient = $ingredient->replicate();
                     $newIngredient->branch_id = $newBranch->branch_id;
                     $newIngredient->product_id = $productMap[$ingredient->product_id] ?? null;
-                    $newIngredient->stock_id = $stockMap[$ingredient->stock_id] ?? null;
+                    $newIngredient->ingredient_id = $stockMap[$ingredient->ingredient_id] ?? null;
                     $newIngredient->created_at = now();
                     $newIngredient->updated_at = now();
                     $newIngredient->save();
@@ -171,7 +173,8 @@ class AdminController extends Controller
         }
     }
 
-    /* Products */
+    /**** Products ****/
+
     public function saveProduct(Request $request)
     {
         $request->validate([
@@ -253,10 +256,10 @@ class AdminController extends Controller
             if ($validated['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
                 $ingredientStockIds = ProductIngredientsModel::where('product_id', $productId)
                     ->where('branch_id', $branchId)
-                    ->pluck('stock_id')
+                    ->pluck('ingredient_id')
                     ->toArray();
                 if (!empty($ingredientStockIds)) {
-                    $unavailableStocks = StocksModel::whereIn('stock_id', $ingredientStockIds)
+                    $unavailableStocks = StocksModel::whereIn('ingredient_id', $ingredientStockIds)
                         ->where('availability_id', '!=', 1)
                         ->where('branch_id', $branchId)
                         ->exists();
@@ -484,7 +487,8 @@ class AdminController extends Controller
         }
     }
 
-    /* Product Ingredients */
+    /**** Product Ingredients ****/
+
     public function saveProductIngredients(Request $request)
     {
         $shopId = auth()->user()->shop_id;
@@ -492,7 +496,7 @@ class AdminController extends Controller
             '*.shop_id' => 'required|integer',
             '*.branch_id' => 'required|integer',
             '*.product_id' => 'required|integer',
-            '*.stock_id' => 'required|integer',
+            '*.ingredient_id' => 'required|integer',
             '*.unit_usage' => 'required|numeric',
             '*.ingredient_capital' => 'required|numeric',
         ]);
@@ -502,7 +506,7 @@ class AdminController extends Controller
                     'product_id' => $item['product_id'],
                     'unit_usage' => $item['unit_usage'],
                     'ingredient_capital' => $item['ingredient_capital'],
-                    'stock_id' => $item['stock_id'],
+                    'ingredient_id' => $item['ingredient_id'],
                     'shop_id' => $shopId,
                     'branch_id' => $item['branch_id'],
                     'created_at' => now(),
@@ -526,7 +530,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|integer',
-            'stock_id' => 'required|integer',
+            'ingredient_id' => 'required|integer',
             'unit_usage' => 'required|numeric',
             'ingredient_capital' => 'required|numeric',
         ]);
@@ -550,11 +554,11 @@ class AdminController extends Controller
             }
             $description = '';
             foreach ($changes as $field => $change) {
-                if ($field === 'stock_id') {
+                if ($field === 'ingredient_id') {
                     $from = StocksModel::find($change['from']);
                     $to = StocksModel::find($change['to']);
-                    $fromLabel = $from ? $from->stock_ingredient : $change['from'];
-                    $toLabel = $to ? $to->stock_ingredient : $change['to'];
+                    $fromLabel = $from ? $from->ingredient_name : $change['from'];
+                    $toLabel = $to ? $to->ingredient_name : $change['to'];
                     $description .= "Stock ingredient: From [{$fromLabel}] To [{$toLabel}]. ";
                 } elseif ($field === 'ingredient_capital') {
                     $description .= "Ingredient capital: From [₱{$change['from']}] To [₱{$change['to']}]. ";
@@ -598,29 +602,29 @@ class AdminController extends Controller
         try {
             $shopId = auth()->user()->shop_id;
             $data = ProductIngredientsModel::select(
-                'tbl_product_ingredient.product_ingredient_id',
-                'tbl_product_ingredient.product_id',
-                'tbl_product_ingredient.unit_usage',
-                'tbl_product_ingredient.ingredient_capital',
-                'tbl_product_ingredient.updated_at',
+                'tbl_product_items.product_ingredient_id',
+                'tbl_product_items.product_id',
+                'tbl_product_items.unit_usage',
+                'tbl_product_items.ingredient_capital',
+                'tbl_product_items.updated_at',
                 'tbl_products.product_name',
                 'tbl_product_temp.temp_label',
                 'tbl_product_size.size_label',
-                'tbl_stocks.stock_id',
+                'tbl_stocks.ingredient_id',
                 'tbl_stocks.branch_id',
-                'tbl_stocks.stock_ingredient',
+                'tbl_stocks.ingredient_name',
                 'tbl_availability.availability_label',
                 'tbl_ingredient_unit.unit_avb',
             )
-                ->join('tbl_products', 'tbl_product_ingredient.product_id', '=', 'tbl_products.product_id')
+                ->join('tbl_products', 'tbl_product_items.product_id', '=', 'tbl_products.product_id')
                 ->join('tbl_product_temp', 'tbl_products.product_temp_id', '=', 'tbl_product_temp.temp_id')
                 ->join('tbl_product_size', 'tbl_products.product_size_id', '=', 'tbl_product_size.size_id')
-                ->join('tbl_stocks', 'tbl_product_ingredient.stock_id', '=', 'tbl_stocks.stock_id')
+                ->join('tbl_stocks', 'tbl_product_items.ingredient_id', '=', 'tbl_stocks.ingredient_id')
                 ->join('tbl_availability', 'tbl_stocks.availability_id', '=', 'tbl_availability.availability_id')
                 ->join('tbl_ingredient_unit', 'tbl_stocks.stock_unit', '=', 'tbl_ingredient_unit.unit_id')
-                ->where('tbl_product_ingredient.shop_id', $shopId)
-                ->where('tbl_product_ingredient.product_id', $product_id)
-                ->orderBy('tbl_stocks.stock_ingredient')
+                ->where('tbl_product_items.shop_id', $shopId)
+                ->where('tbl_product_items.product_id', $product_id)
+                ->orderBy('tbl_stocks.ingredient_name')
                 ->get();
 
             return response()->json([
@@ -637,13 +641,14 @@ class AdminController extends Controller
         }
     }
 
-    /* Stocks */
+    /**** Stocks ****/
+
     public function saveStock(Request $request)
     {
         $request->validate([
-            '*.stock_ingredient' => 'required|string',
+            '*.ingredient_name' => 'required|string',
             '*.stock_unit' => 'required|numeric',
-            '*.stock_in' => 'required|numeric',
+            '*.quantity_received' => 'required|numeric',
             '*.stock_alert_qty' => 'required|numeric',
             '*.stock_unit_cost' => 'required|numeric',
             '*.branch_id' => 'required|numeric',
@@ -654,9 +659,9 @@ class AdminController extends Controller
                 $branchId = $request->user()->branch_id;
                 $userId = $request->user()->admin_id;
                 $stock = new StocksModel();
-                $stock->stock_ingredient = $item['stock_ingredient'];
+                $stock->ingredient_name = $item['ingredient_name'];
                 $stock->stock_unit = $item['stock_unit'];
-                $stock->stock_in = $item['stock_in'];
+                $stock->quantity_received = $item['quantity_received'];
                 $stock->stock_alert_qty = $item['stock_alert_qty'];
                 $stock->stock_unit_cost = $item['stock_unit_cost'];
                 $stock->availability_id = 1;
@@ -666,12 +671,12 @@ class AdminController extends Controller
                 $stock->created_at = now();
                 $stock->updated_at = now();
                 $stock->save();
-                $newStockId = $stock->stock_id;
+                $newStockId = $stock->ingredient_id;
                 $shopId = $stock->shop_id;
                 $branchId = $stock->branch_id;
                 $userId = $stock->user_id;
                 StocksHistoryModel::create([
-                    'stock_id' => $newStockId,
+                    'ingredient_id' => $newStockId,
                     'manage_id' => 1, // SAVE
                     'description' => 'New Stock Saved',
                     'shop_id' => $shopId,
@@ -694,12 +699,12 @@ class AdminController extends Controller
         }
     }
 
-    public function updateStock(Request $request, $stock_id)
+    public function updateStock(Request $request, $ingredient_id)
     {
         $validated = $request->validate([
-            'stock_id' => 'required|integer',
-            'stock_ingredient' => 'required|string',
-            'stock_in' => 'required|numeric',
+            'ingredient_id' => 'required|integer',
+            'ingredient_name' => 'required|string',
+            'quantity_received' => 'required|numeric',
             'stock_unit' => 'required|integer',
             'stock_out' => 'nullable|integer',
             'stock_alert_qty' => 'required|integer',
@@ -710,21 +715,21 @@ class AdminController extends Controller
         ]);
         try {
 
-            if (isset($validated['stock_in']) && $validated['stock_in'] === 1 || $validated['stock_in'] === 0) {
+            if (isset($validated['quantity_received']) && $validated['quantity_received'] === 1 || $validated['quantity_received'] === 0) {
                 $validated['availability_id'] = 2;
             }
-            if (isset($validated['stock_in']) && $validated['stock_in'] > 1) {
+            if (isset($validated['quantity_received']) && $validated['quantity_received'] > 1) {
                 $validated['availability_id'] = 1;
             }
             try {
-                $stock = StocksModel::findOrFail($stock_id);
+                $stock = StocksModel::findOrFail($ingredient_id);
                 $originalValues = $stock->getOriginal();
                 $availabilityChanged = isset($validated['availability_id']) &&
                     $validated['availability_id'] != $originalValues['availability_id'];
                 $isBecomingAvailable = $availabilityChanged && $validated['availability_id'] == 1;
                 $isBecomingUnavailable = $availabilityChanged && $validated['availability_id'] == 2;
                 $stock->update($validated);
-                $newStockId = $stock->stock_id;
+                $newStockId = $stock->ingredient_id;
                 $shopId = $stock->shop_id;
                 $branchId = $stock->branch_id;
                 $userId = auth()->user()->admin_id;
@@ -737,7 +742,7 @@ class AdminController extends Controller
                         ];
                     }
                 }
-                $relatedProducts = ProductIngredientsModel::where('stock_id', $stock_id)
+                $relatedProducts = ProductIngredientsModel::where('ingredient_id', $ingredient_id)
                     ->with('product')
                     ->get()
                     ->pluck('product')
@@ -803,7 +808,7 @@ class AdminController extends Controller
                     $description = 'No fields were updated';
                 }
                 StocksHistoryModel::create([
-                    'stock_id' => $newStockId,
+                    'ingredient_id' => $newStockId,
                     'manage_id' => 2, // UPDATE
                     'shop_id' => $shopId,
                     'branch_id' => $branchId,
@@ -877,12 +882,12 @@ class AdminController extends Controller
         try {
             $shopId = auth()->user()->shop_id;
             $data = StocksModel::select(
-                'tbl_stocks.stock_id',
-                'tbl_stocks.stock_ingredient',
+                'tbl_stocks.ingredient_id',
+                'tbl_stocks.ingredient_name',
             )
                 ->where('tbl_stocks.shop_id', $shopId)
                 ->where('tbl_stocks.branch_id', $branchId)
-                ->orderBy('tbl_stocks.stock_ingredient')
+                ->orderBy('tbl_stocks.ingredient_name')
                 ->get();
 
             return response()->json([
@@ -903,11 +908,11 @@ class AdminController extends Controller
     {
         try {
             $shopId = auth()->user()->shop_id;
-            $productIds = ProductIngredientsModel::where('stock_id', $stockId)
+            $productIds = ProductIngredientsModel::where('ingredient_id', $stockId)
                 ->pluck('product_id')
                 ->toArray();
             $excludedStockIds = ProductIngredientsModel::whereIn('product_id', $productIds)
-                ->pluck('stock_id')
+                ->pluck('ingredient_id')
                 ->unique()
                 ->toArray();
             if (!in_array($stockId, $excludedStockIds)) {
@@ -915,17 +920,17 @@ class AdminController extends Controller
             }
             Log::debug("Excluded stock IDs: " . implode(',', $excludedStockIds));
             $query = StocksModel::select(
-                'tbl_stocks.stock_id',
-                'tbl_stocks.stock_ingredient',
+                'tbl_stocks.ingredient_id',
+                'tbl_stocks.ingredient_name',
                 'tbl_stocks.availability_id'
             )
                 ->where('tbl_stocks.shop_id', $shopId)
                 ->where('tbl_stocks.branch_id', $branchId)
                 ->where('tbl_stocks.availability_id', 1)
-                ->whereNotIn('tbl_stocks.stock_id', $excludedStockIds);
+                ->whereNotIn('tbl_stocks.ingredient_id', $excludedStockIds);
             Log::debug("Final SQL: " . $query->toSql());
             Log::debug("Bindings: " . json_encode($query->getBindings()));
-            $data = $query->orderBy('tbl_stocks.stock_ingredient')
+            $data = $query->orderBy('tbl_stocks.ingredient_name')
                 ->get();
 
             return response()->json([
@@ -942,32 +947,34 @@ class AdminController extends Controller
         }
     }
 
+    // UPDATED
     public function getStocksReport($branchId, Request $request)
     {
         try {
             $shopId = auth()->user()->shop_id;
             $dateType = $request->query('date_filter');
 
-            $stocksQuery = StocksModel::select(
-                'tbl_stocks.stock_id',
-                'tbl_stocks.stock_ingredient',
-                'tbl_stocks.stock_unit',
-                'tbl_stocks.stock_in',
-                'tbl_stocks.updated_at',
-                DB::raw('AVG(tbl_product_ingredient.ingredient_capital) as ingredient_capital')
+            $stocksQuery = IngredientsModel::select(
+                'tbl_ingredients.ingredient_id',
+                'tbl_ingredients.ingredient_name',
+                'tbl_ingredients.base_unit_id',
+                'tbl_stock_batches.quantity_received',
+                'tbl_ingredients.updated_at',
+                DB::raw('AVG(tbl_product_items.ingredient_capital)')
             )
-                ->join('tbl_product_ingredient', 'tbl_stocks.stock_id', '=', 'tbl_product_ingredient.stock_id')
-                ->join('tbl_order_items', 'tbl_product_ingredient.product_id', '=', 'tbl_order_items.product_id')
+                ->join('tbl_stock_batches', 'tbl_ingredients.ingredient_id', '=', 'tbl_stock_batches.ingredient_id')
+                ->join('tbl_product_items', 'tbl_ingredients.ingredient_id', '=', 'tbl_product_items.ingredient_id')
+                ->join('tbl_order_items', 'tbl_product_items.product_id', '=', 'tbl_order_items.product_id')
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
-                ->where('tbl_stocks.shop_id', $shopId)
-                ->where('tbl_stocks.branch_id', $branchId)
+                ->where('tbl_ingredients.shop_id', $shopId)
+                ->where('tbl_ingredients.branch_id', $branchId)
                 ->where('tbl_orders.order_status_id', 3) // Completed orders only
                 ->groupBy(
-                    'tbl_stocks.stock_id',
-                    'tbl_stocks.stock_ingredient',
-                    'tbl_stocks.stock_unit',
-                    'tbl_stocks.stock_in',
-                    'tbl_stocks.updated_at',
+                    'tbl_ingredients.ingredient_id',
+                    'tbl_ingredients.ingredient_name',
+                    'tbl_ingredients.base_unit_id',
+                    'tbl_stock_batches.quantity_received',
+                    'tbl_ingredients.updated_at',
                 );
 
             if ($dateType) {
@@ -1000,13 +1007,13 @@ class AdminController extends Controller
 
             foreach ($stocks as $stock) {
                 $stockOutQuery = DB::table('tbl_order_items')
-                    ->join('tbl_product_ingredient', 'tbl_order_items.product_id', '=', 'tbl_product_ingredient.product_id')
+                    ->join('tbl_product_items', 'tbl_order_items.product_id', '=', 'tbl_product_items.product_id')
                     ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
-                    ->where('tbl_product_ingredient.stock_id', $stock->stock_id)
+                    ->where('tbl_product_items.ingredient_id', $stock->ingredient_id)
                     ->where('tbl_orders.order_status_id', 3) // Completed orders only
                     ->select(
-                        DB::raw('SUM(tbl_order_items.quantity * tbl_product_ingredient.unit_usage) as total_usage'),
-                        DB::raw('SUM(tbl_order_items.quantity * tbl_product_ingredient.ingredient_capital) as total_amount'),
+                        DB::raw('SUM(tbl_order_items.quantity * tbl_product_items.unit_usage) as total_usage'),
+                        DB::raw('SUM(tbl_order_items.quantity * tbl_product_items.ingredient_capital) as total_amount'),
                         DB::raw('SUM(tbl_order_items.quantity) as total_quantity')
                     );
 
@@ -1111,13 +1118,13 @@ class AdminController extends Controller
         try {
             $shopId = auth()->user()->shop_id;
             $data = StocksHistoryModel::select(
-                'tbl_stocks.stock_ingredient',
+                'tbl_stocks.ingredient_name',
                 'tbl_stocks_history.manage_id',
                 'tbl_stocks_history.description',
                 'tbl_admin.admin_name',
                 'tbl_stocks_history.updated_at',
             )
-                ->join('tbl_stocks', 'tbl_stocks_history.stock_id', '=', 'tbl_stocks.stock_id')
+                ->join('tbl_stocks', 'tbl_stocks_history.ingredient_id', '=', 'tbl_stocks.ingredient_id')
                 ->join('tbl_admin', 'tbl_stocks_history.user_id', '=', 'tbl_admin.admin_id')
                 ->where('tbl_stocks_history.shop_id', $shopId)
                 ->where('tbl_stocks_history.branch_id', $branchId)
@@ -1164,7 +1171,9 @@ class AdminController extends Controller
         }
     }
 
-    /* Orders */
+    /**** Orders ****/
+
+    // UPDATED
     public function getOrdersByDateType($branchId, Request $request)
     {
         try {
@@ -1175,15 +1184,16 @@ class AdminController extends Controller
                 'tbl_orders.reference_number',
                 'tbl_orders.total_quantity',
                 'tbl_orders.customer_cash',
-                'tbl_orders.total_due',
-                'tbl_orders.customer_discount',
                 'tbl_orders.customer_change',
-                'tbl_payment_mode.payment_mode',
                 'tbl_orders.updated_at',
+                'tbl_sales.total_amount',
+                'tbl_sales.discount_amount',
+                'tbl_payment_method.payment_method_name',
                 'tbl_cashier.cashier_name',
             )
+                ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
                 ->join('tbl_cashier', 'tbl_orders.user_id', '=', 'tbl_cashier.cashier_id')
-                ->join('tbl_payment_mode', 'tbl_orders.payment_mode_id', '=', 'tbl_payment_mode.payment_mode_id')
+                ->join('tbl_payment_method', 'tbl_sales.payment_method_id', '=', 'tbl_payment_method.payment_method_id')
                 ->where('tbl_orders.shop_id', $shopId)
                 ->where('tbl_orders.branch_id', $branchId)
                 ->where('tbl_orders.order_status_id', 3);
@@ -1269,6 +1279,8 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    /**** Sales ****/
 
     // UPDATED
     public function getSalesByDateType($branchId, Request $request)
@@ -1460,6 +1472,8 @@ class AdminController extends Controller
         }
     }
 
+    /**** Void ****/
+
     // UPDATED
     public function getVoidOrders($branchId, Request $request)
     {
@@ -1595,6 +1609,8 @@ class AdminController extends Controller
             'Content-Disposition' => 'inline'
         ]);
     }
+
+    /**** Options ****/
 
     // UPDATED
     public function getStockUnits()

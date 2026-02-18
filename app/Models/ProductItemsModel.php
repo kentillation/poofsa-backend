@@ -20,6 +20,7 @@ class ProductItemsModel extends Model
     protected $fillable = [
         'product_id',
         'ingredient_id',
+        'ingredient_capital',
         'quantity_required',
     ];
 }

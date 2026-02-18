@@ -17,6 +17,8 @@ class CreateTblOrdersTable extends Migration
             $table->id('order_id');
             $table->string('order_number')->unique();
             $table->string('reference_number')->unique();
+            $table->decimal('customer_cash', 10, 2);
+            $table->decimal('customer_change', 10, 2);
             $table->enum('order_type', ['DINE_IN', 'TAKEOUT', 'DELIVERY']);
             $table->enum('order_status', ['OPEN', 'PREPARING', 'SERVED', 'CANCELLED']);
             $table->string('table_number')->nullable();

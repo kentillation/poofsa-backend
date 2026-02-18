@@ -17,6 +17,7 @@ class CreateTblProductItemsTable extends Migration
             $table->id('product_item_id');
             $table->unsignedBigInteger('product_id');
             $table->unsignedBigInteger('ingredient_id');
+            $table->decimal('ingredient_capital', 10, 3);
             $table->decimal('quantity_required', 10, 3);
             $table->timestamps();
             $table->unique(['product_id', 'ingredient_id']);
