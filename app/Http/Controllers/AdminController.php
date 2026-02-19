@@ -853,8 +853,7 @@ class AdminController extends Controller
     public function getStocks(Request $request, $branchId)
     {
         try {
-            $user = auth('admin')->user();
-            $shopId = $user->shop_id;
+            $shopId = $this->getShopId();
 
             $filters = $request->only(['ingredient_name', 'availability_label']);
             $stocks = StockService::getAllStocks($shopId, $branchId, $filters);
