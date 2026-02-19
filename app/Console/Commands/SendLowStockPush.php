@@ -15,7 +15,7 @@ class SendLowStockPush extends Command
         $branches = \App\Models\BranchModel::all();
 
         foreach ($branches as $branch) {
-            StockService::getLowStock($branch->shop_id, $branch->branch_id);
+            StockService::lowStockService($branch->shop_id, $branch->branch_id);
             $this->info("Checked low stock for Shop {$branch->shop_id}, Branch {$branch->branch_id}");
         }
     }

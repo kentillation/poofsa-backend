@@ -24,7 +24,7 @@ class CreateTblProductPricesTable extends Migration
             $table->timestamps();
             $table->foreign('product_id')->references('product_id')->on('tbl_products')->cascadeOnDelete();
             $table->foreign('variant_id')->references('variant_id')->on('tbl_product_variants')->nullOnDelete();
-            $table->index(['product_id', 'variant_id', 'effective_to']);
+            $table->index(['product_id', 'variant_id', 'effective_to', 'user_id']);
         });
     }
 

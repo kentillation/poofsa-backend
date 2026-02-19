@@ -18,8 +18,8 @@ class CreateTblProductsTable extends Migration
             $table->string('product_name');
             $table->string('sku')->nullable();
             $table->unsignedBigInteger('category_id')->nullable();
-            $table->integer('size_id', 12)->index();
-            $table->integer('temp_id', 12)->index();
+            $table->integer('size_id')->index();
+            $table->integer('temp_id')->index();
             $table->decimal('base_price', 10, 2); // current price only
             $table->decimal('cost_estimate', 10, 2)->nullable();
             $table->boolean('is_active')->default(true);

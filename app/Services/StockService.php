@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\IngredientsModel;
 use App\Models\StockBatchesModel;
 use App\Events\LowStockLevel;
-
 use Illuminate\Support\Facades\DB;
 
 class StockService
@@ -61,25 +60,34 @@ class StockService
     /**
      * Get ingredients that are low on stock
      */
-    public static function getLowStock($shopId, $branchId)
-    { {
-            $lowStockItems = StockBatchesModel::select(
+
+    public static function lowStockService($shopId)
+    {
+        $lowStockItems = StockBatchesModel::select(
+            'tbl_shop_branch.branch_name',
+            'tbl_stock_batches.branch_id',
+            'tbl_stock_batches.ingredient_id',
+            'tbl_ingredients.ingredient_name',
+            'tbl_ingredients.alert_quantity',
+            DB::raw('SUM(tbl_stock_batches.quantity_remaining) as total_remaining')
+        )
+            ->join('tbl_ingredients', 'tbl_stock_batches.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
+            ->join('tbl_shop_branch', 'tbl_stock_batches.branch_id', '=', 'tbl_shop_branch.branch_id')
+            ->where('tbl_stock_batches.shop_id', $shopId)
+            ->groupBy(
+                'tbl_shop_branch.branch_name',
+                'tbl_stock_batches.branch_id',
                 'tbl_stock_batches.ingredient_id',
-                'tbl_stock_batches.quantity_remaining',
                 'tbl_ingredients.ingredient_name',
                 'tbl_ingredients.alert_quantity'
             )
-                ->join('tbl_ingredients', 'tbl_stock_batches.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
-                ->where('tbl_stock_batches.shop_id', $shopId)
-                ->where('tbl_stock_batches.branch_id', $branchId)
-                ->whereColumn('tbl_stock_batches.quantity_remaining', '<=', 'tbl_ingredients.alert_quantity')
-                ->get();
+            ->havingRaw('SUM(tbl_stock_batches.quantity_remaining) <= tbl_ingredients.alert_quantity')
+            ->get();
 
-            if ($lowStockItems->isNotEmpty()) {
-                // Fire real-time event per branch
-                event(new LowStockLevel($shopId, $branchId, $lowStockItems));
-            }
-            return $lowStockItems;
+        if ($lowStockItems->isNotEmpty()) {
+            event(new LowStockLevel($shopId, $lowStockItems));
         }
+
+        return $lowStockItems;
     }
 }

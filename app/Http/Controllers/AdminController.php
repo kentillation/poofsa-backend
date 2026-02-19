@@ -1062,12 +1062,12 @@ class AdminController extends Controller
     }
 
     // UPDATED
-    public function getLowStock($branchId)
+    public function getLowStock()
     {
         try {
             $shopId = $this->getShopId();
 
-            $lowStock = StockService::getLowStock($shopId, $branchId);
+            $lowStock = StockService::lowStockService($shopId);
 
             return response()->json([
                 'status' => true,
