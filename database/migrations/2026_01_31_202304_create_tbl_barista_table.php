@@ -19,8 +19,8 @@ class CreateTblBaristaTable extends Migration
             $table->string('barista_email', 100)->unique();
             $table->string('barista_password');
             $table->string('barista_mpin')->nullable();
-            $table->unsignedBigInteger('shop_id');
-            $table->unsignedBigInteger('branch_id');
+            $table->unsignedBigInteger('shop_id')->index();
+            $table->unsignedBigInteger('branch_id')->index();
             $table->boolean('is_active')->default(true); // active/inactive status
             $table->timestamps();
         });

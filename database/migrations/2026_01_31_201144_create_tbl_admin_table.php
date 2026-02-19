@@ -19,7 +19,7 @@ class CreateTblAdminTable extends Migration
             $table->string('admin_email', 100)->unique(); // admin email
             $table->string('admin_password'); // hashed password
             $table->string('admin_mpin'); // mobile pin
-            $table->unsignedBigInteger('shop_id'); // foreign key to shops table
+            $table->unsignedBigInteger('shop_id')->index(); // foreign key to shops table
             $table->enum('role', ['admin', 'superadmin', 'manager'])->default('admin'); // role: admin, superadmin, etc.
             $table->boolean('status')->default(true); // active/inactive status
             $table->timestamps(); // created_at and updated_at

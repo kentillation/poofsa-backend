@@ -25,12 +25,14 @@ class CreateTblSalesTable extends Migration
             $table->decimal('discount_amount', 10, 2)->default(0);
             $table->decimal('tax_amount', 10, 2)->default(0);
             $table->decimal('total_amount', 10, 2);
-            $table->enum('sale_status', ['PAID', 'VOID', 'REFUND'])->default('PAID');
+            $table->unsignedBigInteger('sale_status_id');
             $table->timestamps();
+            $table->index('order_id');
             $table->index('shop_id');
             $table->index('branch_id');
             $table->index('user_id');
             $table->index('payment_method_id');
+            $table->index('sale_status_id');
             $table->index('created_at');
         });
     }

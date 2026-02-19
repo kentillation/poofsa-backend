@@ -24,9 +24,9 @@ class CreateTblOrdersTable extends Migration
             $table->string('table_number')->nullable();
             $table->string('order_note')->nullable();
             $table->integer('total_quantity')();
-            $table->unsignedBigInteger('shop_id');
-            $table->unsignedBigInteger('branch_id');
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('shop_id')->index();
+            $table->unsignedBigInteger('branch_id')->index();
+            $table->unsignedBigInteger('user_id')->index();
             $table->timestamps();
         });
     }

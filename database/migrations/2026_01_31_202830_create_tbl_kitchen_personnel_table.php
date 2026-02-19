@@ -19,8 +19,8 @@ class CreateTblKitchenPersonnelTable extends Migration
             $table->string('kitchen_personnel_email', 100)->unique();
             $table->string('kitchen_personnel_password');
             $table->string('kitchen_personnel_mpin')->nullable();
-            $table->unsignedBigInteger('shop_id');
-            $table->unsignedBigInteger('branch_id');
+            $table->unsignedBigInteger('shop_id')->index();
+            $table->unsignedBigInteger('branch_id')->index();
             $table->boolean('is_active')->default(true); // active/inactive status
             $table->timestamps();
         });
