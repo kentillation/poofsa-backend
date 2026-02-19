@@ -25,6 +25,7 @@ class CreateTblStockBatchesTable extends Migration
             $table->unsignedBigInteger('branch_id');
             $table->timestamps();
             $table->index(['ingredient_id', 'expiry_date']);
+            $table->index(['shop_id', 'branch_id']);
             $table->foreign('ingredient_id')
                 ->references('ingredient_id')
                 ->on('tbl_ingredients')

@@ -12,24 +12,37 @@ class LowStockLevel implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $alert;
+    public $branchId;
+    public $shopId;
+    public $lowStockItems;
 
-    public function __construct($alert)
+    /**
+     * @param int $shopId
+     * @param int $branchId
+     * @param array $lowStockItems
+     */
+    public function __construct($shopId, $branchId, $lowStockItems)
     {
-        $this->alert = $alert;
+        $this->shopId = $shopId;
+        $this->branchId = $branchId;
+        $this->lowStockItems = $lowStockItems;
     }
 
     public function broadcastWith(): array
     {
         return [
-            'message' => $this->alert,
+            'shop_id' => $this->shopId,
+            'branch_id' => $this->branchId,
+            'low_stock_items' => $this->lowStockItems,
+            'count' => count($this->lowStockItems),
         ];
     }
 
     public function broadcastOn(): array
     {
+        // You can create branch-specific channels for Vue 3
         return [
-            new Channel('lowStockLevelChannel'),
+            new Channel("lowStockLevelChannel.{$this->shopId}.{$this->branchId}"),
         ];
     }
 }

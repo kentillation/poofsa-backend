@@ -15,7 +15,7 @@ class CreateTblShopBranchTable extends Migration
     {
         Schema::create('tbl_shop_branch', function (Blueprint $table) {
             $table->id('branch_id');
-            $table->unsignedBigInteger('shop_id');
+            $table->integer('shop_id');
             $table->string('branch_name');
             $table->string('branch_address');
             $table->string('branch_manager_name');

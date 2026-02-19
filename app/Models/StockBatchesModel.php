@@ -35,11 +35,11 @@ class StockBatchesModel extends Model
 
     public function shops()
     {
-        return $this->belongsTo(ShopModel::class, 'shop_id', 'shop_id');
+        return $this->belongsTo(ShopModel::class, 'shop_id');
     }
 
     public function branches()
     {
-        return $this->belongsTo(BranchModel::class, 'branch_id', 'branch_id');
+        return $this->belongsTo(BranchModel::class, 'branch_id');
     }
 }
