@@ -21,6 +21,7 @@ class IngredientsModel extends Model
         'ingredient_name',
         'base_unit_id',
         'alert_quantity',
+        'availability_id',
         'shop_id',
         'branch_id'
     ];

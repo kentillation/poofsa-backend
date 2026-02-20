@@ -12,7 +12,7 @@ class StockService
     /**
      * Get all stocks with optional search/filter
      */
-    public static function getAllStocks($shopId, $branchId, $filters = [], $perPage = 50)
+    public static function getAllStocksService($shopId, $branchId, $filters = [], $perPage = 50)
     {
         $batchSub = DB::table('tbl_stock_batches')
             ->select(

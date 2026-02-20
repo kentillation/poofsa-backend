@@ -26,6 +26,11 @@ class ProductItemsModel extends Model
         'branch_id'
     ];
 
+    public function product()
+    {
+        return $this->belongsTo(ProductsModel::class, 'product_id');
+    }
+
     public function ingredient()
     {
         return $this->belongsTo(IngredientsModel::class, 'ingredient_id');

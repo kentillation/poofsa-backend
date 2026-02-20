@@ -11,10 +11,9 @@ class UnitModel extends Model
 
     protected $table = 'tbl_ingredient_unit';
 
-    protected $primaryKey = 'ingredient_unit';
+    protected $primaryKey = 'ingredient_unit_id';
 
     protected $fillable = [
-        'ingredient_unit',
         'unit_label',
         'unit_avb'
     ];
