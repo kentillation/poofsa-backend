@@ -248,26 +248,32 @@ class AdminController extends Controller
         }
     }
 
+    // DONE
     public function updateProduct(Request $request, $productId)
     {
         $validated = $request->validate([
-            'availability_id' => 'required|integer',
-            'branch_id' => 'required|integer',
-            'product_category_id' => 'required|integer',
             'product_id' => 'required|integer',
             'product_name' => 'required|string',
             'base_price' => 'required|numeric',
-            'product_size_id' => 'required|integer',
-            'product_temp_id' => 'required|integer',
+            'cost_estimate' => 'required|numeric',
+            'temp_id' => 'required|integer',
+            'size_id' => 'required|integer',
+            'category_id' => 'required|integer',
+            'station_id' => 'required|integer',
+            'availability_id' => 'required|integer',
+            'shop_id' => 'required|integer',
+            'branch_id' => 'required|integer',
         ]);
 
         try {
             $userId = $this->getUserId();
+            $shopId = $this->getShopId();
             $branchId = $validated['branch_id'];
             $product = ProductsModel::findOrFail($productId);
             $originalValues = $product->getOriginal();
             if ($validated['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
                 $ingredientStockIds = ProductIngredientsModel::where('product_id', $productId)
+                    ->where('shop_id', $shopId)
                     ->where('branch_id', $branchId)
                     ->pluck('ingredient_id')
                     ->toArray();
@@ -287,8 +293,6 @@ class AdminController extends Controller
             $product->update($validated);
             $product->load(['temperature', 'category', 'availability']);
             $newProductId = $product->product_id;
-            $shopId = $this->getShopId();
-            $branchId = $product->branch_id;
             $changes = [];
             foreach ($validated as $key => $value) {
                 if ($originalValues[$key] != $value) {
@@ -300,32 +304,42 @@ class AdminController extends Controller
             }
             $description = '';
             foreach ($changes as $field => $change) {
-                if ($field === 'base_price') {
-                    $description .= "Price: From [₱{$change['from']}] To [₱{$change['to']}]. ";
+                if ($field === 'product_name') {
+                    $description .= "Product name: From [{$change['from']}] To [{$change['to']}]. ";
+                } elseif ($field === 'base_price') {
+                    $description .= "Base price: From [₱{$change['from']}] To [₱{$change['to']}]. ";
+                } elseif ($field === 'cost_estimate') {
+                    $description .= "Estimated cost: From [₱{$change['from']}] To [₱{$change['to']}]. ";
+                } elseif ($field === 'temp_id') {
+                    $fromTemp = TemperatureModel::find($change['from']);
+                    $toTemp = TemperatureModel::find($change['to']);
+                    $fromLabel = $fromTemp ? $fromTemp->temp_label : $change['from'];
+                    $toLabel = $toTemp ? $toTemp->temp_label : $change['to'];
+                    $description .= "Temperature: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'size_id') {
+                    $fromSize = SizeModel::find($change['from']);
+                    $toTemp = SizeModel::find($change['to']);
+                    $fromLabel = $fromSize ? $fromSize->size_label : $change['from'];
+                    $toLabel = $toTemp ? $toTemp->size_label : $change['to'];
+                    $description .= "Size: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'category_id') {
+                    $fromCategory = CategoryModel::find($change['from']);
+                    $toCategory = CategoryModel::find($change['to']);
+                    $fromLabel = $fromCategory ? $fromCategory->category_label : $change['from'];
+                    $toLabel = $toCategory ? $toCategory->category_label : $change['to'];
+                    $description .= "Category: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'station_id') {
+                    $fromStation = StationModel::find($change['from']);
+                    $toStation = StationModel::find($change['to']);
+                    $fromLabel = $fromStation ? $fromStation->station_name : $change['from'];
+                    $toLabel = $toStation ? $toStation->station_name : $change['to'];
+                    $description .= "Station    : From [{$fromLabel}] To [{$toLabel}]. ";
                 } elseif ($field === 'availability_id') {
                     $fromAvailability = AvailabilityModel::find($change['from']);
                     $toAvailability = AvailabilityModel::find($change['to']);
                     $fromLabel = $fromAvailability ? $fromAvailability->availability_label : $change['from'];
                     $toLabel = $toAvailability ? $toAvailability->availability_label : $change['to'];
                     $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'product_temp_id') {
-                    $fromTemp = TemperatureModel::find($change['from']);
-                    $toTemp = TemperatureModel::find($change['to']);
-                    $fromLabel = $fromTemp ? $fromTemp->temp_label : $change['from'];
-                    $toLabel = $toTemp ? $toTemp->temp_label : $change['to'];
-                    $description .= "Temperature: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'product_size_id') {
-                    $fromSize = SizeModel::find($change['from']);
-                    $toTemp = SizeModel::find($change['to']);
-                    $fromLabel = $fromSize ? $fromSize->size_label : $change['from'];
-                    $toLabel = $toTemp ? $toTemp->size_label : $change['to'];
-                    $description .= "Size: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'product_category_id') {
-                    $fromCategory = CategoryModel::find($change['from']);
-                    $toCategory = CategoryModel::find($change['to']);
-                    $fromLabel = $fromCategory ? $fromCategory->category_label : $change['from'];
-                    $toLabel = $toCategory ? $toCategory->category_label : $change['to'];
-                    $description .= "Category: From [{$fromLabel}] To [{$toLabel}]. ";
                 } else {
                     $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
                 }
@@ -356,7 +370,7 @@ class AdminController extends Controller
         }
     }
 
-    // UPDATED
+    // DONE
     public function getProducts($branchId)
     {
         try {
@@ -365,11 +379,13 @@ class AdminController extends Controller
                 'tbl_products.product_id',
                 'tbl_products.product_name',
                 'tbl_products.base_price',
+                'tbl_products.cost_estimate',
                 'tbl_products.temp_id',
                 'tbl_products.size_id',
                 'tbl_products.updated_at',
                 'tbl_products.category_id',
                 'tbl_products.availability_id',
+                'tbl_products.station_id',
                 'tbl_product_temp.temp_label',
                 'tbl_product_size.size_label',
                 'tbl_product_category.category_label',
@@ -442,6 +458,7 @@ class AdminController extends Controller
         }
     }
 
+    // DONE
     public function getProductsHistory($branchId)
     {
         try {
@@ -473,6 +490,7 @@ class AdminController extends Controller
         }
     }
 
+    // DONE
     public function getProductsOnly($branchId)
     {
         // For Dashboard
@@ -1568,19 +1586,19 @@ class AdminController extends Controller
         }
     }
 
-    public function getEwalletImage($folderName, $imageFileName)
-    {
-        $folderName = $this->$folderName;
-        $imageFileName = $this->$imageFileName;
-        $folderPath = storage_path('app/e-Wallet_Evidence/' . $folderName . '/' . $imageFileName);
-        if (!File::exists($folderPath)) {
-            abort(404, 'Image not found');
-        }
-        return response()->file($folderPath, [
-            'Content-Type' => File::mimeType($folderPath),
-            'Content-Disposition' => 'inline'
-        ]);
-    }
+    // public function getEwalletImage($folderName, $imageFileName)
+    // {
+    //     $folderName = $this->$folderName;
+    //     $imageFileName = $this->$imageFileName;
+    //     $folderPath = storage_path('app/e-Wallet_Evidence/' . $folderName . '/' . $imageFileName);
+    //     if (!File::exists($folderPath)) {
+    //         abort(404, 'Image not found');
+    //     }
+    //     return response()->file($folderPath, [
+    //         'Content-Type' => File::mimeType($folderPath),
+    //         'Content-Disposition' => 'inline'
+    //     ]);
+    // }
 
     /**** Options ****/
 

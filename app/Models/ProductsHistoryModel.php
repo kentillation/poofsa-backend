@@ -10,9 +10,9 @@ class ProductsHistoryModel extends Model
     use HasFactory;
 
     protected $table = 'tbl_products_history';
-    protected $guarded = [];
+
     protected $fillable = [
-        'product_id', 'description', 'manage_id', 'shop_id', 'branch_id', 'user_id', 'created_at', 'updated_at',
+        'product_id', 'description', 'manage_id', 'shop_id', 'branch_id', 'user_id',
     ];
 
     public function temperature()

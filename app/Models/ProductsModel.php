@@ -22,10 +22,12 @@ class ProductsModel extends Model
         'product_name',
         'sku',
         'category_id',
+        'size_id',
+        'temp_id',
         'base_price',
         'cost_estimate',
         'is_active',
-        'availability',
+        'availability_id',
         'station_id',
         'shop_id',
         'branch_id',
@@ -42,9 +44,19 @@ class ProductsModel extends Model
         )->withPivot('quantity_required');
     }
 
-    public function categories()
+    public function temperature()
+    {
+        return $this->belongsTo(TemperatureModel::class, 'category_id');
+    }
+
+    public function category()
     {
         return $this->belongsTo(CategoryModel::class, 'category_id');
+    }
+
+    public function availability()
+    {
+        return $this->belongsTo(AvailabilityModel::class, 'category_id');
     }
 
     public function stations()
