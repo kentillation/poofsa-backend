@@ -1062,12 +1062,12 @@ class AdminController extends Controller
     }
 
     // UPDATED
-    public function getLowStock()
+    public function getLowStock($branchId)
     {
         try {
             $shopId = $this->getShopId();
 
-            $lowStock = StockService::lowStockService($shopId);
+            $lowStock = StockService::lowStockService($shopId, $branchId);
 
             return response()->json([
                 'status' => true,
@@ -1388,7 +1388,7 @@ class AdminController extends Controller
             )
                 ->where('tbl_sales.shop_id', $shopId)
                 ->where('tbl_sales.branch_id', $branchId)
-                ->where('tbl_sales.sale_status', 'PAID');
+                ->where('tbl_sales.sales_status_id', 1);
             if ($dateType) {
                 $query->whereYear('tbl_sales.updated_at', $year)
                     ->whereMonth('tbl_sales.updated_at', $dateType);
@@ -1422,7 +1422,7 @@ class AdminController extends Controller
             )
                 ->where('tbl_sales.shop_id', $shopId)
                 ->where('tbl_sales.branch_id', $branchId)
-                ->where('tbl_sales.sale_status', 'PAID');
+                ->where('tbl_sales.sales_status_id', 1);
             if ($dateType) {
                 $query->whereMonth('tbl_sales.updated_at', $dateType)
                     ->whereYear('tbl_sales.updated_at', date('Y'));

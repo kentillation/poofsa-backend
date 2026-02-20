@@ -61,7 +61,7 @@ class StockService
      * Get ingredients that are low on stock
      */
 
-    public static function lowStockService($shopId)
+    public static function lowStockService($shopId, $branchId)
     {
         $lowStockItems = StockBatchesModel::select(
             'tbl_shop_branch.branch_name',
@@ -74,6 +74,7 @@ class StockService
             ->join('tbl_ingredients', 'tbl_stock_batches.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
             ->join('tbl_shop_branch', 'tbl_stock_batches.branch_id', '=', 'tbl_shop_branch.branch_id')
             ->where('tbl_stock_batches.shop_id', $shopId)
+            ->where('tbl_stock_batches.branch_id', $branchId)
             ->groupBy(
                 'tbl_shop_branch.branch_name',
                 'tbl_stock_batches.branch_id',
@@ -85,7 +86,7 @@ class StockService
             ->get();
 
         if ($lowStockItems->isNotEmpty()) {
-            event(new LowStockLevel($shopId, $lowStockItems));
+            event(new LowStockLevel($shopId, $branchId, $lowStockItems));
         }
 
         return $lowStockItems;

@@ -19,6 +19,8 @@ class CreateTblOrderItemsTable extends Migration
             $table->unsignedBigInteger('product_id');
             $table->unsignedBigInteger('variant_id')->nullable();
             $table->decimal('quantity', 10, 3);
+            $table->unsignedBigInteger('shop_station_id');
+            $table->unsignedBigInteger('station_status_id');
             $table->timestamps();
             $table->foreign('order_id')->references('order_id')->on('tbl_orders')->cascadeOnDelete();
         });

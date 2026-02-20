@@ -22,5 +22,12 @@ class ProductItemsModel extends Model
         'ingredient_id',
         'ingredient_capital',
         'quantity_required',
+        'shop_id',
+        'branch_id'
     ];
+
+    public function ingredient()
+    {
+        return $this->belongsTo(IngredientsModel::class, 'ingredient_id');
+    }
 }

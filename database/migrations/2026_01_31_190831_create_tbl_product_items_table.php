@@ -19,6 +19,8 @@ class CreateTblProductItemsTable extends Migration
             $table->unsignedBigInteger('ingredient_id');
             $table->decimal('ingredient_capital', 10, 3);
             $table->decimal('quantity_required', 10, 3);
+            $table->unsignedBigInteger('shop_id')->index();
+            $table->unsignedBigInteger('branch_id')->index();
             $table->timestamps();
             $table->unique(['product_id', 'ingredient_id']);
             $table->foreign('product_id')->references('product_id')->on('tbl_products')->cascadeOnDelete();

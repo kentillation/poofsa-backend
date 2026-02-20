@@ -277,16 +277,32 @@ class CashierController extends Controller
             }
             $qr_result->saveToFile($qrCodePath);
 
-            // Checking stocks
-            $count = StocksModel::where('branch_id', $user->branch_id)
-                ->where('shop_id', $user->shop_id)
-                ->whereColumn('stock_in', '<=', 'stock_alert_qty')
-                ->count();
-            if ($count) {
-                event(new LowStockLevel(
-                    $count . ($count == 1 ? ' stock has' : ' stocks have') . ' low level!'
-                ));
-            }
+            // Low Stock Real-time Update
+            // The low stock check MUST be placed immediately after ingredient deduction there.
+            // $lowStockItems = StockBatchesModel::select(
+            //         'tbl_stock_batches.ingredient_id',
+            //         'tbl_ingredients.ingredient_name',
+            //         'tbl_ingredients.alert_quantity',
+            //         DB::raw('SUM(tbl_stock_batches.quantity_remaining) as total_remaining')
+            //     )
+            //     ->join('tbl_ingredients', 'tbl_stock_batches.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
+            //     ->where('tbl_stock_batches.shop_id', $shopId)
+            //     ->where('tbl_stock_batches.branch_id', $branchId)
+            //     ->groupBy(
+            //         'tbl_stock_batches.ingredient_id',
+            //         'tbl_ingredients.ingredient_name',
+            //         'tbl_ingredients.alert_quantity'
+            //     )
+            //     ->havingRaw('SUM(tbl_stock_batches.quantity_remaining) <= tbl_ingredients.alert_quantity')
+            //     ->get();
+
+            // if ($lowStockItems->isNotEmpty()) {
+            //     event(new LowStockLevel(
+            //         $shopId,
+            //         $branchId,
+            //         $lowStockItems
+            //     ));
+            // }
 
             return response()->json([
                 'status' => true,

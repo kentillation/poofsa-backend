@@ -28,7 +28,7 @@ class SalesModel extends Model
         'discount_amount',
         'tax_amount',
         'total_amount',
-        'sale_status',
+        'sales_status_id',
     ];
 
     public function items()

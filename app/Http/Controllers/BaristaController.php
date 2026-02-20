@@ -4,22 +4,43 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\StationStatusModel;
 use App\Models\OrderItemsModel;
 use App\Models\OrdersModel;
-use App\Models\ProductIngredientsModel;
-use App\Models\StocksModel;
+use App\Models\ProductItemsModel;
+use App\Models\IngredientsModel;
 use App\Models\ProductsModel;
 use App\Events\OrderStatusUpdated;
+use App\Events\LowStockLevel;
 
 class BaristaController extends Controller
 {
+
+    protected function getShopId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->shop_id;
+    }
+
+    protected function getBranchId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->branch_id;
+    }
+
+    protected function getUserId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->barista_id;
+    }
+
     public function getCurrentOrders()
     {
         try {
-            $shopId = auth()->user()->shop_id;
-            $branchId = auth()->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
             $currentDate = now()->format('Y-m-d');
             $data = OrdersModel::select(
                 'tbl_orders.order_id',
@@ -27,7 +48,7 @@ class BaristaController extends Controller
                 'tbl_orders.reference_number',
                 'tbl_orders.order_status_id',
                 'tbl_order_items.product_id',
-                'tbl_order_items.station_id',
+                'tbl_order_items.shop_station_id',
                 'tbl_orders.updated_at'
             )
                 ->join('tbl_order_items', 'tbl_orders.order_id', '=', 'tbl_order_items.order_id')
@@ -50,7 +71,7 @@ class BaristaController extends Controller
                         'order_items' => $rows->map(function ($r) {
                             return [
                                 'product_id' => $r->product_id,
-                                'station_id' => $r->station_id,
+                                'shop_station_id' => $r->shop_station_id,
                             ];
                         })->values()
                     ];
@@ -80,10 +101,13 @@ class BaristaController extends Controller
                 ], 400);
             }
 
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
+
             $orders = OrdersModel::where('order_id', $orderId)
-                ->where('shop_id', auth()->user()->shop_id)
-                ->where('branch_id', auth()->user()->branch_id)
-                // ->with(['orders' => function ($query) { $query->where('station_id', 1);}]) // if order is for Barista only
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                // ->with(['orders' => function ($query) { $query->where('shop_station_id', 1);}]) // if order is for Barista only
                 ->with(['orders.product.temperature', 'orders.product.size'])
                 ->orderBy('created_at')
                 ->first();
@@ -96,11 +120,11 @@ class BaristaController extends Controller
             }
 
             $formattedOrders = $orders->orders
-                // ->filter(function ($order) { return $order->station_id == 1; }) // if order is for Barista only
+                // ->filter(function ($order) { return $order->shop_station_id == 1; }) // if order is for Barista only
                 ->map(function ($order) {
                     return [
                         'order_id' => $order->order_id ?? 'N/A',
-                        'station_id' => $order->station_id ?? 'N/A',
+                        'shop_station_id' => $order->shop_station_id ?? 'N/A',
                         'product_id' => $order->product->product_id ?? 'N/A',
                         'product_name' => $order->product->product_name ?? 'N/A',
                         'temp_label' => $order->product->temperature->temp_label ?? 'N/A',
@@ -154,71 +178,121 @@ class BaristaController extends Controller
         }
     }
 
-    private function deductStockForOrder($orderId, $stationId = 1)
+    // UPDATED
+    private function deductStockForOrder(int $orderId, int $shopStationId = 1)
     {
-        $orders = OrderItemsModel::where('order_id', $orderId)
-            ->where('station_id', $stationId)
+        // Fetch all relevant order items for the station
+        $orderItems = OrderItemsModel::where('order_id', $orderId)
+            ->where('shop_station_id', $shopStationId)
             ->get();
 
-        foreach ($orders as $order) {
-            $shopId = $order->shop_id;
-            $branchId = $order->branch_id;
-            $productId = $order->product_id;
-            $quantity = $order->quantity;
-            $productsToDisable = [];
-            $ingredients = ProductIngredientsModel::where('product_id', $productId)
+        $productsToDisable = [];
+        $lowStockItems = [];
+
+        foreach ($orderItems as $orderItem) {
+            $shopId = $orderItem->shop_id;
+            $branchId = $orderItem->branch_id;
+            $quantityMultiplier = $orderItem->quantity;
+
+            // Get all ingredients for the product in one query
+            $productIngredients = ProductItemsModel::where('product_id', $orderItem->product_id)
                 ->where('shop_id', $shopId)
                 ->where('branch_id', $branchId)
-                ->select('stock_id', 'unit_usage')
+                ->with('ingredient') // relation to IngredientsModel
                 ->get();
-            foreach ($ingredients as $ingredient) {
-                $stockId = $ingredient->stock_id;
-                $unitUsage = $ingredient->unit_usage;
-                $stock = StocksModel::where('stock_id', $stockId)
-                    ->where('shop_id', $shopId)
-                    ->where('branch_id', $branchId)
-                    ->first();
-                if ($stock) {
-                    $totalUsage = $unitUsage * $quantity;
-                    $stock->stock_in -= $totalUsage;
-                    $stock->save();
-                    if ($stock->stock_in <= $stock->stock_alert_qty) {
-                        $stock->availability_id = 2;
-                        $stock->save();
-                        $affectedProducts = ProductIngredientsModel::where('stock_id', $stockId)
-                            ->where('shop_id', $shopId)
-                            ->where('branch_id', $branchId)
-                            ->pluck('product_id')
-                            ->toArray();
-                        $productsToDisable = array_merge($productsToDisable, $affectedProducts);
-                    }
+
+            foreach ($productIngredients as $pi) {
+                $ingredient = $pi->ingredient;
+                if (!$ingredient) continue;
+
+                // Total usage for this ingredient
+                $totalUsage = $pi->quantity_required * $quantityMultiplier;
+
+                $previousStock = $ingredient->stock_in;
+                $newStock = max(0, $previousStock - $totalUsage);
+
+                // Check if we crossed the low-stock threshold
+                if ($previousStock > $ingredient->alert_quantity && $newStock <= $ingredient->alert_quantity) {
+                    $lowStockItems[] = [
+                        'ingredient_id' => $ingredient->ingredient_id,
+                        'remaining_quantity' => $newStock,
+                        'alert_quantity' => $ingredient->alert_quantity
+                    ];
+                }
+
+                $ingredient->stock_in = $newStock;
+
+                // Set availability if low
+                if ($newStock <= $ingredient->alert_quantity) {
+                    $ingredient->availability_id = 2;
+
+                    // All products that use this ingredient need to be disabled
+                    $affectedProducts = ProductItemsModel::where('ingredient_id', $ingredient->ingredient_id)
+                        ->where('shop_id', $shopId)
+                        ->where('branch_id', $branchId)
+                        ->pluck('product_id')
+                        ->toArray();
+
+                    $productsToDisable = array_merge($productsToDisable, $affectedProducts);
                 }
             }
-            if (!empty($productsToDisable)) {
-                $productsToDisable = array_unique($productsToDisable);
-                ProductsModel::whereIn('product_id', $productsToDisable)
-                    ->where('shop_id', $shopId)
-                    ->where('branch_id', $branchId)
-                    ->update();
+
+            // Bulk save ingredient updates
+            DB::table('tbl_ingredients')->upsert(
+                $productIngredients->map(function ($pi) {
+                    return [
+                        'ingredient_id' => $pi->ingredient->ingredient_id,
+                        'stock_in' => $pi->ingredient->stock_in,
+                        'availability_id' => $pi->ingredient->availability_id,
+                        'updated_at' => now()
+                    ];
+                })->toArray(),
+                ['ingredient_id'],
+                ['stock_in', 'availability_id', 'updated_at']
+            );
+        }
+
+        // Fire low-stock alerts if any
+        if (!empty($lowStockItems)) {
+            $shopId = $orderItems->first()->shop_id ?? null;
+            $branchId = $orderItems->first()->branch_id ?? null;
+            if ($shopId && $branchId) {
+                event(new LowStockLevel(
+                    $shopId,
+                    $branchId,
+                    collect($lowStockItems)
+                ));
             }
+        }
+
+        // Disable affected products in bulk
+        if (!empty($productsToDisable)) {
+            $productsToDisable = array_unique($productsToDisable);
+            ProductsModel::whereIn('product_id', $productsToDisable)
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->update(['availability_id' => 2]);
         }
     }
 
+    // UPDATED
     public function updateOrderStatus(Request $request)
     {
         try {
-            $shopId = auth()->user()->shop_id;
-            $branchId = auth()->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
+
             if (!$shopId || !$branchId) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Unauthorized access'
                 ], 401);
             }
-            $input = $request->all();
-            $validator = Validator::make($input, [
+
+            $validator = Validator::make($request->all(), [
                 'referenceNumber' => 'required|string|exists:tbl_orders,reference_number',
             ]);
+
             if ($validator->fails()) {
                 return response()->json([
                     'status' => false,
@@ -226,179 +300,77 @@ class BaristaController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            $orders = OrdersModel::select(
-                'tbl_orders.order_id',
-                'tbl_orders.table_number',
-                'tbl_orders.reference_number',
-                'tbl_orders.order_status_id',
-                'tbl_order_items.station_status_id',
-            )
-                ->join('tbl_order_items', 'tbl_orders.order_id', '=', 'tbl_order_items.order_id')
-                ->where('tbl_orders.reference_number', $input['referenceNumber'])
-                ->where('tbl_orders.shop_id', $shopId)
-                ->where('tbl_orders.branch_id', $branchId)
+
+            // Fetch order with first order item for status checks
+            $order = OrdersModel::where('reference_number', $request->referenceNumber)
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->with(['items'])
                 ->first();
 
-            if ($orders->order_status_id == 1) {
-                if (OrderItemsModel::where('order_id', $orders->order_id)
-                    ->where('station_status_id', 1)
-                    ->where('station_id', 2)
-                    ->exists()
-                ) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => "Kitchen has still pending item(s)."
-                    ], 400);
-                } else {
-                    $orders->order_status_id = 3; // Move to 'Served'
-                    $this->deductStockForOrder($orders->order_id, 1);
-                    OrderItemsModel::where('order_id', $orders->order_id)
-                    ->where('station_id', 1)
-                    ->update(['station_status_id' => 2]);
-
-                    // Real-time
-                    $tableNumber = $orders->table_number;
-                    $trnsctn_orders = OrderItemsModel::where([
-                        'order_id' => (int)$orders->order_id,
-                        'station_id' => 1,
-                        'station_status_id' => 2,
-                    ])->first();
-                    if ($trnsctn_orders) {
-                        $stationId = $trnsctn_orders->station_id;
-                        event(new OrderStatusUpdated('Table ' . $tableNumber . ' is ready to serve.', $stationId));
-                    }
-                }
+            if (!$order) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Order not found'
+                ], 404);
             }
 
-            elseif ($orders->order_status_id == 3) {
+            // If order is already served
+            if ($order->order_status_id == 3) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Order is already served!'
                 ], 400);
             }
 
-            $orders->updated_at = now();
-            $orders->save();
+            // Check if kitchen has pending items
+            $hasPendingKitchen = $order->items->where('shop_station_id', 2)
+                ->where('station_status_id', 1)
+                ->isNotEmpty();
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Order status updated successfully',
-                'data' => [
-                    'reference_number' => $orders->reference_number,
-                    'order_status_id' => $orders->order_status_id,
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Order status update failed: ' . $e->getMessage());
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to update order status',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
-
-    // Unused
-    public function updateBaristaProductStatus(Request $request)
-    {
-        try {
-            $input = $request->all();
-            $validator = Validator::make($input, [
-                'transactionId' => 'required|numeric|exists:tbl_order_items,order_id',
-                'productId' => 'required|numeric|exists:tbl_order_items,product_id',
-            ]);
-            if ($validator->fails()) {
+            if ($hasPendingKitchen) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Validation error',
-                    'errors' => $validator->errors()
-                ], 422);
+                    'message' => 'Kitchen has still pending item(s).'
+                ], 400);
             }
 
-            $orders = OrderItemsModel::where('order_id', $input['transactionId'])
-                ->where('product_id', $input['productId'])
+            // All validations passed — update order and stock in a transaction
+            DB::transaction(function () use ($order) {
+
+                // 1️⃣ Update order status to Served
+                $order->order_status_id = 3;
+                $order->updated_at = now();
+                $order->save();
+
+                // 2️⃣ Deduct stock for Barista items
+                $this->deductStockForOrder($order->order_id, 1);
+
+                // 3️⃣ Update station status for Barista items
+                OrderItemsModel::where('order_id', $order->order_id)
+                    ->where('shop_station_id', 1)
+                    ->update(['station_status_id' => 2, 'updated_at' => now()]);
+            });
+
+            // 4️⃣ Trigger real-time notification
+            $baristaItem = OrderItemsModel::where('order_id', $order->order_id)
+                ->where('shop_station_id', 1)
+                ->where('station_status_id', 2)
                 ->first();
-            if (!$orders) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Orders not found'
-                ], 404);
-            }
-            $currentStatus = $orders->station_status_id;
-            $nextStatus = $currentStatus % 2 + 1;
-            $orders->station_status_id = $nextStatus;
-            $orders->updated_at = now();
-            $orders->save();
-            if ($nextStatus == 2) {
-                $shopId = $orders->shop_id;
-                $branchId = $orders->branch_id;
-                $productId = $orders->product_id;
-                $quantity = $orders->quantity;
-                $productsToDisable = [];
-                $ingredients = ProductIngredientsModel::where('product_id', $productId)
-                    ->where('shop_id', $shopId)
-                    ->where('branch_id', $branchId)
-                    ->select('stock_id', 'unit_usage')
-                    ->get();
-                foreach ($ingredients as $ingredient) {
-                    $stockId = $ingredient->stock_id;
-                    $unitUsage = $ingredient->unit_usage;
-                    $stock = StocksModel::where('stock_id', $stockId)
-                        ->where('shop_id', $shopId)
-                        ->where('branch_id', $branchId)
-                        ->first();
-                    if ($stock) {
-                        $totalUsage = $unitUsage * $quantity;
-                        $stock->stock_in -= $totalUsage;
-                        $stock->save();
-                        if ($stock->stock_in <= $stock->stock_alert_qty) {
-                            $stock->availability_id = 2;
-                            $stock->save();
-                            $affectedProducts = ProductIngredientsModel::where('stock_id', $stockId)
-                                ->where('shop_id', $shopId)
-                                ->where('branch_id', $branchId)
-                                ->pluck('product_id')
-                                ->toArray();
-                            $productsToDisable = array_merge($productsToDisable, $affectedProducts);
-                        }
-                    }
-                }
-                if (!empty($productsToDisable)) {
-                    $productsToDisable = array_unique($productsToDisable);
-                    ProductsModel::whereIn('product_id', $productsToDisable)
-                        ->where('shop_id', $shopId)
-                        ->where('branch_id', $branchId)
-                        ->update(['availability_id' => 2]);
-                }
-            }
 
-            $orders = OrdersModel::where('order_id', $input['transactionId'])->first();
-            if (!$orders) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Orders not found'
-                ], 404);
-            }
-            $orders->updated_at = now();
-            $orders->save();
-
-            // Real-time
-            $tableNumber = $orders->table_number;
-            $trnsctn_orders = OrderItemsModel::where([
-                'order_id' => (int)$input['transactionId'],
-                'station_id' => 1,
-                'station_status_id' => 2,
-            ])->first();
-            if ($trnsctn_orders) {
-                $stationId = $trnsctn_orders->station_id;
-                event(new OrderStatusUpdated('Barista: Order in table ' . $tableNumber . ' is ready.', $stationId));
+            if ($baristaItem) {
+                event(new OrderStatusUpdated(
+                    'Table ' . $order->table_number . ' is ready to serve.',
+                    $baristaItem->shop_station_id
+                ));
             }
 
             return response()->json([
                 'status' => true,
                 'message' => 'Order status updated successfully',
                 'data' => [
-                    'order_id' => $orders->order_id
+                    'reference_number' => $order->reference_number,
+                    'order_status_id' => $order->order_status_id,
                 ]
             ], 200);
         } catch (\Exception $e) {

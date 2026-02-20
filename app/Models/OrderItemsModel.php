@@ -22,6 +22,8 @@ class OrderItemsModel extends Model
         'product_id',
         'variant_id',
         'quantity',
+        'shop_station_id',
+        'station_status_id'
     ];
 
     public function products()
