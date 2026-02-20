@@ -20,11 +20,11 @@ class CreateTblProductPricesTable extends Migration
             $table->decimal('price', 10, 2);
             $table->timestamp('effective_from');
             $table->timestamp('effective_to')->nullable();
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->index();
             $table->timestamps();
             $table->foreign('product_id')->references('product_id')->on('tbl_products')->cascadeOnDelete();
             $table->foreign('variant_id')->references('variant_id')->on('tbl_product_variants')->nullOnDelete();
-            $table->index(['product_id', 'variant_id', 'effective_to', 'user_id']);
+            $table->index(['product_id', 'variant_id', 'effective_to']);
         });
     }
 

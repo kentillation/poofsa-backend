@@ -4,14 +4,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTblOrdersTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('tbl_orders', function (Blueprint $table) {
             $table->id('order_id');
@@ -19,11 +17,11 @@ class CreateTblOrdersTable extends Migration
             $table->string('reference_number')->unique();
             $table->decimal('customer_cash', 10, 2);
             $table->decimal('customer_change', 10, 2);
-            $table->enum('order_type', ['DINE_IN', 'TAKEOUT', 'DELIVERY']);
-            $table->enum('order_status', ['OPEN', 'PREPARING', 'SERVED', 'CANCELLED']);
+            $table->unsignedBigInteger('order_type_id')->index();
+            $table->unsignedBigInteger('order_status_id')->index();
             $table->string('table_number')->nullable();
             $table->string('order_note')->nullable();
-            $table->integer('total_quantity')();
+            $table->integer('total_quantity');
             $table->unsignedBigInteger('shop_id')->index();
             $table->unsignedBigInteger('branch_id')->index();
             $table->unsignedBigInteger('user_id')->index();
@@ -33,11 +31,9 @@ class CreateTblOrdersTable extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('tbl_orders');
     }
-}
+};

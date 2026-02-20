@@ -15,15 +15,15 @@ class CreateTblStockMovementsTable extends Migration
     {
         Schema::create('tbl_stock_movements', function (Blueprint $table) {
             $table->id('stock_movement_id');
-            $table->unsignedBigInteger('ingredient_id');
+            $table->unsignedBigInteger('ingredient_id')->index();
             $table->unsignedBigInteger('stock_batch_id')->nullable();
-            $table->unsignedBigInteger('movement_type_id');
+            $table->unsignedBigInteger('movement_type_id')->index();
             $table->decimal('quantity', 10, 3);
             $table->string('reference_type')->nullable(); // sale, purchase, spoilage
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
-            $table->index(['ingredient_id', 'stock_batch_id', 'movement_type_id']);
+            $table->index(['stock_batch_id']);
             $table->foreign('ingredient_id')
                 ->references('ingredient_id')
                 ->on('tbl_ingredients')
