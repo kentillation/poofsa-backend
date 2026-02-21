@@ -12,7 +12,6 @@ use App\Models\ProductItemsModel;
 use App\Models\ProductsModel;
 use App\Models\ProductsHistoryModel;
 use App\Models\StocksHistoryModel;
-use App\Models\StocksModel;
 use App\Models\StockBatchesModel;
 use App\Models\TemperatureModel;
 use App\Models\SizeModel;
@@ -81,7 +80,7 @@ class AdminController extends Controller
 
                 $userId = $request->user()->admin_id;
 
-                $stocks = StocksModel::where('branch_id', $newBranchId)->get();
+                $stocks = IngredientsModel::where('branch_id', $newBranchId)->get();
                 $stockMap = [];
                 foreach ($stocks as $stock) {
                     $newStock = $stock->replicate();
@@ -209,22 +208,20 @@ class AdminController extends Controller
                 $product = new ProductsModel();
                 $product->product_name = $item['product_name'];
                 $product->base_price = $item['base_price'];
-                $product->product_size_id = $item['size_id'];
-                $product->product_temp_id = $item['temp_id'];
-                $product->product_category_id = $item['category_id'];
-                $product->availability_id = 1;
+                $product->size_id = $item['size_id'];
+                $product->temp_id = $item['temp_id'];
+                $product->category_id = $item['category_id'];
+                $product->availability_id = 2;
                 $product->station_id = $item['station_id'];
                 $product->shop_id = $shopId;
                 $product->branch_id = $item['branch_id'];
-                $product->shop_id = $shopId;
                 $product->user_id = $userId;
                 $product->created_at = now();
                 $product->updated_at = now();
                 $product->save();
+
                 $newProductId = $product->product_id;
-                $shopId = $product->shop_id;
                 $branchId = $product->branch_id;
-                $userId = $product->user_id;
 
                 ProductsHistoryModel::create([
                     'product_id' => $newProductId,
@@ -278,7 +275,7 @@ class AdminController extends Controller
                     ->pluck('ingredient_id')
                     ->toArray();
                 if (!empty($ingredientStockIds)) {
-                    $unavailableStocks = StocksModel::whereIn('ingredient_id', $ingredientStockIds)
+                    $unavailableStocks = IngredientsModel::whereIn('ingredient_id', $ingredientStockIds)
                         ->where('availability_id', '!=', 1)
                         ->where('branch_id', $branchId)
                         ->exists();
@@ -318,9 +315,9 @@ class AdminController extends Controller
                     $description .= "Temperature: From [{$fromLabel}] To [{$toLabel}]. ";
                 } elseif ($field === 'size_id') {
                     $fromSize = SizeModel::find($change['from']);
-                    $toTemp = SizeModel::find($change['to']);
+                    $toSize = SizeModel::find($change['to']);
                     $fromLabel = $fromSize ? $fromSize->size_label : $change['from'];
-                    $toLabel = $toTemp ? $toTemp->size_label : $change['to'];
+                    $toLabel = $toSize ? $toSize->size_label : $change['to'];
                     $description .= "Size: From [{$fromLabel}] To [{$toLabel}]. ";
                 } elseif ($field === 'category_id') {
                     $fromCategory = CategoryModel::find($change['from']);
@@ -508,8 +505,8 @@ class AdminController extends Controller
             $description = '';
             foreach ($changes as $field => $change) {
                 if ($field === 'ingredient_id') {
-                    $from = StocksModel::find($change['from']);
-                    $to = StocksModel::find($change['to']);
+                    $from = IngredientsModel::find($change['from']);
+                    $to = IngredientsModel::find($change['to']);
                     $fromLabel = $from ? $from->ingredient_name : $change['from'];
                     $toLabel = $to ? $to->ingredient_name : $change['to'];
                     $description .= "Stock ingredient: From [{$fromLabel}] To [{$toLabel}]. ";
@@ -612,7 +609,7 @@ class AdminController extends Controller
                 $shopId = $request->user()->shop_id;
                 $branchId = $request->user()->branch_id;
                 $userId = $request->user()->admin_id;
-                $stock = new StocksModel();
+                $stock = new IngredientsModel();
                 $stock->ingredient_name = $item['ingredient_name'];
                 $stock->stock_unit = $item['stock_unit'];
                 $stock->quantity_received = $item['quantity_received'];
@@ -676,7 +673,7 @@ class AdminController extends Controller
                 $validated['availability_id'] = 1;
             }
             try {
-                $stock = StocksModel::findOrFail($ingredient_id);
+                $stock = IngredientsModel::findOrFail($ingredient_id);
                 $originalValues = $stock->getOriginal();
                 $availabilityChanged = isset($validated['availability_id']) &&
                     $validated['availability_id'] != $originalValues['availability_id'];
@@ -819,13 +816,13 @@ class AdminController extends Controller
     {
         try {
             $shopId = $this->getShopId();
-            $data = StocksModel::select(
-                'tbl_stocks.ingredient_id',
-                'tbl_stocks.ingredient_name',
+            $data = IngredientsModel::select(
+                'tbl_ingredients.ingredient_id',
+                'tbl_ingredients.ingredient_name',
             )
-                ->where('tbl_stocks.shop_id', $shopId)
-                ->where('tbl_stocks.branch_id', $branchId)
-                ->orderBy('tbl_stocks.ingredient_name')
+                ->where('tbl_ingredients.shop_id', $shopId)
+                ->where('tbl_ingredients.branch_id', $branchId)
+                ->orderBy('tbl_ingredients.ingredient_name')
                 ->get();
 
             return response()->json([
@@ -1031,17 +1028,17 @@ class AdminController extends Controller
         try {
             $shopId = $this->getShopId();
             $data = StocksHistoryModel::select(
-                'tbl_stocks.ingredient_name',
-                'tbl_stocks_history.manage_id',
-                'tbl_stocks_history.description',
+                'tbl_ingredients.ingredient_name',
+                'tbl_ingredients_history.manage_id',
+                'tbl_ingredients_history.description',
                 'tbl_admin.admin_name',
-                'tbl_stocks_history.updated_at',
+                'tbl_ingredients_history.updated_at',
             )
-                ->join('tbl_stocks', 'tbl_stocks_history.ingredient_id', '=', 'tbl_stocks.ingredient_id')
-                ->join('tbl_admin', 'tbl_stocks_history.user_id', '=', 'tbl_admin.admin_id')
-                ->where('tbl_stocks_history.shop_id', $shopId)
-                ->where('tbl_stocks_history.branch_id', $branchId)
-                ->orderBy('tbl_stocks_history.updated_at')
+                ->join('tbl_ingredients', 'tbl_ingredients_history.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
+                ->join('tbl_admin', 'tbl_ingredients_history.user_id', '=', 'tbl_admin.admin_id')
+                ->where('tbl_ingredients_history.shop_id', $shopId)
+                ->where('tbl_ingredients_history.branch_id', $branchId)
+                ->orderBy('tbl_ingredients_history.updated_at')
                 ->get();
             return response()->json([
                 'status' => true,

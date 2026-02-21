@@ -21,9 +21,9 @@ class ProductsModel extends Model
         'product_id',
         'product_name',
         'sku',
-        'category_id',
         'size_id',
         'temp_id',
+        'category_id',
         'base_price',
         'cost_estimate',
         'is_active',
@@ -46,7 +46,7 @@ class ProductsModel extends Model
 
     public function temperature()
     {
-        return $this->belongsTo(TemperatureModel::class, 'category_id');
+        return $this->belongsTo(TemperatureModel::class, 'temp_id');
     }
 
     public function category()
@@ -56,7 +56,7 @@ class ProductsModel extends Model
 
     public function availability()
     {
-        return $this->belongsTo(AvailabilityModel::class, 'category_id');
+        return $this->belongsTo(AvailabilityModel::class, 'availability_id');
     }
 
     public function stations()
