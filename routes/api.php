@@ -73,10 +73,9 @@ Route::middleware('auth:sanctum')->put('/admin/update-void/{branch_id}', [AdminC
 Route::middleware('auth:sanctum')->get('/admin/shop-branches', [AdminController::class, 'getShopBranches']);
 Route::middleware('auth:sanctum')->get('/admin/branch-details/{branchName}', [AdminController::class, 'getBranchDetails']);
 Route::middleware('auth:sanctum')->get('/admin/products/{branch_id}', [AdminController::class, 'getProducts']);
-Route::middleware('auth:sanctum')->get('/admin/product-alone/{product_id}', [AdminController::class, 'getProductAlone']);
 Route::middleware('auth:sanctum')->get('/admin/products-history/{branch_id}', [AdminController::class, 'getProductsHistory']);
 Route::middleware('auth:sanctum')->get('/admin/product-items/{product_id}', [AdminController::class, 'getProductItems']);
-Route::middleware('auth:sanctum')->get('/admin/products-only/{branchId}', [AdminController::class, 'getProductsOnly']);
+Route::middleware('auth:sanctum')->get('/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
 Route::middleware('auth:sanctum')->get('/admin/stocks/{branch_id}', [AdminController::class, 'getStocks']);
 Route::middleware('auth:sanctum')->get('/admin/stocks-report/{branch_id}', [AdminController::class, 'getStocksReport']);
 Route::middleware('auth:sanctum')->get('/admin/ingredients-name/{branch_id}/{ingredient_id}', [AdminController::class, 'getIngredientsNameBasedId']);

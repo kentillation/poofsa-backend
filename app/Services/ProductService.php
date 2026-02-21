@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ProductsModel;
 use App\Models\ProductsHistoryModel;
+use Illuminate\Support\Facades\DB;
 
 class ProductService
 {
@@ -59,5 +60,17 @@ class ProductService
             ->get();
 
         return $products;
+    }
+
+    public static function getTotalProductsCountService($shopId, $branchId)
+    {
+        $totalProducts = ProductsModel::select(
+            DB::raw('COUNT(tbl_products.product_id) as total_products')
+        )
+            ->where('tbl_products.shop_id', $shopId)
+            ->where('tbl_products.branch_id', $branchId)
+            ->first();
+
+        return $totalProducts;
     }
 }

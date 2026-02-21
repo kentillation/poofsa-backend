@@ -195,9 +195,9 @@ class AdminController extends Controller
         $request->validate([
             '*.product_name' => 'required|string',
             '*.base_price' => 'required|numeric',
-            '*.product_temp_id' => 'required|integer',
-            '*.product_size_id' => 'required|integer',
-            '*.product_category_id' => 'required|integer',
+            '*.size_id' => 'required|integer',
+            '*.temp_id' => 'required|integer',
+            '*.category_id' => 'required|integer',
             '*.station_id' => 'required|integer',
             '*.branch_id' => 'required|integer',
         ]);
@@ -205,15 +205,15 @@ class AdminController extends Controller
         try {
             foreach ($request->all() as $item) {
                 $shopId = $this->getShopId();
-                $userId = $request->user()->admin_id;
+                $userId = $this->getUserId();
                 $product = new ProductsModel();
                 $product->product_name = $item['product_name'];
                 $product->base_price = $item['base_price'];
-                $product->product_temp_id = $item['product_temp_id'];
-                $product->product_size_id = $item['product_size_id'];
-                $product->product_category_id = $item['product_category_id'];
+                $product->product_size_id = $item['size_id'];
+                $product->product_temp_id = $item['temp_id'];
+                $product->product_category_id = $item['category_id'];
+                $product->availability_id = 1;
                 $product->station_id = $item['station_id'];
-                $product->availability_id = 2;
                 $product->shop_id = $shopId;
                 $product->branch_id = $item['branch_id'];
                 $product->shop_id = $shopId;
@@ -225,6 +225,7 @@ class AdminController extends Controller
                 $shopId = $product->shop_id;
                 $branchId = $product->branch_id;
                 $userId = $product->user_id;
+
                 ProductsHistoryModel::create([
                     'product_id' => $newProductId,
                     'manage_id' => 1, // SAVE
@@ -232,8 +233,6 @@ class AdminController extends Controller
                     'shop_id' => $shopId,
                     'branch_id' => $branchId,
                     'user_id' => $userId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
             }
             return response()->json([
@@ -348,6 +347,7 @@ class AdminController extends Controller
             if (empty($description)) {
                 $description = 'No fields were updated';
             }
+
             ProductsHistoryModel::create([
                 'product_id' => $newProductId,
                 'manage_id' => 2, // UPDATE
@@ -356,6 +356,7 @@ class AdminController extends Controller
                 'user_id' => $userId,
                 'description' => trim($description),
             ]);
+
             return response()->json([
                 'status' => true,
                 'message' => 'Product updated successfully',
@@ -393,48 +394,6 @@ class AdminController extends Controller
         }
     }
 
-    public function getProductAlone($product_id)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $data = ProductsModel::select(
-                'tbl_products.product_id',
-                'tbl_products.product_name',
-                'tbl_products.base_price',
-                'tbl_products.product_temp_id',
-                'tbl_products.product_size_id',
-                'tbl_products.updated_at',
-                'tbl_products.product_category_id',
-                'tbl_products.availability_id',
-                'tbl_product_temp.temp_label',
-                'tbl_product_size.size_label',
-                'tbl_category.category_label',
-                'tbl_availability.availability_label',
-                'tbl_products.branch_id',
-                'tbl_products.shop_id',
-            )
-                ->join('tbl_product_temp', 'tbl_products.product_temp_id', '=', 'tbl_product_temp.temp_id')
-                ->join('tbl_product_size', 'tbl_products.product_size_id', '=', 'tbl_product_size.size_id')
-                ->join('tbl_category', 'tbl_products.product_category_id', '=', 'tbl_category.category_id')
-                ->join('tbl_availability', 'tbl_products.availability_id', '=', 'tbl_availability.availability_id')
-                ->where('tbl_products.shop_id', $shopId)
-                ->where('tbl_products.product_id', $product_id)
-                ->get();
-
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No product found!' : 'Product alone fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching products!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     // DONE
     public function getProductsHistory($branchId)
     {
@@ -457,20 +416,16 @@ class AdminController extends Controller
     }
 
     // DONE
-    public function getProductsOnly($branchId)
+    public function getTotalProductsCount($branchId)
     {
         // For Dashboard
         try {
             $shopId = $this->getShopId();
-            $totalProducts = ProductsModel::select(
-                DB::raw('COUNT(tbl_products.product_id) as total_products')
-            )
-                ->where('tbl_products.shop_id', $shopId)
-                ->where('tbl_products.branch_id', $branchId)
-                ->first();
+            $totalProducts = ProductService::getTotalProductsCountService($shopId, $branchId);
+
             return response()->json([
                 'status' => true,
-                'message' => 'Total orders fetched successfully!',
+                'message' => 'Total products fetched successfully!',
                 'data' => [
                     'total_products' => $totalProducts->total_products ?? 0
                 ]
