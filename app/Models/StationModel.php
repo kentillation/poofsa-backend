@@ -14,7 +14,7 @@ class StationModel extends Model
     protected $primaryKey = 'shop_station_id';
 
     protected $fillable = [
-        'shop_station_id', 'station_name',
+        'station_name'
     ];
 
     protected $hidden = [

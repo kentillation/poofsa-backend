@@ -64,7 +64,7 @@ Route::post('/admin/login', [AdminAuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/admin/logout', [AdminAuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/admin/save-branch', [AdminController::class, 'saveBranch']);
 Route::middleware('auth:sanctum')->post('/admin/save-stock', [AdminController::class, 'saveStock']);
-Route::middleware('auth:sanctum')->post('/admin/save-product', [AdminController::class, 'saveProduct']);
+Route::middleware('auth:sanctum')->post('/admin/save-product', [AdminController::class, 'saveProducts']);
 Route::middleware('auth:sanctum')->post('/admin/save-product-items', [AdminController::class, 'saveProductIngredients']);
 Route::middleware('auth:sanctum')->put('/admin/update-stock/{stock_id}', [AdminController::class, 'updateStock']);
 Route::middleware('auth:sanctum')->put('/admin/update-product/{product_id}', [AdminController::class, 'updateProduct']);

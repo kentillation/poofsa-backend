@@ -3,14 +3,184 @@
 namespace App\Services;
 
 use App\Models\ProductsModel;
+use App\Models\ProductItemsModel;
 use App\Models\ProductsHistoryModel;
+use App\Models\IngredientsModel;
+use App\Models\TemperatureModel;
+use App\Models\SizeModel;
+use App\Models\CategoryModel;
+use App\Models\StationModel;
+use App\Models\AvailabilityModel;
 use Illuminate\Support\Facades\DB;
 
 class ProductService
 {
-    /**
-     * Get all Products
-     */
+    public static function saveProductsService($request, $shopId, $userId)
+    {
+        $request->validate([
+            '*.product_name' => 'required|string',
+            '*.base_price' => 'required|numeric',
+            '*.size_id' => 'required|integer',
+            '*.temp_id' => 'required|integer',
+            '*.category_id' => 'required|integer',
+            '*.station_id' => 'required|integer',
+            '*.branch_id' => 'required|integer',
+        ]);
+
+        foreach ($request->all() as $item) {
+            $product = new ProductsModel();
+            $product->product_name = $item['product_name'];
+            $product->base_price = $item['base_price'];
+            $product->size_id = $item['size_id'];
+            $product->temp_id = $item['temp_id'];
+            $product->category_id = $item['category_id'];
+            $product->availability_id = 2;
+            $product->station_id = $item['station_id'];
+            $product->shop_id = $shopId;
+            $product->branch_id = $item['branch_id'];
+            $product->user_id = $userId;
+            $product->created_at = now();
+            $product->updated_at = now();
+            $product->save();
+
+            $newProductId = $product->product_id;
+            $branchId = $product->branch_id;
+
+            ProductsHistoryModel::create([
+                'product_id' => $newProductId,
+                'manage_id' => 1, // SAVE
+                'description' => 'New Product Saved',
+                'shop_id' => $shopId,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
+        }
+    }
+
+    public static function updateProductService($request, $productId, $shopId, $userId)
+    {
+        $validatedData = $request->validate([
+            'product_id' => 'required|integer',
+            'product_name' => 'required|string',
+            'base_price' => 'required|numeric',
+            'cost_estimate' => 'required|numeric',
+            'temp_id' => 'required|integer',
+            'size_id' => 'required|integer',
+            'category_id' => 'required|integer',
+            'station_id' => 'required|integer',
+            'availability_id' => 'required|integer',
+            'shop_id' => 'required|integer',
+            'branch_id' => 'required|integer',
+        ]);
+        $branchId = $validatedData['branch_id'];
+
+        $result = DB::transaction(function () use ($validatedData, $productId, $userId, $shopId, $branchId) {
+
+            $product = ProductsModel::findOrFail($productId);
+            $originalValues = $product->getOriginal();
+
+            if ($validatedData['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
+                $ingredientStockIds = ProductItemsModel::where('product_id', $productId)
+                    ->where('shop_id', $shopId)
+                    ->where('branch_id', $branchId)
+                    ->pluck('ingredient_id')
+                    ->toArray();
+                if (!empty($ingredientStockIds)) {
+                    $unavailableStocks = IngredientsModel::whereIn('ingredient_id', $ingredientStockIds)
+                        ->where('availability_id', '!=', 1)
+                        ->where('branch_id', $branchId)
+                        ->exists();
+                    if ($unavailableStocks) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Cannot set product to available because some required ingredients are not available in stock',
+                        ], 400);
+                    }
+                }
+            }
+
+            $product->fill($validatedData);
+            $dirtyFields = $product->getDirty();
+            $changes = [];
+
+            foreach ($dirtyFields as $field => $newValue) {
+                if ($field === 'updated_at') continue;
+                $changes[$field] = [
+                    'from' => $originalValues[$field] ?? null,
+                    'to' => $newValue
+                ];
+            }
+
+            $product->save();
+            $product = $product->fresh([
+                'temperature',
+                'category',
+                'availability',
+                'stations'
+            ]);
+
+            $description = '';
+            foreach ($changes as $field => $change) {
+                $temps = TemperatureModel::pluck('temp_label', 'product_temp_id');
+                $sizes = SizeModel::pluck('size_label', 'product_size_id');
+                $categories = CategoryModel::pluck('category_label', 'product_category_id');
+                $stations = StationModel::pluck('station_name', 'shop_station_id');
+                $availabilities = AvailabilityModel::pluck('availability_label', 'availability_id');
+
+                if ($field === 'product_name') {
+                    $description .= "Product name: From [{$change['from']}] To [{$change['to']}]. ";
+                } elseif ($field === 'base_price') {
+                    $description .= "Base price: From [₱{$change['from']}] To [₱{$change['to']}]. ";
+                } elseif ($field === 'cost_estimate') {
+                    $description .= "Estimated cost: From [₱{$change['from']}] To [₱{$change['to']}]. ";
+                } elseif ($field === 'temp_id') {
+                    $fromLabel = $temps[$change['from']] ?? $change['from'];
+                    $toLabel = $temps[$change['to']] ?? $change['to'];
+                    $description .= "Temperature: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'size_id') {
+                    $fromLabel = $sizes[$change['from']] ?? $change['from'];
+                    $toLabel = $sizes[$change['to']] ?? $change['to'];
+                    $description .= "Size: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'category_id') {
+                    $fromLabel = $categories[$change['from']] ?? $change['from'];
+                    $toLabel = $categories[$change['to']] ?? $change['to'];
+                    $description .= "Category: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'station_id') {
+                    $fromLabel = $stations[$change['from']] ?? $change['from'];
+                    $toLabel = $stations[$change['to']] ?? $change['to'];
+                    $description .= "Station    : From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'availability_id') {
+                    $fromLabel = $availabilities[$change['from']] ?? $change['from'];
+                    $toLabel = $availabilities[$change['to']] ?? $change['to'];
+                    $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
+                } else {
+                    $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
+                }
+            }
+
+            if (empty($description)) {
+                $description = 'No fields were updated';
+            }
+
+            $newProductId = $product->product_id;
+
+            ProductsHistoryModel::create([
+                'product_id' => $newProductId,
+                'manage_id' => 2, // UPDATE
+                'shop_id' => $shopId,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'description' => trim($description),
+            ]);
+
+            return [
+                'product' => $product,
+                'changes' => $changes
+            ];
+        });
+        return $result;
+    }
+
     public static function getProductsService($shopId, $branchId)
     {
         $products = ProductsModel::select(
@@ -27,6 +197,7 @@ class ProductService
             'tbl_product_temp.temp_label',
             'tbl_product_size.size_label',
             'tbl_product_category.category_label',
+            'tbl_shop_station.station_name',
             'tbl_availability.availability_label',
             'tbl_products.branch_id',
             'tbl_products.shop_id',
@@ -34,6 +205,7 @@ class ProductService
             ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
             ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
             ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
+            ->join('tbl_shop_station', 'tbl_products.station_id', '=', 'tbl_shop_station.shop_station_id')
             ->join('tbl_availability', 'tbl_products.availability_id', '=', 'tbl_availability.availability_id')
             ->where('tbl_products.shop_id', $shopId)
             ->where('tbl_products.branch_id', $branchId)

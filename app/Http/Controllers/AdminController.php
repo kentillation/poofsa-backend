@@ -189,49 +189,15 @@ class AdminController extends Controller
 
     /**** Products ****/
 
-    public function saveProduct(Request $request)
+    // DONE
+    public function saveProducts(Request $request)
     {
-        $request->validate([
-            '*.product_name' => 'required|string',
-            '*.base_price' => 'required|numeric',
-            '*.size_id' => 'required|integer',
-            '*.temp_id' => 'required|integer',
-            '*.category_id' => 'required|integer',
-            '*.station_id' => 'required|integer',
-            '*.branch_id' => 'required|integer',
-        ]);
-
         try {
-            foreach ($request->all() as $item) {
-                $shopId = $this->getShopId();
-                $userId = $this->getUserId();
-                $product = new ProductsModel();
-                $product->product_name = $item['product_name'];
-                $product->base_price = $item['base_price'];
-                $product->size_id = $item['size_id'];
-                $product->temp_id = $item['temp_id'];
-                $product->category_id = $item['category_id'];
-                $product->availability_id = 2;
-                $product->station_id = $item['station_id'];
-                $product->shop_id = $shopId;
-                $product->branch_id = $item['branch_id'];
-                $product->user_id = $userId;
-                $product->created_at = now();
-                $product->updated_at = now();
-                $product->save();
+            $shopId = $this->getShopId();
+            $userId = $this->getUserId();
 
-                $newProductId = $product->product_id;
-                $branchId = $product->branch_id;
+            ProductService::saveProductsService($request, $shopId, $userId);
 
-                ProductsHistoryModel::create([
-                    'product_id' => $newProductId,
-                    'manage_id' => 1, // SAVE
-                    'description' => 'New Product Saved',
-                    'shop_id' => $shopId,
-                    'branch_id' => $branchId,
-                    'user_id' => $userId,
-                ]);
-            }
             return response()->json([
                 'status' => true,
                 'message' => 'Product saved successfully',
@@ -248,123 +214,27 @@ class AdminController extends Controller
     // DONE
     public function updateProduct(Request $request, $productId)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|integer',
-            'product_name' => 'required|string',
-            'base_price' => 'required|numeric',
-            'cost_estimate' => 'required|numeric',
-            'temp_id' => 'required|integer',
-            'size_id' => 'required|integer',
-            'category_id' => 'required|integer',
-            'station_id' => 'required|integer',
-            'availability_id' => 'required|integer',
-            'shop_id' => 'required|integer',
-            'branch_id' => 'required|integer',
-        ]);
-
         try {
             $userId = $this->getUserId();
             $shopId = $this->getShopId();
-            $branchId = $validated['branch_id'];
-            $product = ProductsModel::findOrFail($productId);
-            $originalValues = $product->getOriginal();
-            if ($validated['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
-                $ingredientStockIds = ProductItemsModel::where('product_id', $productId)
-                    ->where('shop_id', $shopId)
-                    ->where('branch_id', $branchId)
-                    ->pluck('ingredient_id')
-                    ->toArray();
-                if (!empty($ingredientStockIds)) {
-                    $unavailableStocks = IngredientsModel::whereIn('ingredient_id', $ingredientStockIds)
-                        ->where('availability_id', '!=', 1)
-                        ->where('branch_id', $branchId)
-                        ->exists();
-                    if ($unavailableStocks) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Cannot set product to available because some required ingredients are not available in stock',
-                        ], 400);
-                    }
-                }
-            }
-            $product->update($validated);
-            $product->load(['temperature', 'category', 'availability']);
-            $newProductId = $product->product_id;
-            $changes = [];
-            foreach ($validated as $key => $value) {
-                if ($originalValues[$key] != $value) {
-                    $changes[$key] = [
-                        'from' => $originalValues[$key],
-                        'to' => $value
-                    ];
-                }
-            }
-            $description = '';
-            foreach ($changes as $field => $change) {
-                if ($field === 'product_name') {
-                    $description .= "Product name: From [{$change['from']}] To [{$change['to']}]. ";
-                } elseif ($field === 'base_price') {
-                    $description .= "Base price: From [₱{$change['from']}] To [₱{$change['to']}]. ";
-                } elseif ($field === 'cost_estimate') {
-                    $description .= "Estimated cost: From [₱{$change['from']}] To [₱{$change['to']}]. ";
-                } elseif ($field === 'temp_id') {
-                    $fromTemp = TemperatureModel::find($change['from']);
-                    $toTemp = TemperatureModel::find($change['to']);
-                    $fromLabel = $fromTemp ? $fromTemp->temp_label : $change['from'];
-                    $toLabel = $toTemp ? $toTemp->temp_label : $change['to'];
-                    $description .= "Temperature: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'size_id') {
-                    $fromSize = SizeModel::find($change['from']);
-                    $toSize = SizeModel::find($change['to']);
-                    $fromLabel = $fromSize ? $fromSize->size_label : $change['from'];
-                    $toLabel = $toSize ? $toSize->size_label : $change['to'];
-                    $description .= "Size: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'category_id') {
-                    $fromCategory = CategoryModel::find($change['from']);
-                    $toCategory = CategoryModel::find($change['to']);
-                    $fromLabel = $fromCategory ? $fromCategory->category_label : $change['from'];
-                    $toLabel = $toCategory ? $toCategory->category_label : $change['to'];
-                    $description .= "Category: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'station_id') {
-                    $fromStation = StationModel::find($change['from']);
-                    $toStation = StationModel::find($change['to']);
-                    $fromLabel = $fromStation ? $fromStation->station_name : $change['from'];
-                    $toLabel = $toStation ? $toStation->station_name : $change['to'];
-                    $description .= "Station    : From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'availability_id') {
-                    $fromAvailability = AvailabilityModel::find($change['from']);
-                    $toAvailability = AvailabilityModel::find($change['to']);
-                    $fromLabel = $fromAvailability ? $fromAvailability->availability_label : $change['from'];
-                    $toLabel = $toAvailability ? $toAvailability->availability_label : $change['to'];
-                    $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
-                } else {
-                    $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
-                }
-            }
-            if (empty($description)) {
-                $description = 'No fields were updated';
-            }
 
-            ProductsHistoryModel::create([
-                'product_id' => $newProductId,
-                'manage_id' => 2, // UPDATE
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-                'user_id' => $userId,
-                'description' => trim($description),
-            ]);
-
+            $result = ProductService::updateProductService($request, $productId, $shopId, $userId);
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Product updated successfully',
-                'updated_at' => now('Asia/Manila')->toDateTimeString(),
-                'changes' => $changes
+                'data' => $result['product'],
+                'changes' => $result['changes'],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Product update failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'product_name' => $product->product_name ?? null,
+                'user_id' => $userId,
             ]);
-        } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => 'Error updating product!',
-                'error' => $e->getMessage()
+                'success' => false,
+                'message' => 'Failed to update product. Please try again.'
             ], 500);
         }
     }
@@ -377,14 +247,13 @@ class AdminController extends Controller
             $products = ProductService::getProductsService($shopId, $branchId);
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => $products->isEmpty() ? 'No products found!' : 'Products fetched successfully!',
                 'data' => $products
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'message' => 'Error fetching products!',
                 'error' => $e->getMessage()
             ], 500);
