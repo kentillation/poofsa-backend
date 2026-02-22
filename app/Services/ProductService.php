@@ -251,6 +251,7 @@ class ProductService
     public static function getProductItemsService($shopId, $productId)
     {
         $productItems = ProductItemsModel::select(
+            'tbl_product_items.product_item_id',
             'tbl_product_items.product_id',
             'tbl_product_items.ingredient_id',
             'tbl_product_items.quantity_required',
