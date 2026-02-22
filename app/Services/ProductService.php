@@ -12,6 +12,7 @@ use App\Models\CategoryModel;
 use App\Models\StationModel;
 use App\Models\AvailabilityModel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductService
 {
@@ -43,11 +44,11 @@ class ProductService
             $product->updated_at = now();
             $product->save();
 
-            $newProductId = $product->product_id;
+            $referenceProductId = $product->product_id;
             $branchId = $product->branch_id;
 
             ProductsHistoryModel::create([
-                'product_id' => $newProductId,
+                'product_id' => $referenceProductId,
                 'manage_id' => 1, // SAVE
                 'description' => 'New Product Saved',
                 'shop_id' => $shopId,
@@ -74,7 +75,7 @@ class ProductService
         ]);
         $branchId = $validatedData['branch_id'];
 
-        $result = DB::transaction(function () use ($validatedData, $productId, $userId, $shopId, $branchId) {
+        $result = DB::transaction(function () use ($validatedData, $productId, $shopId, $branchId, $userId) {
 
             $product = ProductsModel::findOrFail($productId);
             $originalValues = $product->getOriginal();
@@ -162,10 +163,10 @@ class ProductService
                 $description = 'No fields were updated';
             }
 
-            $newProductId = $product->product_id;
+            $referenceProductId = $product->product_id;
 
             ProductsHistoryModel::create([
-                'product_id' => $newProductId,
+                'product_id' => $referenceProductId,
                 'manage_id' => 2, // UPDATE
                 'shop_id' => $shopId,
                 'branch_id' => $branchId,
@@ -178,6 +179,7 @@ class ProductService
                 'changes' => $changes
             ];
         });
+
         return $result;
     }
 
@@ -244,5 +246,111 @@ class ProductService
             ->first();
 
         return $totalProducts;
+    }
+
+    public static function getProductItemsService($shopId, $productId)
+    {
+        $productItems = ProductItemsModel::select(
+            'tbl_product_items.product_id',
+            'tbl_product_items.ingredient_id',
+            'tbl_product_items.quantity_required',
+            'tbl_product_items.ingredient_capital',
+            'tbl_product_items.updated_at',
+            'tbl_products.product_name',
+            'tbl_product_temp.temp_label',
+            'tbl_product_size.size_label',
+            'tbl_ingredients.ingredient_id',
+            'tbl_ingredients.branch_id',
+            'tbl_ingredients.ingredient_name',
+            'tbl_availability.availability_label',
+            'tbl_ingredient_unit.unit_avb',
+        )
+            ->join('tbl_products', 'tbl_product_items.product_id', '=', 'tbl_products.product_id')
+            ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
+            ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
+            ->join('tbl_ingredients', 'tbl_product_items.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
+            ->join('tbl_availability', 'tbl_ingredients.availability_id', '=', 'tbl_availability.availability_id')
+            ->join('tbl_ingredient_unit', 'tbl_ingredients.base_unit_id', '=', 'tbl_ingredient_unit.ingredient_unit_id')
+            ->where('tbl_product_items.shop_id', $shopId)
+            ->where('tbl_product_items.product_id', $productId)
+            ->orderBy('tbl_ingredients.ingredient_name')
+            ->get();
+
+        return $productItems;
+    }
+
+    public static function updateProductItemsService($request, $productItemId, $shopId, $userId)
+    {
+        $validatedData = $request->validate([
+            'product_id' => 'required|integer',
+            'ingredient_id' => 'required|integer',
+            'quantity_required' => 'required|numeric',
+            'ingredient_capital' => 'required|numeric',
+        ]);
+
+        $result = DB::transaction(function () use ($validatedData, $productItemId, $shopId, $userId) {
+
+            $productItems = ProductItemsModel::findOrFail($productItemId);
+            $originalValues = $productItems->getOriginal();
+
+            $productItems->fill($validatedData);
+            $dirtyFields = $productItems->getDirty();
+
+            $changes = [];
+
+            foreach ($dirtyFields as $field => $newValue) {
+                if ($field === 'updated_at') continue;
+                $changes[$field] = [
+                    'from' => $originalValues[$field] ?? null,
+                    'to' => $newValue
+                ];
+            }
+
+            $productItems->save();
+            $productItems = $productItems->fresh([
+                'product',
+                'ingredient',
+            ]);
+
+            $description = '';
+            foreach ($changes as $field => $change) {
+                $ingredients = IngredientsModel::pluck('ingredient_id', 'ingredient_name');
+
+                if ($field === 'ingredient_id') {
+                    $fromLabel = $ingredients[$change['from']] ?? $change['from'];
+                    $toLabel = $ingredients[$change['to']] ?? $change['to'];
+                    $description .= "Product Items: From [{$fromLabel}] To [{$toLabel}]. ";
+                } elseif ($field === 'quantity_required') {
+                    $description .= "Quantity required: From [{$change['from']}] To [{$change['to']}]. ";
+                } elseif ($field === 'ingredient_capital') {
+                    $description .= "Ingredient capital: From [₱{$change['from']}] To [₱{$change['to']}]. ";
+                } else {
+                    $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
+                }
+            }
+
+            if (empty($description)) {
+                $description = 'No fields were updated';
+            }
+
+            $referenceProductId = $productItems->product_id;
+            $branchId = $productItems->branch_id;
+
+            ProductsHistoryModel::create([
+                'product_id' => $referenceProductId,
+                'manage_id' => 2, // UPDATE
+                'shop_id' => $shopId,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'description' => trim($description),
+            ]);
+
+            return [
+                'productItems' => $productItems,
+                'changes' => $changes
+            ];
+        });
+
+        return $result;
     }
 }

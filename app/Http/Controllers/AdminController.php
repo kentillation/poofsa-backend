@@ -345,68 +345,20 @@ class AdminController extends Controller
     }
 
     // DONE
-    public function updateProductItems(Request $request, $ingredientId)
+    public function updateProductItems(Request $request, $productItemId)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|integer',
-            'ingredient_id' => 'required|integer',
-            'quantity_required' => 'required|numeric',
-            'ingredient_capital' => 'required|numeric',
-        ]);
         try {
-            $ingredient = ProductItemsModel::findOrFail($ingredientId);
-            $originalValues = $ingredient->getOriginal();
-            $ingredient->update($validated);
-            $ingredient->load(['product', 'ingredient']);
-            $newProductId = $ingredient->product_id;
-            $shopId = $ingredient->shop_id;
-            $branchId = $ingredient->branch_id;
+            $shopId = $this->getShopId();
             $userId = $this->getUserId();
-            $changes = [];
-            foreach ($validated as $key => $value) {
-                if ($originalValues[$key] != $value) {
-                    $changes[$key] = [
-                        'from' => $originalValues[$key],
-                        'to' => $value
-                    ];
-                }
-            }
-            $description = '';
-            foreach ($changes as $field => $change) {
-                if ($field === 'ingredient_id') {
-                    $from = IngredientsModel::find($change['from']);
-                    $to = IngredientsModel::find($change['to']);
-                    $fromLabel = $from ? $from->ingredient_name : $change['from'];
-                    $toLabel = $to ? $to->ingredient_name : $change['to'];
-                    $description .= "Stock ingredient: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'ingredient_capital') {
-                    $description .= "Ingredient capital: From [₱{$change['from']}] To [₱{$change['to']}]. ";
-                } else {
-                    $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
-                }
-            }
 
-            if (empty($description)) {
-                $description = 'No fields were updated';
-            }
-
-            ProductsHistoryModel::create([
-                'product_id' => $newProductId,
-                'manage_id' => 2, // UPDATE
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-                'user_id' => $userId,
-                'description' => trim($description),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $result = ProductService::updateProductItemsService($request, $productItemId, $shopId, $userId);
 
             return response()->json([
-                'status' => true,
+                'success' => true,
                 'message' => 'Product items updated successfully',
-                'updated_at' => now('Asia/Manila')->toDateTimeString(),
-                'changes' => $changes
-            ]);
+                'data' => $result['productItems'],
+                'changes' => $result['changes'],
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -417,45 +369,21 @@ class AdminController extends Controller
     }
 
     // DONE
-    public function getProductItems($product_id)
+    public function getProductItems($productId)
     {
         try {
             $shopId = $this->getShopId();
-            $data = ProductItemsModel::select(
-                'tbl_product_items.product_id',
-                'tbl_product_items.ingredient_id',
-                'tbl_product_items.quantity_required',
-                'tbl_product_items.ingredient_capital',
-                'tbl_product_items.updated_at',
-                'tbl_products.product_name',
-                'tbl_product_temp.temp_label',
-                'tbl_product_size.size_label',
-                'tbl_ingredients.ingredient_id',
-                'tbl_ingredients.branch_id',
-                'tbl_ingredients.ingredient_name',
-                'tbl_availability.availability_label',
-                'tbl_ingredient_unit.unit_avb',
-            )
-                ->join('tbl_products', 'tbl_product_items.product_id', '=', 'tbl_products.product_id')
-                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
-                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
-                ->join('tbl_ingredients', 'tbl_product_items.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
-                ->join('tbl_availability', 'tbl_ingredients.availability_id', '=', 'tbl_availability.availability_id')
-                ->join('tbl_ingredient_unit', 'tbl_ingredients.base_unit_id', '=', 'tbl_ingredient_unit.ingredient_unit_id')
-                ->where('tbl_product_items.shop_id', $shopId)
-                ->where('tbl_product_items.product_id', $product_id)
-                ->orderBy('tbl_ingredients.ingredient_name')
-                ->get();
+            $productItems = ProductService::getProductItemsService($shopId, $productId);
 
             return response()->json([
                 'status' => true,
-                'message' => $data->isEmpty() ? 'No product ingredients found!' : 'Product ingredients fetched successfully!',
-                'data' => $data
+                'message' => $productItems->isEmpty() ? 'No product items found!' : 'Product items fetched successfully!',
+                'data' => $productItems
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error fetching product ingredients!',
+                'message' => 'Error fetching product items!',
                 'error' => $e->getMessage()
             ], 500);
         }
