@@ -289,6 +289,7 @@ class AdminController extends Controller
                 'temp_id' => $product->temp_id,
                 'size_id' => $product->size_id,
                 'category_id' => $product->category_id,
+                'station_id' => $product->station_id,
                 'availability_id' => $product->availability_id,
                 'product_name' => $product->product_name,
                 'base_price' => $product->base_price,
@@ -296,7 +297,7 @@ class AdminController extends Controller
                 'temp_label' => $product->temperature->temp_label ?? null,
                 'size_label' => $product->size->size_label ?? null,
                 'category_label' => $product->category->category_label ?? null,
-                'station_name' => $product->station->station_name ?? null,
+                'station_name' => $product->stations->station_name ?? null,
                 'availability_label' => $product->availability->availability_label ?? null,
                 'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
             ];
