@@ -283,6 +283,7 @@ class ProductService
     public static function updateProductItemsService($request, $productItemId, $shopId, $userId)
     {
         $validatedData = $request->validate([
+            'product_item_id' => 'required|integer',
             'product_id' => 'required|integer',
             'ingredient_id' => 'required|integer',
             'quantity_required' => 'required|numeric',

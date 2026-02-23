@@ -44,6 +44,11 @@ class ProductsModel extends Model
         )->withPivot('quantity_required');
     }
 
+    public function size()
+    {
+        return $this->belongsTo(SizeModel::class, 'size_id');
+    }
+
     public function temperature()
     {
         return $this->belongsTo(TemperatureModel::class, 'temp_id');

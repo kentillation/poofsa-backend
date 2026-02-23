@@ -240,24 +240,75 @@ class AdminController extends Controller
     }
 
     // DONE
-    public function getProducts($branchId)
+    public function getProducts(Request $request)
     {
-        try {
-            $shopId = $this->getShopId();
-            $products = ProductService::getProductsService($shopId, $branchId);
+        $shopId = $this->getShopId();
+        $branchId = $request->query('branch_id');
+        $search = $request->query('search', '');
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('itemsPerPage', 10);
 
-            return response()->json([
-                'success' => true,
-                'message' => $products->isEmpty() ? 'No products found!' : 'Products fetched successfully!',
-                'data' => $products
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error fetching products!',
-                'error' => $e->getMessage()
-            ], 500);
+        $query = ProductsModel::with(['temperature', 'size', 'category', 'stations', 'availability'])
+            ->where('shop_id', $shopId)
+            ->where('branch_id', $branchId);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                    ->orWhereHas('temperature', function ($q2) use ($search) {
+                        $q2->where('temp_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('size', function ($q2) use ($search) {
+                        $q2->where('size_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('category', function ($q2) use ($search) {
+                        $q2->where('category_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('stations', function ($q2) use ($search) {
+                        $q2->where('station_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('availability', function ($q2) use ($search) {
+                        $q2->where('availability_label', 'like', "%{$search}%");
+                    });
+            });
         }
+
+        $total = $query->count();
+
+        $products = $query->orderByDesc('updated_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        // Map products for frontend display
+        $mapped = $products->map(function ($product) {
+            return [
+                'product_id' => $product->product_id,
+                'product_name' => $product->product_name,
+                'display_product_name' => $product->product_name
+                    . ($product->temperature->temp_label ?? '')
+                    . ($product->size->size_label ?? ''),
+                'base_price' => $product->base_price,
+                'display_base_price' => "₱{$product->base_price}",
+                'cost_estimate' => $product->cost_estimate,
+                'display_estimated_cost' => $product->cost_estimate ? "₱{$product->cost_estimate}" : null,
+                'temp_label' => $product->temperature->temp_label ?? null,
+                'size_label' => $product->size->size_label ?? null,
+                'category_label' => $product->category->category_label ?? null,
+                'station_name' => $product->station->station_name ?? null,
+                'availability_label' => $product->availability->availability_label ?? null,
+                'availability_id' => $product->availability_id,
+                'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $mapped,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+        ]);
     }
 
     // DONE
