@@ -283,21 +283,21 @@ class AdminController extends Controller
         // Map products for frontend display
         $mapped = $products->map(function ($product) {
             return [
+                'shop_id' => $product->shop_id,
+                'branch_id' => $product->branch_id,
                 'product_id' => $product->product_id,
+                'temp_id' => $product->temp_id,
+                'size_id' => $product->size_id,
+                'category_id' => $product->category_id,
+                'availability_id' => $product->availability_id,
                 'product_name' => $product->product_name,
-                'display_product_name' => $product->product_name
-                    . ($product->temperature->temp_label ?? '')
-                    . ($product->size->size_label ?? ''),
                 'base_price' => $product->base_price,
-                'display_base_price' => "₱{$product->base_price}",
                 'cost_estimate' => $product->cost_estimate,
-                'display_estimated_cost' => $product->cost_estimate ? "₱{$product->cost_estimate}" : null,
                 'temp_label' => $product->temperature->temp_label ?? null,
                 'size_label' => $product->size->size_label ?? null,
                 'category_label' => $product->category->category_label ?? null,
                 'station_name' => $product->station->station_name ?? null,
                 'availability_label' => $product->availability->availability_label ?? null,
-                'availability_id' => $product->availability_id,
                 'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
             ];
         });
