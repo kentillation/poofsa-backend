@@ -246,9 +246,23 @@ class ProductService
         ];
     }
 
-    public static function getProductsHistoryService($shopId, $branchId)
+    public static function getProductsHistoryService($shopId, $branchId, $search = '', $page = 1, $perPage = 10)
     {
-        $products = ProductsHistoryModel::select(
+        // $products = ProductsHistoryModel::select(
+        //     'tbl_products.product_name',
+        //     'tbl_products_history.manage_id',
+        //     'tbl_products_history.description',
+        //     'tbl_admin.admin_name',
+        //     'tbl_products_history.updated_at',
+        // )
+        //     ->join('tbl_products', 'tbl_products_history.product_id', '=', 'tbl_products.product_id')
+        //     ->join('tbl_admin', 'tbl_products_history.user_id', '=', 'tbl_admin.admin_id')
+        //     ->where('tbl_products_history.shop_id', $shopId)
+        //     ->where('tbl_products_history.branch_id', $branchId)
+        //     ->orderBy('tbl_products_history.updated_at')
+        //     ->get();
+
+        $query = ProductsHistoryModel::select(
             'tbl_products.product_name',
             'tbl_products_history.manage_id',
             'tbl_products_history.description',
@@ -258,11 +272,27 @@ class ProductService
             ->join('tbl_products', 'tbl_products_history.product_id', '=', 'tbl_products.product_id')
             ->join('tbl_admin', 'tbl_products_history.user_id', '=', 'tbl_admin.admin_id')
             ->where('tbl_products_history.shop_id', $shopId)
-            ->where('tbl_products_history.branch_id', $branchId)
-            ->orderBy('tbl_products_history.updated_at')
+            ->where('tbl_products_history.branch_id', $branchId);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('tbl_products.product_name', 'like', "%{$search}%")
+                    ->orWhere('tbl_admin.admin_name', 'like', "%{$search}%")
+                    ->orWhere('tbl_products_history.description', 'like', "%{$search}%");
+            });
+        }
+
+        $total = $query->count();
+
+        $mapped = $query->orderByDesc('updated_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
 
-        return $products;
+        return [
+            'mapped' => $mapped,
+            'total' => $total,
+        ];
     }
 
     public static function getTotalProductsCountService($shopId, $branchId)

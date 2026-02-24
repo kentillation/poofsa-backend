@@ -260,17 +260,24 @@ class AdminController extends Controller
     }
 
     // DONE
-    public function getProductsHistory($branchId)
+    public function getProductsHistory(Request $request)
     {
         try {
             $shopId = $this->getShopId();
-            $products = ProductService::getProductsHistoryService($shopId, $branchId);
+            $branchId = $request->query('branch_id');
+            $search = $request->query('search', '');
+            $page = (int) $request->query('page', 1);
+            $perPage = (int) $request->query('itemsPerPage', 10);
+            
+            $productsData = ProductService::getProductsHistoryService($shopId, $branchId, $search, $page, $perPage);
 
             return response()->json([
-                'status' => true,
-                'message' => $products->isEmpty() ? 'No products found!' : 'Products history fetched successfully!',
-                'data' => $products
-            ], 200);
+                'success' => true,
+                'data' => $productsData['mapped'],
+                'total' => $productsData['total'],
+                'page' => $page,
+                'perPage' => $perPage,
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,

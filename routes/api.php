@@ -73,7 +73,7 @@ Route::middleware('auth:sanctum')->put('/admin/update-void/{branch_id}', [AdminC
 Route::middleware('auth:sanctum')->get('/admin/shop-branches', [AdminController::class, 'getShopBranches']);
 Route::middleware('auth:sanctum')->get('/admin/branch-details/{branchName}', [AdminController::class, 'getBranchDetails']);
 Route::middleware('auth:sanctum')->get('/admin/products', [AdminController::class, 'getProducts']);
-Route::middleware('auth:sanctum')->get('/admin/products-history/{branch_id}', [AdminController::class, 'getProductsHistory']);
+Route::middleware('auth:sanctum')->get('/admin/products-history', [AdminController::class, 'getProductsHistory']);
 Route::middleware('auth:sanctum')->get('/admin/product-items/{product_id}', [AdminController::class, 'getProductItems']);
 Route::middleware('auth:sanctum')->get('/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
 Route::middleware('auth:sanctum')->get('/admin/stocks/{branch_id}', [AdminController::class, 'getStocks']);
@@ -210,7 +210,6 @@ Route::post('/registerAccount', function (Request $request) {
             'cashier_name' => $validated['cashier_name'],
             'cashier_email' => $validated['cashier_email'],
             'cashier_password' => Hash::make($validated['cashier_password']),
-            'cashier_mpin' => $validated['cashier_mpin'],
             'cashier_mpin' => Hash::make($validated['cashier_mpin']),
             'shop_id' => $shop->shop_id,
             'branch_id' => $branch->branch_id,
