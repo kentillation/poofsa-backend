@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('tbl_ingredient_unit', function (Blueprint $table) {
             $table->id('ingredient_unit_id');
-            $table->string('ingredient_label');
-            $table->string('ingredient_avb');
+            $table->string('unit_label');
+            $table->string('unit_avb');
             $table->timestamps();
         });
     }
