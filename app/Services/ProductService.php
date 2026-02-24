@@ -248,27 +248,16 @@ class ProductService
 
     public static function getProductsHistoryService($shopId, $branchId, $search = '', $page = 1, $perPage = 10)
     {
-        // $products = ProductsHistoryModel::select(
-        //     'tbl_products.product_name',
-        //     'tbl_products_history.modified_type_id',
-        //     'tbl_products_history.description',
-        //     'tbl_admin.admin_name',
-        //     'tbl_products_history.updated_at',
-        // )
-        //     ->join('tbl_products', 'tbl_products_history.product_id', '=', 'tbl_products.product_id')
-        //     ->join('tbl_admin', 'tbl_products_history.user_id', '=', 'tbl_admin.admin_id')
-        //     ->where('tbl_products_history.shop_id', $shopId)
-        //     ->where('tbl_products_history.branch_id', $branchId)
-        //     ->orderBy('tbl_products_history.updated_at')
-        //     ->get();
 
         $query = ProductsHistoryModel::select(
             'tbl_products.product_name',
             'tbl_products_history.modified_type_id',
+            'tbl_modified_type.modified_type',
             'tbl_products_history.description',
             'tbl_admin.admin_name',
             'tbl_products_history.updated_at',
         )
+            ->join('tbl_modified_type', 'tbl_products_history.modified_type_id', '=', 'tbl_modified_type.modified_type_id')
             ->join('tbl_products', 'tbl_products_history.product_id', '=', 'tbl_products.product_id')
             ->join('tbl_admin', 'tbl_products_history.user_id', '=', 'tbl_admin.admin_id')
             ->where('tbl_products_history.shop_id', $shopId)

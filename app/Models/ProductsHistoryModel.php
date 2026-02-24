@@ -15,28 +15,23 @@ class ProductsHistoryModel extends Model
         'product_id', 'description', 'modified_type_id', 'shop_id', 'branch_id', 'user_id',
     ];
 
-    public function temperature()
+    public function modify()
     {
-        return $this->belongsTo(TemperatureModel::class);
+        return $this->belongsTo(ModifiedTypeModel::class, 'modified_type_id');
     }
 
-    public function size()
+    public function shops()
     {
-        return $this->belongsTo(SizeModel::class);
+        return $this->belongsTo(ShopModel::class, 'shop_id');
     }
 
-    public function category()
+    public function branches()
     {
-        return $this->belongsTo(CategoryModel::class);
+        return $this->belongsTo(BranchModel::class, 'branch_id');
     }
 
-    public function availability()
+    public function users()
     {
-        return $this->belongsTo(AvailabilityModel::class);
-    }
-
-    public function visibility()
-    {
-        return $this->belongsTo(VisibilityModel::class);
+        return $this->belongsTo(AdminModel::class, 'user_id');
     }
 }
