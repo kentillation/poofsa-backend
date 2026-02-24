@@ -25,7 +25,7 @@ class CreateTblSalesTable extends Migration
             $table->decimal('discount_amount', 10, 2)->default(0);
             $table->decimal('tax_amount', 10, 2)->default(0);
             $table->decimal('total_amount', 10, 2);
-            $table->unsignedBigInteger('sale_status_id');
+            $table->unsignedBigInteger('sales_status_id');
             $table->timestamps();
             $table->index('order_id');
             $table->index('shop_id');
