@@ -12,7 +12,7 @@ class ProductsHistoryModel extends Model
     protected $table = 'tbl_products_history';
 
     protected $fillable = [
-        'product_id', 'description', 'manage_id', 'shop_id', 'branch_id', 'user_id',
+        'product_id', 'description', 'modified_type_id', 'shop_id', 'branch_id', 'user_id',
     ];
 
     public function temperature()

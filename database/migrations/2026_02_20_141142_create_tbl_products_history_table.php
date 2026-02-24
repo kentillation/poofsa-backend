@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('product_history_id');
             $table->unsignedBigInteger('product_id');
             $table->longText('description');
-            $table->unsignedBigInteger('manage_id')->index();
+            $table->unsignedBigInteger('modified_type_id')->index();
             $table->unsignedBigInteger('shop_id')->index();
             $table->unsignedBigInteger('branch_id')->index();
             $table->unsignedBigInteger('user_id')->index();

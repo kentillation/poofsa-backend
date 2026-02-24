@@ -49,7 +49,7 @@ class ProductService
 
             ProductsHistoryModel::create([
                 'product_id' => $referenceProductId,
-                'manage_id' => 1, // SAVE
+                'modified_type_id' => 1, // SAVE
                 'description' => 'New Product Saved',
                 'shop_id' => $shopId,
                 'branch_id' => $branchId,
@@ -167,7 +167,7 @@ class ProductService
 
             ProductsHistoryModel::create([
                 'product_id' => $referenceProductId,
-                'manage_id' => 2, // UPDATE
+                'modified_type_id' => 2, // UPDATE
                 'shop_id' => $shopId,
                 'branch_id' => $branchId,
                 'user_id' => $userId,
@@ -250,7 +250,7 @@ class ProductService
     {
         // $products = ProductsHistoryModel::select(
         //     'tbl_products.product_name',
-        //     'tbl_products_history.manage_id',
+        //     'tbl_products_history.modified_type_id',
         //     'tbl_products_history.description',
         //     'tbl_admin.admin_name',
         //     'tbl_products_history.updated_at',
@@ -264,7 +264,7 @@ class ProductService
 
         $query = ProductsHistoryModel::select(
             'tbl_products.product_name',
-            'tbl_products_history.manage_id',
+            'tbl_products_history.modified_type_id',
             'tbl_products_history.description',
             'tbl_admin.admin_name',
             'tbl_products_history.updated_at',
@@ -399,7 +399,7 @@ class ProductService
 
             ProductsHistoryModel::create([
                 'product_id' => $referenceProductId,
-                'manage_id' => 2, // UPDATE
+                'modified_type_id' => 2, // UPDATE
                 'shop_id' => $shopId,
                 'branch_id' => $branchId,
                 'user_id' => $userId,
