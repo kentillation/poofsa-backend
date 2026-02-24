@@ -183,38 +183,67 @@ class ProductService
         return $result;
     }
 
-    public static function getProductsService($shopId, $branchId)
+    public static function getProductsService($shopId, $branchId, $search, $page, $perPage)
     {
-        $products = ProductsModel::select(
-            'tbl_products.product_id',
-            'tbl_products.product_name',
-            'tbl_products.base_price',
-            'tbl_products.cost_estimate',
-            'tbl_products.temp_id',
-            'tbl_products.size_id',
-            'tbl_products.updated_at',
-            'tbl_products.category_id',
-            'tbl_products.availability_id',
-            'tbl_products.station_id',
-            'tbl_product_temp.temp_label',
-            'tbl_product_size.size_label',
-            'tbl_product_category.category_label',
-            'tbl_shop_station.station_name',
-            'tbl_availability.availability_label',
-            'tbl_products.branch_id',
-            'tbl_products.shop_id',
-        )
-            ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
-            ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
-            ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
-            ->join('tbl_shop_station', 'tbl_products.station_id', '=', 'tbl_shop_station.shop_station_id')
-            ->join('tbl_availability', 'tbl_products.availability_id', '=', 'tbl_availability.availability_id')
-            ->where('tbl_products.shop_id', $shopId)
-            ->where('tbl_products.branch_id', $branchId)
-            ->orderByDesc('tbl_products.updated_at')
+        $query = ProductsModel::with(['temperature', 'size', 'category', 'stations', 'availability'])
+            ->where('shop_id', $shopId)
+            ->where('branch_id', $branchId);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                    ->orWhereHas('temperature', function ($q2) use ($search) {
+                        $q2->where('temp_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('size', function ($q2) use ($search) {
+                        $q2->where('size_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('category', function ($q2) use ($search) {
+                        $q2->where('category_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('stations', function ($q2) use ($search) {
+                        $q2->where('station_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('availability', function ($q2) use ($search) {
+                        $q2->where('availability_label', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $total = $query->count();
+
+        $products = $query->orderByDesc('updated_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
 
-        return $products;
+        // Map products for frontend display
+        $mapped = $products->map(function ($product) {
+            return [
+                'shop_id' => $product->shop_id,
+                'branch_id' => $product->branch_id,
+                'product_id' => $product->product_id,
+                'temp_id' => $product->temp_id,
+                'size_id' => $product->size_id,
+                'category_id' => $product->category_id,
+                'station_id' => $product->station_id,
+                'availability_id' => $product->availability_id,
+                'product_name' => $product->product_name,
+                'base_price' => $product->base_price,
+                'cost_estimate' => $product->cost_estimate,
+                'temp_label' => $product->temperature->temp_label ?? null,
+                'size_label' => $product->size->size_label ?? null,
+                'category_label' => $product->category->category_label ?? null,
+                'station_name' => $product->stations->station_name ?? null,
+                'availability_label' => $product->availability->availability_label ?? null,
+                'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        return [
+            'mapped' => $mapped,
+            'total' => $total,
+        ];
     }
 
     public static function getProductsHistoryService($shopId, $branchId)
