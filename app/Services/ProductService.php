@@ -32,6 +32,7 @@ class ProductService
             $product = new ProductsModel();
             $product->product_name = $item['product_name'];
             $product->base_price = $item['base_price'];
+            $product->cost_estimate = 0;
             $product->size_id = $item['size_id'];
             $product->temp_id = $item['temp_id'];
             $product->category_id = $item['category_id'];
