@@ -41,13 +41,13 @@ class IngredientsModel extends Model
         return $this->belongsTo(BranchModel::class, 'branch_id');
     }
 
+    public function unit()
+    {
+        return $this->belongsTo(UnitModel::class, 'base_unit_id');
+    }
     public function availability()
     {
         return $this->belongsTo(AvailabilityModel::class, 'availability_id');
     }
 
-    public function unit()
-    {
-        return $this->belongsTo(UnitModel::class, 'base_unit_id');
-    }
 }

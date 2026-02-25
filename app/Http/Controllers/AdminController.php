@@ -229,7 +229,7 @@ class AdminController extends Controller
             Log::error('Product update failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'product_name' => $product->product_name ?? null,
+                'product_name' => $result->product_name ?? null,
                 'user_id' => $userId,
             ]);
             return response()->json([
@@ -453,139 +453,166 @@ class AdminController extends Controller
         }
     }
 
-    public function updateStock(Request $request, $ingredient_id)
-    {
-        $validated = $request->validate([
-            'ingredient_id' => 'required|integer',
-            'ingredient_name' => 'required|string',
-            'quantity_received' => 'required|numeric',
-            'stock_unit' => 'required|integer',
-            'stock_out' => 'nullable|integer',
-            'stock_alert_qty' => 'required|integer',
-            'availability_id' => 'required|integer',
-            'stock_unit_cost' => 'required|numeric',
-            'shop_id' => 'required|integer',
-            'branch_id' => 'required|integer',
-        ]);
-        try {
+    // public function updateStock(Request $request, $ingredient_id)
+    // {
+    //     $validated = $request->validate([
+    //         'ingredient_id' => 'required|integer',
+    //         'ingredient_name' => 'required|string',
+    //         'quantity_received' => 'required|numeric',
+    //         'stock_unit' => 'required|integer',
+    //         'stock_out' => 'nullable|integer',
+    //         'stock_alert_qty' => 'required|integer',
+    //         'availability_id' => 'required|integer',
+    //         'stock_unit_cost' => 'required|numeric',
+    //         'shop_id' => 'required|integer',
+    //         'branch_id' => 'required|integer',
+    //     ]);
+    //     try {
 
-            if (isset($validated['quantity_received']) && $validated['quantity_received'] === 1 || $validated['quantity_received'] === 0) {
-                $validated['availability_id'] = 2;
-            }
-            if (isset($validated['quantity_received']) && $validated['quantity_received'] > 1) {
-                $validated['availability_id'] = 1;
-            }
-            try {
-                $stock = IngredientsModel::findOrFail($ingredient_id);
-                $originalValues = $stock->getOriginal();
-                $availabilityChanged = isset($validated['availability_id']) &&
-                    $validated['availability_id'] != $originalValues['availability_id'];
-                $isBecomingAvailable = $availabilityChanged && $validated['availability_id'] == 1;
-                $isBecomingUnavailable = $availabilityChanged && $validated['availability_id'] == 2;
-                $stock->update($validated);
-                $newStockId = $stock->ingredient_id;
-                $shopId = $stock->shop_id;
-                $branchId = $stock->branch_id;
-                $userId = $this->getUserId();
-                $changes = [];
-                foreach ($validated as $key => $value) {
-                    if ($originalValues[$key] != $value) {
-                        $changes[$key] = [
-                            'from' => $originalValues[$key],
-                            'to' => $value
-                        ];
-                    }
-                }
-                $relatedProducts = ProductItemsModel::where('ingredient_id', $ingredient_id)
-                    ->with('product')
-                    ->get()
-                    ->pluck('product')
-                    ->unique();
-                foreach ($relatedProducts as $product) {
-                    $originalProductAvailability = $product->availability_id;
-                    if ($isBecomingUnavailable) {
-                        if ($product->availability_id != 2) {
-                            $product->update(['availability_id' => 2]);
-                            ProductsHistoryModel::create([
-                                'product_id' => $product->product_id,
-                                'manage_id' => 2, // UPDATE
-                                'shop_id' => $product->shop_id,
-                                'branch_id' => $product->branch_id,
-                                'user_id' => $userId,
-                                'description' => 'Automatically set to Not Available because one of its ingredients became unavailable',
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ]);
-                        }
-                    } elseif ($isBecomingAvailable) {
-                        $allIngredientsAvailable = true;
-                        foreach ($product->ingredients as $ingredient) {
-                            if ($ingredient->stock->availability_id != 1) {
-                                $allIngredientsAvailable = false;
-                                break;
-                            }
-                        }
-                        if ($allIngredientsAvailable && $originalProductAvailability == 2) {
-                            $product->update(['availability_id' => 1]);
-                            ProductsHistoryModel::create([
-                                'product_id' => $product->product_id,
-                                'manage_id' => 2, // UPDATE
-                                'shop_id' => $product->shop_id,
-                                'branch_id' => $product->branch_id,
-                                'user_id' => $userId,
-                                'description' => 'Automatically set to Available because all ingredients are now available',
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ]);
-                        }
-                    }
-                }
-                $description = '';
-                foreach ($changes as $field => $change) {
-                    if ($field === 'availability_id') {
-                        $fromAvailability = AvailabilityModel::find($change['from']);
-                        $toAvailability = AvailabilityModel::find($change['to']);
-                        $fromLabel = $fromAvailability ? $fromAvailability->availability_label : $change['from'];
-                        $toLabel = $toAvailability ? $toAvailability->availability_label : $change['to'];
-                        $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
-                    } elseif ($field === 'stock_unit') {
-                        $fromUnit = UnitModel::find($change['from']);
-                        $toUnit = UnitModel::find($change['to']);
-                        $fromLabel = $fromUnit ? $fromUnit->unit_label : $change['from'];
-                        $toLabel = $toUnit ? $toUnit->unit_label : $change['to'];
-                        $description .= "Unit: From [{$fromLabel}] To [{$toLabel}]. ";
-                    } else {
-                        $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
-                    }
-                }
-                if (empty($description)) {
-                    $description = 'No fields were updated';
-                }
-                StocksHistoryModel::create([
-                    'ingredient_id' => $newStockId,
-                    'manage_id' => 2, // UPDATE
-                    'shop_id' => $shopId,
-                    'branch_id' => $branchId,
-                    'user_id' => $userId,
-                    'description' => trim($description),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Stock updated successfully',
-                    'updated_at' => now('Asia/Manila')->toDateTimeString(),
-                    'changes' => $changes
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Error updating stocks!',
-                    'error' => $e->getMessage()
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+    //         if (isset($validated['quantity_received']) && $validated['quantity_received'] === 1 || $validated['quantity_received'] === 0) {
+    //             $validated['availability_id'] = 2;
+    //         }
+    //         if (isset($validated['quantity_received']) && $validated['quantity_received'] > 1) {
+    //             $validated['availability_id'] = 1;
+    //         }
+    //         try {
+    //             $stock = IngredientsModel::findOrFail($ingredient_id);
+    //             $originalValues = $stock->getOriginal();
+    //             $availabilityChanged = isset($validated['availability_id']) &&
+    //                 $validated['availability_id'] != $originalValues['availability_id'];
+    //             $isBecomingAvailable = $availabilityChanged && $validated['availability_id'] == 1;
+    //             $isBecomingUnavailable = $availabilityChanged && $validated['availability_id'] == 2;
+    //             $stock->update($validated);
+    //             $newStockId = $stock->ingredient_id;
+    //             $shopId = $stock->shop_id;
+    //             $branchId = $stock->branch_id;
+    //             $userId = $this->getUserId();
+    //             $changes = [];
+    //             foreach ($validated as $key => $value) {
+    //                 if ($originalValues[$key] != $value) {
+    //                     $changes[$key] = [
+    //                         'from' => $originalValues[$key],
+    //                         'to' => $value
+    //                     ];
+    //                 }
+    //             }
+    //             $relatedProducts = ProductItemsModel::where('ingredient_id', $ingredient_id)
+    //                 ->with('product')
+    //                 ->get()
+    //                 ->pluck('product')
+    //                 ->unique();
+    //             foreach ($relatedProducts as $product) {
+    //                 $originalProductAvailability = $product->availability_id;
+    //                 if ($isBecomingUnavailable) {
+    //                     if ($product->availability_id != 2) {
+    //                         $product->update(['availability_id' => 2]);
+    //                         ProductsHistoryModel::create([
+    //                             'product_id' => $product->product_id,
+    //                             'manage_id' => 2, // UPDATE
+    //                             'shop_id' => $product->shop_id,
+    //                             'branch_id' => $product->branch_id,
+    //                             'user_id' => $userId,
+    //                             'description' => 'Automatically set to Not Available because one of its ingredients became unavailable',
+    //                             'created_at' => now(),
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 } elseif ($isBecomingAvailable) {
+    //                     $allIngredientsAvailable = true;
+    //                     foreach ($product->ingredients as $ingredient) {
+    //                         if ($ingredient->stock->availability_id != 1) {
+    //                             $allIngredientsAvailable = false;
+    //                             break;
+    //                         }
+    //                     }
+    //                     if ($allIngredientsAvailable && $originalProductAvailability == 2) {
+    //                         $product->update(['availability_id' => 1]);
+    //                         ProductsHistoryModel::create([
+    //                             'product_id' => $product->product_id,
+    //                             'manage_id' => 2, // UPDATE
+    //                             'shop_id' => $product->shop_id,
+    //                             'branch_id' => $product->branch_id,
+    //                             'user_id' => $userId,
+    //                             'description' => 'Automatically set to Available because all ingredients are now available',
+    //                             'created_at' => now(),
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 }
+    //             }
+    //             $description = '';
+    //             foreach ($changes as $field => $change) {
+    //                 if ($field === 'availability_id') {
+    //                     $fromAvailability = AvailabilityModel::find($change['from']);
+    //                     $toAvailability = AvailabilityModel::find($change['to']);
+    //                     $fromLabel = $fromAvailability ? $fromAvailability->availability_label : $change['from'];
+    //                     $toLabel = $toAvailability ? $toAvailability->availability_label : $change['to'];
+    //                     $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
+    //                 } elseif ($field === 'stock_unit') {
+    //                     $fromUnit = UnitModel::find($change['from']);
+    //                     $toUnit = UnitModel::find($change['to']);
+    //                     $fromLabel = $fromUnit ? $fromUnit->unit_label : $change['from'];
+    //                     $toLabel = $toUnit ? $toUnit->unit_label : $change['to'];
+    //                     $description .= "Unit: From [{$fromLabel}] To [{$toLabel}]. ";
+    //                 } else {
+    //                     $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
+    //                 }
+    //             }
+    //             if (empty($description)) {
+    //                 $description = 'No fields were updated';
+    //             }
+    //             StocksHistoryModel::create([
+    //                 'ingredient_id' => $newStockId,
+    //                 'manage_id' => 2, // UPDATE
+    //                 'shop_id' => $shopId,
+    //                 'branch_id' => $branchId,
+    //                 'user_id' => $userId,
+    //                 'description' => trim($description),
+    //                 'created_at' => now(),
+    //                 'updated_at' => now(),
+    //             ]);
+    //             return response()->json([
+    //                 'status' => true,
+    //                 'message' => 'Stock updated successfully',
+    //                 'updated_at' => now('Asia/Manila')->toDateTimeString(),
+    //                 'changes' => $changes
+    //             ]);
+    //         } catch (\Exception $e) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Error updating stocks!',
+    //                 'error' => $e->getMessage()
+    //             ], 500);
+    //         }
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
+
+    public function updateStock(Request $request, $ingredientId)
+    {
+        try {
+            $userId = $this->getUserId();
+            $shopId = $this->getShopId();
+
+            $result = StockService::updateStockService($request, $ingredientId, $shopId, $userId);
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock updated successfully',
+                'data' => $result['stock'],
+                'changes' => $result['changes'],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Stock update failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ingredient_name' => $result->ingredient_name ?? null,
+                'user_id' => $userId,
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update stock. Please try again.'
+            ], 500);
         }
     }
 

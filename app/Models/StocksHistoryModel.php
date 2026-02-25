@@ -9,10 +9,32 @@ class StocksHistoryModel extends Model
 {
     use HasFactory;
     protected $table = 'tbl_stocks_history';
-    protected $guarded = [];
+
+    protected $primaryKey = 'stock_history_id';
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
+
     protected $fillable = [
-        'stock_id', 'description', 'manage_id', 'shop_id', 'branch_id', 'user_id', 'created_at', 'updated_at',
+        'ingredient_id', 
+        'description', 
+        'modified_type_id', 
+        'shop_id', 
+        'branch_id', 
+        'user_id',
     ];
+    
+    public function ingredient()
+    {
+        return $this->belongsTo(IngredientsModel::class, 'ingredient_id');
+    }
+
+    public function modify()
+    {
+        return $this->belongsTo(ModifiedTypeModel::class, 'modified_type_id');
+    }
+
     public function stocks()
     {
         return $this->belongsTo(StocksModel::class);
