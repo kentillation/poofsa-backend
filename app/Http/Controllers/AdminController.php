@@ -591,21 +591,25 @@ class AdminController extends Controller
 
     // UPDATED
     // Enterprise-level optimization
-    public function getStocks(Request $request, $branchId)
+    public function getStocks(Request $request)
     {
         try {
             $shopId = $this->getShopId();
+            $branchId = $request->query('branch_id');
+            $search = $request->query('search', '');
+            $page = (int) $request->query('page', 1);
+            $perPage = (int) $request->query('itemsPerPage', 10);
 
-            $filters = $request->only(['ingredient_name', 'availability_label']);
-            $stocks = StockService::getAllStocksService($shopId, $branchId, $filters);
+            $stocksData = StockService::getAllStocksService($shopId, $branchId, $search, $page, $perPage);
 
             return response()->json([
-                'status' => true,
-                'message' => $stocks->total() === 0
-                    ? 'No stocks found!'
-                    : 'Stocks fetched successfully!',
-                'data' => $stocks
+                'success' => true,
+                'data' => $stocksData['mapped'],
+                'total' => $stocksData['total'],
+                'page' => $page,
+                'perPage' => $perPage,
             ]);
+        
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
@@ -613,6 +617,8 @@ class AdminController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+
+        
     }
 
     public function getStocksList($branchId)

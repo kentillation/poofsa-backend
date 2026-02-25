@@ -12,55 +12,70 @@ class StockService
     /**
      * Get all stocks with optional search/filter
      */
-    public static function getAllStocksService($shopId, $branchId, $filters = [], $perPage = 50)
+    public static function getAllStocksService($shopId, $branchId, $search, $page, $perPage)
     {
-        $batchSub = DB::table('tbl_stock_batches')
-            ->select(
-                'ingredient_id',
-                DB::raw('SUM(quantity_remaining) as total_quantity'),
-                DB::raw('AVG(unit_cost) as avg_unit_cost')
-            )
+        // $batchSub = DB::table('tbl_stock_batches')
+        //     ->select(
+        //         'ingredient_id',
+        //         DB::raw('SUM(quantity_remaining) as total_quantity'),
+        //         DB::raw('AVG(unit_cost) as avg_unit_cost')
+        //     )
+        //     ->where('shop_id', $shopId)
+        //     ->where('branch_id', $branchId)
+        //     ->groupBy('ingredient_id');
+
+        $query = IngredientsModel::with(['unit', 'availability'])
+            ->pluck('batches')
             ->where('shop_id', $shopId)
-            ->where('branch_id', $branchId)
-            ->groupBy('ingredient_id');
+            ->where('branch_id', $branchId);
 
-        $query = IngredientsModel::select(
-            'tbl_ingredients.ingredient_id',
-            'tbl_ingredients.ingredient_name',
-            'tbl_ingredients.base_unit_id',
-            'tbl_ingredients.alert_quantity',
-            'tbl_ingredients.availability_id',
-            'tbl_ingredient_unit.unit_label',
-            'tbl_ingredient_unit.unit_avb',
-            'tbl_availability.availability_label',
-            DB::raw('COALESCE(batch.total_quantity, 0) as total_quantity'),
-            DB::raw('COALESCE(batch.avg_unit_cost, 0) as avg_unit_cost')
-        )
-            ->leftJoinSub($batchSub, 'batch', function ($join) {
-                $join->on('tbl_ingredients.ingredient_id', '=', 'batch.ingredient_id');
-            })
-            ->leftJoin('tbl_ingredient_unit', 'tbl_ingredients.base_unit_id', '=', 'tbl_ingredient_unit.ingredient_unit_id')
-            ->leftJoin('tbl_availability', 'tbl_ingredients.availability_id', '=', 'tbl_availability.availability_id')
-            ->where('tbl_ingredients.shop_id', $shopId)
-            ->where('tbl_ingredients.branch_id', $branchId);
-
-        // Apply search filters
-        if (!empty($filters['ingredient_name'])) {
-            $query->where('tbl_ingredients.ingredient_name', 'like', '%' . $filters['ingredient_name'] . '%');
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('ingredient_name', 'like', "%{$search}%")
+                    ->orWhereHas('unit', function ($q2) use ($search) {
+                        $q2->where('unit_label', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('availability', function ($q2) use ($search) {
+                        $q2->where('availability_label', 'like', "%{$search}%");
+                    });
+            });
         }
 
-        if (!empty($filters['availability_label'])) {
-            $query->where('tbl_availability.availability_label', 'like', '%' . $filters['availability_label'] . '%');
-        }
+        $total = $query->count();
 
-        return $query->orderByDesc('tbl_ingredients.updated_at')
-            ->paginate($perPage);
+        $stocks = $query->orderByDesc('updated_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        // Map products for frontend display
+        $mapped = $stocks->map(function ($stock) {
+            return [
+                'shop_id' => $stock->shop_id,
+                'branch_id' => $stock->branch_id,
+                'ingredient_id' => $stock->ingredient_id,
+                'ingredient_name' => $stock->ingredient_name,
+                'base_unit_id' => $stock->base_unit_id,
+                'quantity_received' => $stock->batches->quantity_received,
+                'quantity_remaining' => $stock->batches->quantity_remaining,
+                'alert_quantity' => $stock->alert_quantity,
+                'availability_id' => $stock->availability_id,
+                'availability_label' => $stock->availability->availability_label ?? null,
+                'unit_label' => $stock->unit->unit_label ?? null,
+                'unit_avb' => $stock->unit->unit_avb ?? null,
+                'updated_at' => $stock->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        return [
+            'mapped' => $mapped,
+            'total' => $total,
+        ];
     }
 
     /**
      * Get ingredients that are low on stock
      */
-
     public static function lowStockService($shopId, $branchId)
     {
         $lowStockItems = StockBatchesModel::select(
