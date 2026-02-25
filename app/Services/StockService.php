@@ -117,7 +117,7 @@ class StockService
                 }  elseif ($field === 'base_unit_it') {
                     $fromLabel = $units[$change['from']] ?? $change['from'];
                     $toLabel = $units[$change['to']] ?? $change['to'];
-                    $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
+                    $description .= "Base unit: From [{$fromLabel}] To [{$toLabel}]. ";
                 } elseif ($field === 'availability_id') {
                     $fromLabel = $availabilities[$change['from']] ?? $change['from'];
                     $toLabel = $availabilities[$change['to']] ?? $change['to'];
