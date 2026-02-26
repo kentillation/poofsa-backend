@@ -19,12 +19,12 @@ class OrdersModel extends Model
 
     protected $fillable = [
         'order_number',
+        'table_number',
         'reference_number',
         'customer_cash',
         'customer_change',
-        'order_type',
+        'order_type_id',
         'order_status_id',
-        'table_number',
         'order_note',
         'total_quantity',
         'shop_id',
@@ -40,5 +40,15 @@ class OrdersModel extends Model
     public function sale()
     {
         return $this->hasOne(SalesModel::class, 'order_id');
+    }
+
+    public function orderType()
+    {
+        return $this->belongsTo(OrderTypeModel::class, 'order_type_id');
+    }
+
+    public function orderStatus()
+    {
+        return $this->belongsTo(OrderStatusModel::class, 'order_status_id');
     }
 }

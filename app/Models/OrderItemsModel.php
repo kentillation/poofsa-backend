@@ -26,9 +26,19 @@ class OrderItemsModel extends Model
         'station_status_id'
     ];
 
+    public function order()
+    {
+        return $this->belongsTo(OrdersModel::class, 'order_id');
+    }
+
     public function products()
     {
         return $this->belongsTo(ProductsModel::class, 'product_id');
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariantModel::class, 'variant_id');
     }
 
 }
