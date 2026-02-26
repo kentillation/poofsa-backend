@@ -26,6 +26,26 @@ return new class extends Migration
             $table->unsignedBigInteger('branch_id')->index();
             $table->unsignedBigInteger('user_id')->index();
             $table->timestamps();
+            $table->foreign('order_type_id')
+                ->references('order_type_id')
+                ->on('tbl_order_type')
+                ->cascadeOnDelete();
+            $table->foreign('order_status_id')
+                ->references('order_status_id')
+                ->on('tbl_order_status')
+                ->cascadeOnDelete();
+            $table->foreign('shop_id')
+                ->references('shop_id')
+                ->on('tbl_shops')
+                ->cascadeOnDelete();
+            $table->foreign('branch_id')
+                ->references('branch_id')
+                ->on('tbl_shop_branch')
+                ->cascadeOnDelete();
+            $table->foreign('user_id')
+                ->references('admin_id')
+                ->on('tbl_admin')
+                ->cascadeOnDelete();
         });
     }
 

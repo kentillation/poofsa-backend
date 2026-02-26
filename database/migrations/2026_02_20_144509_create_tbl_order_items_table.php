@@ -20,7 +20,26 @@ return new class extends Migration
             $table->unsignedBigInteger('shop_station_id');
             $table->unsignedBigInteger('station_status_id');
             $table->timestamps();
-            $table->foreign('order_id')->references('order_id')->on('tbl_orders')->cascadeOnDelete();
+            $table->foreign('order_id')
+                ->references('order_id')
+                ->on('tbl_orders')
+                ->cascadeOnDelete();
+            $table->foreign('product_id')
+                ->references('product_id')
+                ->on('tbl_products')
+                ->cascadeOnDelete();
+            $table->foreign('variant_id')
+                ->references('variant_id')
+                ->on('tbl_product_variants')
+                ->cascadeOnDelete();
+            $table->foreign('shop_station_id')
+                ->references('shop_station_id')
+                ->on('tbl_shop_station')
+                ->cascadeOnDelete();
+            $table->foreign('station_status_id')
+                ->references('station_status_id')
+                ->on('tbl_station_status')
+                ->cascadeOnDelete();
         });
     }
 

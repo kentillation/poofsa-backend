@@ -202,7 +202,7 @@ class StockService
                             'shop_id' => $product->shop_id,
                             'branch_id' => $product->branch_id,
                             'user_id' => $userId,
-                            'description' => "Automatically set to Not Available because $referenceIngredientName became unavailable",
+                            'description' => "Automatically set to Unavailable because $referenceIngredientName became unavailable",
                         ]);
                     }
                 } elseif ($isBecomingAvailable) {

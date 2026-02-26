@@ -14,22 +14,42 @@ return new class extends Migration
         Schema::create('tbl_void_orders', function (Blueprint $table) {
             $table->id('void_order_id');
             $table->unsignedBigInteger('order_id');
-            $table->integer('product_id');
+            $table->unsignedBigInteger('product_id');
             $table->string('reference_number');
             $table->string('void_reason');
             $table->text('void_notes')->nullable();
             $table->unsignedBigInteger('voided_by');
             $table->timestamp('voided_at');
-            $table->integer('void_status_id');
+            $table->unsignedBigInteger('void_status_id');
             $table->integer('from_quantity');
             $table->integer('to_quantity');
-            $table->integer('shop_id');
-            $table->integer('branch_id');
+            $table->unsignedBigInteger('shop_id');
+            $table->unsignedBigInteger('branch_id');
+            $table->timestamps();
             $table->foreign('order_id')
                 ->references('order_id')
                 ->on('tbl_orders')
                 ->cascadeOnDelete();
-            $table->timestamps();
+            $table->foreign('product_id')
+                ->references('product_id')
+                ->on('tbl_products')
+                ->cascadeOnDelete();
+            $table->foreign('voided_by')
+                ->references('cashier_id')
+                ->on('tbl_cashier')
+                ->cascadeOnDelete();
+            $table->foreign('void_status_id')
+                ->references('void_status_id')
+                ->on('tbl_void_status')
+                ->cascadeOnDelete();
+            $table->foreign('shop_id')
+                ->references('shop_id')
+                ->on('tbl_shops')
+                ->cascadeOnDelete();
+            $table->foreign('branch_id')
+                ->references('branch_id')
+                ->on('tbl_shop_branch')
+                ->cascadeOnDelete();
         });
     }
 
