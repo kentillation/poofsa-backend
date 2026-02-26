@@ -17,14 +17,14 @@ class StocksHistoryModel extends Model
     protected $keyType = 'int';
 
     protected $fillable = [
-        'ingredient_id', 
-        'description', 
-        'modified_type_id', 
-        'shop_id', 
-        'branch_id', 
+        'ingredient_id',
+        'description',
+        'modified_type_id',
+        'shop_id',
+        'branch_id',
         'user_id',
     ];
-    
+
     public function ingredient()
     {
         return $this->belongsTo(IngredientsModel::class, 'ingredient_id');

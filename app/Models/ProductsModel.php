@@ -34,14 +34,19 @@ class ProductsModel extends Model
         'user_id',
     ];
 
-    public function ingredients()
+    // public function ingredients()
+    // {
+    //     return $this->belongsToMany(
+    //         ProductItemsModel::class,
+    //         'tbl_product_items',
+    //         'product_id',
+    //         'ingredient_id'
+    //     )->withPivot('quantity_required');
+    // }
+
+    public function productItems()
     {
-        return $this->belongsToMany(
-            ProductItemsModel::class,
-            'tbl_product_items',
-            'product_id',
-            'ingredient_id'
-        )->withPivot('quantity_required');
+        return $this->hasMany(ProductItemsModel::class, 'product_id');
     }
 
     public function size()

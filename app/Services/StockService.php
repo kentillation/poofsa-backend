@@ -73,6 +73,7 @@ class StockService
             'total' => $total,
         ];
     }
+
     public static function getStocksHistoryService($shopId, $branchId, $search = '', $page = 1, $perPage = 10)
     {
 
@@ -110,6 +111,7 @@ class StockService
             'total' => $total,
         ];
     }
+
     public static function updateStockService($request, $ingredientId, $shopId, $userId)
     {
         $validatedData = $request->validate([
@@ -157,7 +159,7 @@ class StockService
 
                 if ($field === 'ingredient_name') {
                     $description .= "Ingredient name: From [{$change['from']}] To [{$change['to']}]. ";
-                } elseif ($field === 'base_unit_it') {
+                } elseif ($field === 'base_unit_id') {
                     $fromLabel = $units[$change['from']] ?? $change['from'];
                     $toLabel = $units[$change['to']] ?? $change['to'];
                     $description .= "Base unit: From [{$fromLabel}] To [{$toLabel}]. ";
@@ -187,10 +189,10 @@ class StockService
             ]);
 
             $relatedProducts = ProductItemsModel::where('ingredient_id', $referenceIngredientId)
-                ->with('product')
+                ->with('product.productItems.ingredient')
                 ->get()
                 ->pluck('product')
-                ->unique();
+                ->unique('product_id');
             foreach ($relatedProducts as $product) {
                 $originalProductAvailability = $product->availability_id;
                 if ($isBecomingUnavailable) {
@@ -198,7 +200,7 @@ class StockService
                         $product->update(['availability_id' => 2]);
                         ProductsHistoryModel::create([
                             'product_id' => $product->product_id,
-                            'modified_type_id' => 2, // UPDATE
+                            'modified_type_id' => 2, // Update
                             'shop_id' => $product->shop_id,
                             'branch_id' => $product->branch_id,
                             'user_id' => $userId,
@@ -207,8 +209,8 @@ class StockService
                     }
                 } elseif ($isBecomingAvailable) {
                     $allIngredientsAvailable = true;
-                    foreach ($product->ingredients as $ingredient) {
-                        if ($ingredient->stock->availability_id != 1) {
+                    foreach ($product->productItems  as $item) {
+                        if ($item->ingredient->availability_id != 1) {
                             $allIngredientsAvailable = false;
                             break;
                         }
@@ -217,7 +219,7 @@ class StockService
                         $product->update(['availability_id' => 1]);
                         ProductsHistoryModel::create([
                             'product_id' => $product->product_id,
-                            'modified_type_id' => 2, // UPDATE
+                            'modified_type_id' => 2, // Update
                             'shop_id' => $product->shop_id,
                             'branch_id' => $product->branch_id,
                             'user_id' => $userId,
@@ -235,6 +237,7 @@ class StockService
 
         return $result;
     }
+
     public static function lowStockService($shopId, $branchId)
     {
         $lowStockItems = StockBatchesModel::select(
