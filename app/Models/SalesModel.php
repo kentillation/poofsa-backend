@@ -20,15 +20,15 @@ class SalesModel extends Model
     protected $fillable = [
         'receipt_no',
         'order_id',
-        'shop_id',
-        'branch_id',
-        'user_id',
         'payment_method_id',
+        'total_amount',
         'subtotal',
         'discount_amount',
         'tax_amount',
-        'total_amount',
         'sales_status_id',
+        'shop_id',
+        'branch_id',
+        'user_id',
     ];
 
     public function items()
@@ -39,5 +39,15 @@ class SalesModel extends Model
     public function orders()
     {
         return $this->belongsTo(OrdersModel::class, 'order_id');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethodModel::class, 'payment_method_id');
+    }
+
+    public function salesStatus()
+    {
+        return $this->belongsTo(SalesStatusModel::class, 'sales_status_id');
     }
 }

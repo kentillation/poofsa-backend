@@ -14,6 +14,6 @@ class PaymentMethodModel extends Model
     protected $primaryKey = 'payment_method_id';
 
     protected $fillable = [
-        'payment_method_name',
+        'payment_method',
     ];
 }

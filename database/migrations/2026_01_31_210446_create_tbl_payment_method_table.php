@@ -15,7 +15,7 @@ class CreateTblPaymentMethodTable extends Migration
     {
         Schema::create('tbl_payment_method', function (Blueprint $table) {
             $table->id('payment_method_id');
-            $table->string('payment_method_name', 100); // Cash, GCash, Credit Card,
+            $table->string('payment_method', 100); // Cash, GCash, Credit Card,
             $table->timestamps();
         });
     }

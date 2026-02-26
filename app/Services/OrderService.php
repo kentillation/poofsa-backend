@@ -43,9 +43,9 @@ class OrderService
                 'customer_cash' => $order->customer_cash,
                 'customer_change' => $order->customer_change,
 
-                // 'total_amount' => $order->total_amount,
-                // 'payment_status' => $order->payment_status,
-                // 'payment_method' => $order->payment_method,
+                // 'total_amount' => ?,
+                // 'payment_method' => ?,
+                // 'sales_status' => ?,
 
                 'order_type' => $order->orderType->order_type ?? 'Unknown',
                 'order_type_id' => $order->order_type_id ?? null,
