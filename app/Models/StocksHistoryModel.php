@@ -35,8 +35,18 @@ class StocksHistoryModel extends Model
         return $this->belongsTo(ModifiedTypeModel::class, 'modified_type_id');
     }
 
-    public function stocks()
+    public function ingredients()
     {
-        return $this->belongsTo(StocksModel::class);
+        return $this->belongsTo(IngredientsModel::class, 'ingredient_id');
+    }
+
+    public function shops()
+    {
+        return $this->belongsTo(ShopModel::class, 'shop_id');
+    }
+
+    public function branches()
+    {
+        return $this->belongsTo(BranchModel::class, 'branch_id');
     }
 }

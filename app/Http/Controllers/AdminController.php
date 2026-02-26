@@ -281,7 +281,7 @@ class AdminController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error fetching products!',
+                'message' => 'Error fetching modified products history!',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -606,7 +606,6 @@ class AdminController extends Controller
             Log::error('Stock update failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'ingredient_name' => $result->ingredient_name ?? null,
                 'user_id' => $userId,
             ]);
             return response()->json([
@@ -617,7 +616,6 @@ class AdminController extends Controller
     }
 
     // UPDATED
-    // Enterprise-level optimization
     public function getStocks(Request $request)
     {
         try {
@@ -859,32 +857,29 @@ class AdminController extends Controller
         }
     }
 
-    public function getStocksHistory($branchId)
+    // UPDATED
+    public function getStocksHistory(Request $request)
     {
         try {
             $shopId = $this->getShopId();
-            $data = StocksHistoryModel::select(
-                'tbl_ingredients.ingredient_name',
-                'tbl_ingredients_history.manage_id',
-                'tbl_ingredients_history.description',
-                'tbl_admin.admin_name',
-                'tbl_ingredients_history.updated_at',
-            )
-                ->join('tbl_ingredients', 'tbl_ingredients_history.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
-                ->join('tbl_admin', 'tbl_ingredients_history.user_id', '=', 'tbl_admin.admin_id')
-                ->where('tbl_ingredients_history.shop_id', $shopId)
-                ->where('tbl_ingredients_history.branch_id', $branchId)
-                ->orderBy('tbl_ingredients_history.updated_at')
-                ->get();
+            $branchId = $request->query('branch_id');
+            $search = $request->query('search', '');
+            $page = (int) $request->query('page', 1);
+            $perPage = (int) $request->query('itemsPerPage', 10);
+            
+            $stocksData = StockService::getStocksHistoryService($shopId, $branchId, $search, $page, $perPage);
+
             return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No stocks found!' : 'Stocks history fetched successfully!',
-                'data' => $data
-            ], 200);
+                'success' => true,
+                'data' => $stocksData['mapped'],
+                'total' => $stocksData['total'],
+                'page' => $page,
+                'perPage' => $perPage,
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error fetching stocks!',
+                'message' => 'Error fetching modified stocks history!',
                 'error' => $e->getMessage()
             ], 500);
         }
