@@ -936,7 +936,7 @@ class AdminController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error fetching stocks!',
+                'message' => 'Error fetching orders!',
                 'error' => $e->getMessage()
             ], 500);
         }

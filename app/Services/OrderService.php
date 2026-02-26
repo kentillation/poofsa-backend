@@ -43,17 +43,11 @@ class OrderService
                 'customer_cash' => $order->customer_cash,
                 'customer_change' => $order->customer_change,
 
-                // 'total_amount' => ?,
-                // 'payment_method' => ?,
-                // 'sales_status' => ?,
+                // Must check the relation tables if not empty
                 'total_amount' => $order->sale->total_amount ?? 0,
                 'payment_method' => $order->sale->paymentMethod->payment_method ?? 'Unknown',
+                'payment_method_id' => $order->sale->paymentMethod->payment_method_id ?? null,
                 'sales_status' => $order->sale->salesStatus->sales_status ?? 'Unknown',
-
-                // 'total_amount' => optional($order->sale)->total_amount,
-                // 'payment_method' => optional(optional($order->sale)->paymentMethod)->payment_method,
-                // 'sales_status' => optional(optional($order->sale)->salesStatus)->sales_status,
-
                 'order_type' => $order->orderType->order_type ?? 'Unknown',
                 'order_type_id' => $order->order_type_id ?? null,
                 'order_status' => $order->orderStatus->order_status ?? 'Unknown',
