@@ -10,9 +10,13 @@ use App\Http\Requests\GetRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductHistoryResource;
+use App\Http\Resources\StockResource;
+use App\Http\Resources\StockHistoryResource;
 use App\Actions\Orders\GetOrdersAction;
 use App\Actions\Products\GetProductsAction;
 use App\Actions\Products\GetProductsHistoryAction;
+use App\Actions\Stocks\GetStocksAction;
+use App\Actions\Stocks\GetStocksHistoryAction;
 use App\Models\BranchModel;
 use App\Models\ProductItemsModel;
 use App\Models\ProductsModel;
@@ -268,35 +272,7 @@ class AdminController extends Controller
 
         return ProductHistoryResource::collection($result);
     }
-
-    // DONE
-    // public function getProductsHistory(Request $request)
-    // {
-    //     try {
-    //         $shopId = $this->getShopId();
-    //         $branchId = $request->query('branch_id');
-    //         $search = $request->query('search', '');
-    //         $page = (int) $request->query('page', 1);
-    //         $perPage = (int) $request->query('itemsPerPage', 10);
-
-    //         $productsData = ProductService::getProductsHistoryService($shopId, $branchId, $search, $page, $perPage);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'data' => $productsData['mapped'],
-    //             'total' => $productsData['total'],
-    //             'page' => $page,
-    //             'perPage' => $perPage,
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Error fetching modified products history!',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
+    
     // DONE
     public function getTotalProductsCount($branchId)
     {
@@ -489,34 +465,87 @@ class AdminController extends Controller
         }
     }
 
-    // UPDATED
-    public function getStocks(Request $request)
+    // NEW
+    public function getStocks(GetRequest $request, GetStocksAction $action)
     {
-        try {
-            $shopId = $this->getShopId();
-            $branchId = $request->query('branch_id');
-            $search = $request->query('search', '');
-            $page = (int) $request->query('page', 1);
-            $perPage = (int) $request->query('itemsPerPage', 10);
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+            search: $request->search,
+            perPage: $request->itemsPerPage ?? 10
+        );
 
-            $stocksData = StockService::getAllStocksService($shopId, $branchId, $search, $page, $perPage);
-
-            return response()->json([
-                'success' => true,
-                'data' => $stocksData['mapped'],
-                'total' => $stocksData['total'],
-                'page' => $page,
-                'perPage' => $perPage,
-            ]);
-
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching stocks!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return StockResource::collection($result);
     }
+
+    // UPDATED
+    // public function getStocks(Request $request)
+    // {
+    //     try {
+    //         $shopId = $this->getShopId();
+    //         $branchId = $request->query('branch_id');
+    //         $search = $request->query('search', '');
+    //         $page = (int) $request->query('page', 1);
+    //         $perPage = (int) $request->query('itemsPerPage', 10);
+
+    //         $stocksData = StockService::getAllStocksService($shopId, $branchId, $search, $page, $perPage);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => $stocksData['mapped'],
+    //             'total' => $stocksData['total'],
+    //             'page' => $page,
+    //             'perPage' => $perPage,
+    //         ]);
+
+    //     } catch (\Throwable $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Error fetching stocks!',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    public function getStocksHistory(GetRequest $request, GetStocksHistoryAction $action)
+    {
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+            search: $request->search,
+            perPage: $request->itemsPerPage ?? 10
+        );
+
+        return StockHistoryResource::collection($result);
+    }
+
+    // UPDATED
+    // public function getStocksHistory(Request $request)
+    // {
+    //     try {
+    //         $shopId = $this->getShopId();
+    //         $branchId = $request->query('branch_id');
+    //         $search = $request->query('search', '');
+    //         $page = (int) $request->query('page', 1);
+    //         $perPage = (int) $request->query('itemsPerPage', 10);
+
+    //         $stocksData = StockService::getStocksHistoryService($shopId, $branchId, $search, $page, $perPage);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => $stocksData['mapped'],
+    //             'total' => $stocksData['total'],
+    //             'page' => $page,
+    //             'perPage' => $perPage,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Error fetching modified stocks history!',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     public function getStocksList($branchId)
     {
@@ -724,34 +753,6 @@ class AdminController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Error fetching low-stock!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // UPDATED
-    public function getStocksHistory(Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $branchId = $request->query('branch_id');
-            $search = $request->query('search', '');
-            $page = (int) $request->query('page', 1);
-            $perPage = (int) $request->query('itemsPerPage', 10);
-
-            $stocksData = StockService::getStocksHistoryService($shopId, $branchId, $search, $page, $perPage);
-
-            return response()->json([
-                'success' => true,
-                'data' => $stocksData['mapped'],
-                'total' => $stocksData['total'],
-                'page' => $page,
-                'perPage' => $perPage,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching modified stocks history!',
                 'error' => $e->getMessage()
             ], 500);
         }

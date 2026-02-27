@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ProductHistoryResource extends JsonResource
+class StockHistoryResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,4 +18,4 @@ class ProductHistoryResource extends JsonResource
     }
 }
 
-// This Resource is for Products History module only
+// This Resource is for Stocks History module only

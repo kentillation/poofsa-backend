@@ -45,9 +45,7 @@ class StockService
         $total = $query->count();
 
         $stocks = $query->orderByDesc('updated_at')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
-            ->get();
+            ->paginate();
 
         // Map stocks for frontend display
         $mapped = $stocks->map(function ($stock) {
@@ -102,9 +100,7 @@ class StockService
         $total = $query->count();
 
         $mapped = $query->orderByDesc('updated_at')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
-            ->get();
+            ->paginate();
 
         return [
             'mapped' => $mapped,
