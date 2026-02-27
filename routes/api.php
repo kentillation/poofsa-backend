@@ -78,8 +78,7 @@ Route::middleware('auth:sanctum')->get('/admin/product-items/{product_id}', [Adm
 Route::middleware('auth:sanctum')->get('/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
 Route::middleware('auth:sanctum')->get('/admin/stocks', [AdminController::class, 'getStocks']);
 Route::middleware('auth:sanctum')->get('/admin/stocks-report/{branch_id}', [AdminController::class, 'getStocksReport']);
-Route::middleware('auth:sanctum')->get('/admin/ingredients-name/{branch_id}/{ingredient_id}', [AdminController::class, 'getIngredientsNameBasedId']);
-Route::middleware('auth:sanctum')->get('/admin/stocks-name-only/{branch_id}', [AdminController::class, 'getStocksList']);
+Route::middleware('auth:sanctum')->get('/admin/ingredients-name/{branch_id}', [AdminController::class, 'getIngredientsName']);
 Route::middleware('auth:sanctum')->get('/admin/stocks-history', [AdminController::class, 'getStocksHistory']);
 Route::middleware('auth:sanctum')->get('/admin/low-stocks/{branch_id}', [AdminController::class, 'getLowStock']);
 // Route::middleware('auth:sanctum')->get('/admin/{branchId}/low-stocks', [AdminController::class, 'getLowStock']);

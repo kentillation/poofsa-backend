@@ -299,6 +299,7 @@ class AdminController extends Controller
 
     /**** Product Ingredients ****/
 
+    // DONE
     public function saveProductIngredients(Request $request)
     {
         $shopId = $this->getShopId();
@@ -313,24 +314,22 @@ class AdminController extends Controller
         try {
             foreach ($request->all() as $item) {
                 ProductItemsModel::create([
-                    'product_id' => $item['product_id'],
-                    'quantity_required' => $item['quantity_required'],
-                    'ingredient_capital' => $item['ingredient_capital'],
-                    'ingredient_id' => $item['ingredient_id'],
                     'shop_id' => $shopId,
                     'branch_id' => $item['branch_id'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'product_id' => $item['product_id'],
+                    'ingredient_id' => $item['ingredient_id'],
+                    'quantity_required' => $item['quantity_required'],
+                    'ingredient_capital' => $item['ingredient_capital'],
                 ]);
             }
             return response()->json([
                 'status' => true,
-                'message' => 'Product ingredients saved successfully',
+                'message' => 'Product items saved successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error saving product ingredients!',
+                'message' => 'Error saving product items!',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -490,7 +489,8 @@ class AdminController extends Controller
         return StockHistoryResource::collection($result);
     }
 
-    public function getStocksList($branchId)
+    // DONE
+    public function getIngredientsName($branchId)
     {
         try {
             $shopId = $this->getShopId();
@@ -505,56 +505,13 @@ class AdminController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => $data->isEmpty() ? 'No stocks name found!' : 'Stocks name fetched successfully!',
+                'message' => $data->isEmpty() ? 'No items found!' : 'Items fetched successfully!',
                 'data' => $data
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error fetching stocks name!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getIngredientsNameBasedId($branchId, $ingedientId)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $productIds = ProductItemsModel::where('ingredient_id', $ingedientId)
-                ->pluck('product_id')
-                ->toArray();
-            $excludedIngredientIds = ProductItemsModel::whereIn('product_id', $productIds)
-                ->pluck('ingredient_id')
-                ->unique()
-                ->toArray();
-            if (!in_array($ingedientId, $excludedIngredientIds)) {
-                $excludedIngredientIds[] = $ingedientId;
-            }
-            Log::debug("Excluded ingredient IDs: " . implode(',', $excludedIngredientIds));
-            $query = IngredientsModel::select(
-                'tbl_ingredients.ingredient_id',
-                'tbl_ingredients.ingredient_name',
-                'tbl_ingredients.availability_id'
-            )
-                ->where('tbl_ingredients.shop_id', $shopId)
-                ->where('tbl_ingredients.branch_id', $branchId)
-                ->where('tbl_ingredients.availability_id', 1)
-                ->whereNotIn('tbl_ingredients.ingredient_id', $excludedIngredientIds);
-            Log::debug("Final SQL: " . $query->toSql());
-            Log::debug("Bindings: " . json_encode($query->getBindings()));
-            $data = $query->orderBy('tbl_ingredients.ingredient_name')
-                ->get();
-
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No available stocks found!' : 'Stocks fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching stocks!',
+                'message' => 'Error fetching items!',
                 'error' => $e->getMessage()
             ], 500);
         }
