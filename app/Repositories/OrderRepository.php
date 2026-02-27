@@ -33,3 +33,5 @@ class OrderRepository
             ->paginate($perPage);
     }
 }
+
+// This Repository is for Orders module only

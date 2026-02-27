@@ -6,16 +6,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\File;
-use App\Http\Requests\GetOrdersRequest;
+use App\Http\Requests\GetRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\ProductResource;
+use App\Http\Resources\ProductHistoryResource;
 use App\Actions\Orders\GetOrdersAction;
+use App\Actions\Products\GetProductsAction;
+use App\Actions\Products\GetProductsHistoryAction;
 use App\Models\BranchModel;
 use App\Models\ProductItemsModel;
 use App\Models\ProductsModel;
-use App\Models\ProductsHistoryModel;
 use App\Models\StocksHistoryModel;
-use App\Models\StockBatchesModel;
 use App\Models\TemperatureModel;
 use App\Models\SizeModel;
 use App\Models\CategoryModel;
@@ -28,7 +29,6 @@ use App\Models\VoidOrdersModel;
 use App\Models\VoidStatusModel;
 use App\Models\SalesModel;
 use App\Models\IngredientsModel;
-use App\Services\OrderService;
 use App\Services\ProductService;
 use App\Services\StockService;
 
@@ -243,53 +243,59 @@ class AdminController extends Controller
         }
     }
 
-    // DONE
-    public function getProducts(Request $request)
+    // NEW
+    public function getProducts(GetRequest $request, GetProductsAction $action)
     {
-        $shopId = $this->getShopId();
-        $branchId = $request->query('branch_id');
-        $search = $request->query('search', '');
-        $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('itemsPerPage', 10);
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+            search: $request->search,
+            perPage: $request->itemsPerPage ?? 10
+        );
 
-        $productsData = ProductService::getProductsService($shopId, $branchId, $search, $page, $perPage);
+        return ProductResource::collection($result);
+    }
 
-        return response()->json([
-            'success' => true,
-            'data' => $productsData['mapped'],
-            'total' => $productsData['total'],
-            'page' => $page,
-            'perPage' => $perPage,
-        ]);
+    // NEW
+    public function getProductsHistory(GetRequest $request, GetProductsHistoryAction $action)
+    {
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+            search: $request->search,
+            perPage: $request->itemsPerPage ?? 10
+        );
+
+        return ProductHistoryResource::collection($result);
     }
 
     // DONE
-    public function getProductsHistory(Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $branchId = $request->query('branch_id');
-            $search = $request->query('search', '');
-            $page = (int) $request->query('page', 1);
-            $perPage = (int) $request->query('itemsPerPage', 10);
+    // public function getProductsHistory(Request $request)
+    // {
+    //     try {
+    //         $shopId = $this->getShopId();
+    //         $branchId = $request->query('branch_id');
+    //         $search = $request->query('search', '');
+    //         $page = (int) $request->query('page', 1);
+    //         $perPage = (int) $request->query('itemsPerPage', 10);
 
-            $productsData = ProductService::getProductsHistoryService($shopId, $branchId, $search, $page, $perPage);
+    //         $productsData = ProductService::getProductsHistoryService($shopId, $branchId, $search, $page, $perPage);
 
-            return response()->json([
-                'success' => true,
-                'data' => $productsData['mapped'],
-                'total' => $productsData['total'],
-                'page' => $page,
-                'perPage' => $perPage,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching modified products history!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => $productsData['mapped'],
+    //             'total' => $productsData['total'],
+    //             'page' => $page,
+    //             'perPage' => $perPage,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Error fetching modified products history!',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     // DONE
     public function getTotalProductsCount($branchId)
@@ -781,7 +787,7 @@ class AdminController extends Controller
     /**** Orders ****/
 
     // NEW
-    public function getOrders(GetOrdersRequest $request, GetOrdersAction $action)
+    public function getOrders(GetRequest $request, GetOrdersAction $action)
     {
         $result = $action->execute(
             shopId: $this->getShopId(),

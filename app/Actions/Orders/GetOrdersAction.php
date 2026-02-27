@@ -12,3 +12,5 @@ class GetOrdersAction
         return $this->repo->getOrders($shopId, $branchId, $search, $perPage);
     }
 }
+
+// This Action is for Orders module only
