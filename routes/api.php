@@ -96,7 +96,7 @@ Route::middleware('auth:sanctum')->get('/admin/product-size-option', [AdminContr
 Route::middleware('auth:sanctum')->get('/admin/product-category-option', [AdminController::class, 'getProductCategories']);
 Route::middleware('auth:sanctum')->get('/admin/product-availability-option', [AdminController::class, 'getAvailabilities']); // to change
 Route::middleware('auth:sanctum')->get('/admin/product-station-option', [AdminController::class, 'getProductStation']);
-Route::middleware('auth:sanctum')->get('/admin/stock-unit-option', [AdminController::class, 'getStockUnits']);
+Route::middleware('auth:sanctum')->get('/admin/unit-option', [AdminController::class, 'getUnits']);
 
 // CASHIER
 Route::post('/cashier/login', [CashierAuthController::class, 'login']);

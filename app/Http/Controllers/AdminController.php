@@ -384,37 +384,34 @@ class AdminController extends Controller
     public function saveStock(Request $request)
     {
         $request->validate([
-            '*.ingredient_name' => 'required|string',
-            '*.stock_unit' => 'required|numeric',
-            '*.quantity_received' => 'required|numeric',
-            '*.stock_alert_qty' => 'required|numeric',
-            '*.stock_unit_cost' => 'required|numeric',
-            '*.branch_id' => 'required|numeric',
+            'ingredient_name' => 'required|string',
+            'base_unit_id' => 'required|numeric',
+            'alert_quantity' => 'required|numeric',
+            'quantity_received' => 'required|numeric', // for tbl_stock_batches
+            'unit_cost' => 'required|numeric', // for tbl_stock_batches
+            'branch_id' => 'required|numeric',
         ]);
         try {
             foreach ($request->all() as $item) {
-                $shopId = $request->user()->shop_id;
-                $branchId = $request->user()->branch_id;
-                $userId = $request->user()->admin_id;
+                $shopId = $this->getShopId();
+                $branchId = $item['branch_id'];
+                $userId = $this->getUserId();
+
                 $stock = new IngredientsModel();
                 $stock->ingredient_name = $item['ingredient_name'];
-                $stock->stock_unit = $item['stock_unit'];
+                $stock->base_unit_id = $item['base_unit_id'];
+                $stock->alert_quantity = $item['alert_quantity'];
                 $stock->quantity_received = $item['quantity_received'];
-                $stock->stock_alert_qty = $item['stock_alert_qty'];
-                $stock->stock_unit_cost = $item['stock_unit_cost'];
+                $stock->unit_cost = $item['unit_cost'];
                 $stock->availability_id = 1;
                 $stock->shop_id = $shopId;
                 $stock->branch_id = $item['branch_id'];
                 $stock->user_id = $userId;
-                $stock->created_at = now();
-                $stock->updated_at = now();
                 $stock->save();
-                $newStockId = $stock->ingredient_id;
-                $shopId = $stock->shop_id;
-                $branchId = $stock->branch_id;
-                $userId = $stock->user_id;
+
+                $ingredientId = $stock->ingredient_id;
                 StocksHistoryModel::create([
-                    'ingredient_id' => $newStockId,
+                    'ingredient_id' => $ingredientId,
                     'manage_id' => 1, // SAVE
                     'description' => 'New Stock Saved',
                     'shop_id' => $shopId,
@@ -1147,7 +1144,7 @@ class AdminController extends Controller
     /**** Options ****/
 
     // UPDATED
-    public function getStockUnits()
+    public function getUnits()
     {
         try {
             $data = UnitModel::all();
