@@ -272,7 +272,7 @@ class AdminController extends Controller
 
         return ProductHistoryResource::collection($result);
     }
-    
+
     // DONE
     public function getTotalProductsCount($branchId)
     {
@@ -382,7 +382,6 @@ class AdminController extends Controller
     }
 
     /**** Stocks ****/
-
     public function saveStock(Request $request)
     {
         $request->validate([
@@ -478,35 +477,7 @@ class AdminController extends Controller
         return StockResource::collection($result);
     }
 
-    // UPDATED
-    // public function getStocks(Request $request)
-    // {
-    //     try {
-    //         $shopId = $this->getShopId();
-    //         $branchId = $request->query('branch_id');
-    //         $search = $request->query('search', '');
-    //         $page = (int) $request->query('page', 1);
-    //         $perPage = (int) $request->query('itemsPerPage', 10);
-
-    //         $stocksData = StockService::getAllStocksService($shopId, $branchId, $search, $page, $perPage);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'data' => $stocksData['mapped'],
-    //             'total' => $stocksData['total'],
-    //             'page' => $page,
-    //             'perPage' => $perPage,
-    //         ]);
-
-    //     } catch (\Throwable $e) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Error fetching stocks!',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
+    // NEW
     public function getStocksHistory(GetRequest $request, GetStocksHistoryAction $action)
     {
         $result = $action->execute(
@@ -518,34 +489,6 @@ class AdminController extends Controller
 
         return StockHistoryResource::collection($result);
     }
-
-    // UPDATED
-    // public function getStocksHistory(Request $request)
-    // {
-    //     try {
-    //         $shopId = $this->getShopId();
-    //         $branchId = $request->query('branch_id');
-    //         $search = $request->query('search', '');
-    //         $page = (int) $request->query('page', 1);
-    //         $perPage = (int) $request->query('itemsPerPage', 10);
-
-    //         $stocksData = StockService::getStocksHistoryService($shopId, $branchId, $search, $page, $perPage);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'data' => $stocksData['mapped'],
-    //             'total' => $stocksData['total'],
-    //             'page' => $page,
-    //             'perPage' => $perPage,
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Error fetching modified stocks history!',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
 
     public function getStocksList($branchId)
     {
@@ -786,7 +729,6 @@ class AdminController extends Controller
     }
 
     /**** Orders ****/
-
     // NEW
     public function getOrders(GetRequest $request, GetOrdersAction $action)
     {
@@ -956,7 +898,7 @@ class AdminController extends Controller
                     'tbl_product_temp.temp_label',
                     'tbl_product_size.size_label'
                 );
-            
+
             if ($dateType) {
                 switch ($dateType) {
                     case 1:
@@ -984,7 +926,8 @@ class AdminController extends Controller
             }
             $totalSalesQuery = OrderItemsModel::select(
                 DB::raw(
-                    'SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales')
+                    'SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales'
+                )
             )
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
                 ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
