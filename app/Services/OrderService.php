@@ -34,6 +34,7 @@ class OrderService
         // Map orders for frontend display
         $mapped = $orders->map(function ($order) {
             return [
+                'order_id' => $order->order_id,
                 'shop_id' => $order->shop_id,
                 'branch_id' => $order->branch_id,
                 'order_number' => $order->order_number,

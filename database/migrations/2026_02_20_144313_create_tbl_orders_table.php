@@ -21,7 +21,7 @@ return new class extends Migration
             $table->unsignedBigInteger('order_status_id')->index();
             $table->string('table_number')->nullable();
             $table->string('order_note')->nullable();
-            $table->integer('total_quantity');
+            $table->unsignedBigInteger('total_quantity');
             $table->unsignedBigInteger('shop_id')->index();
             $table->unsignedBigInteger('branch_id')->index();
             $table->unsignedBigInteger('user_id')->index();

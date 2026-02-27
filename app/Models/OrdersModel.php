@@ -32,6 +32,8 @@ class OrdersModel extends Model
         'user_id',
     ];
 
+    // protected $casts = ('total_quantity')->int;
+
     public function items()
     {
         return $this->hasMany(OrderItemsModel::class, 'order_id');

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('product_id');
             $table->unsignedBigInteger('variant_id')->nullable();
-            $table->decimal('quantity', 10, 3);
+            $table->unsignedBigInteger('quantity');
             $table->unsignedBigInteger('shop_station_id');
             $table->unsignedBigInteger('station_status_id');
             $table->timestamps();

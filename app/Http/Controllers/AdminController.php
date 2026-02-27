@@ -957,7 +957,7 @@ class AdminController extends Controller
                 'tbl_orders.updated_at',
                 'tbl_sales.total_amount',
                 'tbl_sales.discount_amount',
-                'tbl_payment_method.payment_method_name',
+                'tbl_payment_method.payment_method',
                 'tbl_cashier.cashier_name',
             )
                 ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
@@ -1063,36 +1063,42 @@ class AdminController extends Controller
                 DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price) as gross_sales'),
                 DB::raw('MAX(tbl_order_items.updated_at) as updated_at'),
                 'tbl_orders.order_id',
+                'tbl_orders.shop_id',
+                'tbl_orders.branch_id',
+                'tbl_sales.sales_status_id',
+                'tbl_sales_status.sales_status',
                 'tbl_products.product_name',
                 'tbl_products.base_price',
                 'tbl_products.category_id',
-                'tbl_products.shop_id as shop_id',
-                'tbl_products.branch_id as branch_id',
                 'tbl_product_category.category_label',
                 'tbl_product_temp.temp_label',
-                'tbl_product_size.size_label',
+                'tbl_product_size.size_label'
             )
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
                 ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
+                ->join('tbl_sales_status', 'tbl_sales.sales_status_id', '=', 'tbl_sales_status.sales_status_id')
                 ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
                 ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
                 ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
                 ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
-                ->where('tbl_products.shop_id', $shopId)
-                ->where('tbl_products.branch_id', $branchId)
-                ->where('tbl_orders.order_status_id', 3)
+                ->where('tbl_orders.shop_id', $shopId)
+                ->where('tbl_orders.branch_id', $branchId)
+                ->where('tbl_sales.sales_status_id', 4) // PAID
                 ->groupBy(
                     'tbl_order_items.product_id',
                     'tbl_orders.order_id',
+                    'tbl_orders.shop_id',
+                    'tbl_orders.branch_id',
+                    'tbl_sales.sales_status_id',
+                    'tbl_sales_status.sales_status',
                     'tbl_products.product_name',
                     'tbl_products.base_price',
                     'tbl_products.category_id',
-                    'tbl_products.shop_id',
-                    'tbl_products.branch_id',
                     'tbl_product_category.category_label',
                     'tbl_product_temp.temp_label',
-                    'tbl_product_size.size_label',
+                    'tbl_product_size.size_label'
                 );
+            
             if ($dateType) {
                 switch ($dateType) {
                     case 1:
@@ -1119,14 +1125,15 @@ class AdminController extends Controller
                 }
             }
             $totalSalesQuery = OrderItemsModel::select(
-                DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales')
+                DB::raw(
+                    'SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales')
             )
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
                 ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
                 ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
-                ->where('tbl_products.shop_id', $shopId)
-                ->where('tbl_products.branch_id', $branchId)
-                ->where('tbl_orders.order_status_id', 3);
+                ->where('tbl_orders.shop_id', $shopId)
+                ->where('tbl_orders.branch_id', $branchId)
+                ->where('tbl_sales.sales_status_id', 4);
 
             if ($dateType) {
                 switch ($dateType) {

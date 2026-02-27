@@ -26,6 +26,8 @@ class OrderItemsModel extends Model
         'station_status_id'
     ];
 
+    // protected $casts = ('quantity')->int;
+
     public function order()
     {
         return $this->belongsTo(OrdersModel::class, 'order_id');
