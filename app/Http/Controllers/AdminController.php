@@ -33,6 +33,7 @@ use App\Models\VoidOrdersModel;
 use App\Models\VoidStatusModel;
 use App\Models\SalesModel;
 use App\Models\IngredientsModel;
+use App\Models\StockBatchesModel;
 use App\Services\ProductService;
 use App\Services\StockService;
 
@@ -383,42 +384,57 @@ class AdminController extends Controller
     /**** Stocks ****/
     public function saveStock(Request $request)
     {
+        $shopId = $this->getShopId();
         $request->validate([
-            'ingredient_name' => 'required|string',
-            'base_unit_id' => 'required|numeric',
-            'alert_quantity' => 'required|numeric',
-            'quantity_received' => 'required|numeric', // for tbl_stock_batches
-            'unit_cost' => 'required|numeric', // for tbl_stock_batches
-            'branch_id' => 'required|numeric',
+            '*.ingredient_name' => 'required|string',
+            '*.alert_quantity' => 'required|numeric',
+            '*.base_unit_id' => 'required|integer',
+            '*.branch_id' => 'required|integer',
+            '*.quantity_received' => 'required|numeric', // for tbl_stock_batches
+            '*.unit_cost' => 'required|numeric', // for tbl_stock_batches
+            // 'expiry_date' => 'required|string', // for tbl_stock_batches
         ]);
         try {
             foreach ($request->all() as $item) {
-                $shopId = $this->getShopId();
                 $branchId = $item['branch_id'];
-                $userId = $this->getUserId();
+                $ingredient = new IngredientsModel();
+                $ingredient->ingredient_name = $item['ingredient_name'];
+                $ingredient->base_unit_id = $item['base_unit_id'];
+                $ingredient->alert_quantity = $item['alert_quantity'];
+                $ingredient->availability_id = 1;
+                $ingredient->shop_id = $shopId;
+                $ingredient->branch_id = $branchId;
+                $ingredient->save();
 
-                $stock = new IngredientsModel();
-                $stock->ingredient_name = $item['ingredient_name'];
-                $stock->base_unit_id = $item['base_unit_id'];
-                $stock->alert_quantity = $item['alert_quantity'];
-                $stock->quantity_received = $item['quantity_received'];
-                $stock->unit_cost = $item['unit_cost'];
-                $stock->availability_id = 1;
-                $stock->shop_id = $shopId;
-                $stock->branch_id = $item['branch_id'];
-                $stock->user_id = $userId;
-                $stock->save();
+                // IngredientsModel::create([
+                //     'ingredient_name' => $item['ingredient_name'],
+                //     'base_unit_id' => $item['base_unit_id'],
+                //     'alert_quantity' => $item['alert_quantity'],
+                //     'availability_id' => 1,
+                //     'shop_id' => $shopId,
+                //     'branch_id' => $branchId,
+                // ]);
 
-                $ingredientId = $stock->ingredient_id;
+                $ingredientId = $ingredient->ingredient_id;
+
+                $batchCode = 'BATCH-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+
+                StockBatchesModel::create([
+                    'ingredient_id' => $ingredientId,
+                    'batch_code' => $batchCode,
+                    'unit_cost' => $item['unit_cost'],
+                    'quantity_received' => $item['quantity_received'],
+                    'quantity_remaining' => $item['quantity_remaining'],
+                    'shop_id' => $shopId,
+                    'branch_id' => $branchId,
+                ]);
+
                 StocksHistoryModel::create([
                     'ingredient_id' => $ingredientId,
-                    'manage_id' => 1, // SAVE
+                    'modified_type_id' => 1, // SAVE
                     'description' => 'New Stock Saved',
                     'shop_id' => $shopId,
                     'branch_id' => $branchId,
-                    'user_id' => $userId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
             }
             return response()->json([
