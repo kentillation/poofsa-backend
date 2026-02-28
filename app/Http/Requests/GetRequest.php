@@ -25,12 +25,14 @@ class GetRequest extends FormRequest
             'branch_id'     => 'required|integer|exists:tbl_shop_branch,branch_id',
             'search'        => 'nullable|string',
             'itemsPerPage'  => 'nullable|integer|min:1',
+            'dateType'        => 'nullable|string',
         ];
     }
 }
 
 // Request for the following controllers
 // getOrders
+// getOrdersReport
 // getProducts
 // getProductsHistory
 // getStocks
