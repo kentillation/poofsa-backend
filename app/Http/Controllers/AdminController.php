@@ -196,6 +196,127 @@ class AdminController extends Controller
         }
     }
 
+    /**** Orders ****/
+    // NEW
+    public function getOrders(GetRequest $request, GetOrdersAction $action)
+    {
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+            search: $request->search,
+            perPage: $request->itemsPerPage ?? 10
+        );
+
+        return OrderResource::collection($result);
+    }
+
+    // UPDATED
+    public function getOrdersByDateType($branchId, Request $request)
+    {
+        try {
+            $shopId = $this->getShopId();
+            $dateType = $request->query('date_filter');
+
+            $query = OrdersModel::select(
+                'tbl_orders.reference_number',
+                'tbl_orders.total_quantity',
+                'tbl_orders.customer_cash',
+                'tbl_orders.customer_change',
+                'tbl_orders.updated_at',
+                'tbl_sales.total_amount',
+                'tbl_sales.discount_amount',
+                'tbl_payment_method.payment_method',
+                'tbl_cashier.cashier_name',
+            )
+                ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
+                ->join('tbl_cashier', 'tbl_orders.user_id', '=', 'tbl_cashier.cashier_id')
+                ->join('tbl_payment_method', 'tbl_sales.payment_method_id', '=', 'tbl_payment_method.payment_method_id')
+                ->where('tbl_orders.shop_id', $shopId)
+                ->where('tbl_orders.branch_id', $branchId)
+                ->where('tbl_orders.order_status_id', 3);
+
+            if ($dateType) {
+                switch ($dateType) {
+                    case 1: // Today
+                        $query->whereDate('tbl_orders.updated_at', now());
+                        break;
+                    case 2: // Yesterday
+                        $query->whereDate('tbl_orders.updated_at', now()->subDay());
+                        break;
+                    case 3: // Last 7 days
+                        $query->whereDate('tbl_orders.updated_at', '>=', now()->subDays(7));
+                        break;
+                    case 4: // This week
+                        $query->whereDate('tbl_orders.updated_at', '>=', now()->startOfWeek());
+                        break;
+                    case 5: // Last 30 days
+                        $query->whereDate('tbl_orders.updated_at', '>=', now()->subDays(30));
+                        break;
+                    case 6: // This month
+                        $query->whereMonth('tbl_orders.updated_at', now()->month);
+                        break;
+                    case 7: // Last month
+                        $query->whereMonth('tbl_orders.updated_at', now()->subMonth()->month);
+                        break;
+                }
+            }
+
+            $data = $query->orderBy('tbl_orders.created_at', 'desc')->get();
+
+            return response()->json([
+                'status' => true,
+                'message' => $data->isEmpty() ? 'No orders found!' : 'Orders fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching orders', [
+                'shop_id' => $shopId,
+                'branch_id' => $branchId,
+                'date_filter' => $dateType,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching orders!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // UPDATED
+    public function getOrdersOnly($branchId, Request $request)
+    {
+        try {
+            $shopId = $this->getShopId();
+            $dateType = $request->query('date_filter');
+            $query = OrdersModel::select(
+                DB::raw('COUNT(tbl_orders.reference_number) as total_orders'),
+                DB::raw('MAX(tbl_orders.updated_at) as updated_at'),
+            )
+                ->where('tbl_orders.shop_id', $shopId)
+                ->where('tbl_orders.branch_id', $branchId)
+                ->where('tbl_orders.order_status_id', 3);
+            if ($dateType) {
+                $query->whereMonth('tbl_orders.updated_at', $dateType)
+                    ->whereYear('tbl_orders.updated_at', date('Y'));
+            }
+            $totalOrders = $query->first();
+            return response()->json([
+                'status' => true,
+                'message' => 'Total orders fetched successfully!',
+                'data' => [
+                    'total_orders' => $totalOrders->total_orders ?? 0
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching total orders!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**** Products ****/
 
     // DONE
@@ -689,127 +810,6 @@ class AdminController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Error fetching total stocks!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**** Orders ****/
-    // NEW
-    public function getOrders(GetRequest $request, GetOrdersAction $action)
-    {
-        $result = $action->execute(
-            shopId: $this->getShopId(),
-            branchId: $request->branch_id,
-            search: $request->search,
-            perPage: $request->itemsPerPage ?? 10
-        );
-
-        return OrderResource::collection($result);
-    }
-
-    // UPDATED
-    public function getOrdersByDateType($branchId, Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $dateType = $request->query('date_filter');
-
-            $query = OrdersModel::select(
-                'tbl_orders.reference_number',
-                'tbl_orders.total_quantity',
-                'tbl_orders.customer_cash',
-                'tbl_orders.customer_change',
-                'tbl_orders.updated_at',
-                'tbl_sales.total_amount',
-                'tbl_sales.discount_amount',
-                'tbl_payment_method.payment_method',
-                'tbl_cashier.cashier_name',
-            )
-                ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
-                ->join('tbl_cashier', 'tbl_orders.user_id', '=', 'tbl_cashier.cashier_id')
-                ->join('tbl_payment_method', 'tbl_sales.payment_method_id', '=', 'tbl_payment_method.payment_method_id')
-                ->where('tbl_orders.shop_id', $shopId)
-                ->where('tbl_orders.branch_id', $branchId)
-                ->where('tbl_orders.order_status_id', 3);
-
-            if ($dateType) {
-                switch ($dateType) {
-                    case 1: // Today
-                        $query->whereDate('tbl_orders.updated_at', now());
-                        break;
-                    case 2: // Yesterday
-                        $query->whereDate('tbl_orders.updated_at', now()->subDay());
-                        break;
-                    case 3: // Last 7 days
-                        $query->whereDate('tbl_orders.updated_at', '>=', now()->subDays(7));
-                        break;
-                    case 4: // This week
-                        $query->whereDate('tbl_orders.updated_at', '>=', now()->startOfWeek());
-                        break;
-                    case 5: // Last 30 days
-                        $query->whereDate('tbl_orders.updated_at', '>=', now()->subDays(30));
-                        break;
-                    case 6: // This month
-                        $query->whereMonth('tbl_orders.updated_at', now()->month);
-                        break;
-                    case 7: // Last month
-                        $query->whereMonth('tbl_orders.updated_at', now()->subMonth()->month);
-                        break;
-                }
-            }
-
-            $data = $query->orderBy('tbl_orders.created_at', 'desc')->get();
-
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No orders found!' : 'Orders fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error fetching orders', [
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-                'date_filter' => $dateType,
-                'error' => $e->getMessage()
-            ]);
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching orders!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // UPDATED
-    public function getOrdersOnly($branchId, Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $dateType = $request->query('date_filter');
-            $query = OrdersModel::select(
-                DB::raw('COUNT(tbl_orders.reference_number) as total_orders'),
-                DB::raw('MAX(tbl_orders.updated_at) as updated_at'),
-            )
-                ->where('tbl_orders.shop_id', $shopId)
-                ->where('tbl_orders.branch_id', $branchId)
-                ->where('tbl_orders.order_status_id', 3);
-            if ($dateType) {
-                $query->whereMonth('tbl_orders.updated_at', $dateType)
-                    ->whereYear('tbl_orders.updated_at', date('Y'));
-            }
-            $totalOrders = $query->first();
-            return response()->json([
-                'status' => true,
-                'message' => 'Total orders fetched successfully!',
-                'data' => [
-                    'total_orders' => $totalOrders->total_orders ?? 0
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching total orders!',
                 'error' => $e->getMessage()
             ], 500);
         }
