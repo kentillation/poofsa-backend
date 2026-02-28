@@ -211,6 +211,7 @@ class AdminController extends Controller
         return OrderResource::collection($result);
     }
 
+    // NEW
     public function getOrdersReport(GetRequest $request, GetOrdersReportAction $action)
     {
         $result = $action->execute(
@@ -682,11 +683,14 @@ class AdminController extends Controller
                 'tbl_ingredients.ingredient_id',
                 'tbl_ingredients.ingredient_name',
                 'tbl_ingredients.base_unit_id',
+                'tbl_ingredient_unit.unit_label',
+                'tbl_ingredient_unit.unit_avb',
                 'tbl_stock_batches.quantity_received',
-                'tbl_ingredients.updated_at',
-                DB::raw('AVG(tbl_product_items.ingredient_capital)')
+                'tbl_stock_batches.quantity_remaining',
+                'tbl_ingredients.updated_at'
             )
                 ->join('tbl_stock_batches', 'tbl_ingredients.ingredient_id', '=', 'tbl_stock_batches.ingredient_id')
+                ->join('tbl_ingredient_unit', 'tbl_ingredients.base_unit_id', '=', 'tbl_ingredient_unit.ingredient_unit_id')
                 ->join('tbl_product_items', 'tbl_ingredients.ingredient_id', '=', 'tbl_product_items.ingredient_id')
                 ->join('tbl_order_items', 'tbl_product_items.product_id', '=', 'tbl_order_items.product_id')
                 ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
@@ -697,7 +701,10 @@ class AdminController extends Controller
                     'tbl_ingredients.ingredient_id',
                     'tbl_ingredients.ingredient_name',
                     'tbl_ingredients.base_unit_id',
+                    'tbl_ingredient_unit.unit_label',
+                    'tbl_ingredient_unit.unit_avb',
                     'tbl_stock_batches.quantity_received',
+                    'tbl_stock_batches.quantity_remaining',
                     'tbl_ingredients.updated_at',
                 );
 
@@ -737,7 +744,6 @@ class AdminController extends Controller
                     ->where('tbl_orders.order_status_id', 3) // Completed orders only
                     ->select(
                         DB::raw('SUM(tbl_order_items.quantity * tbl_product_items.quantity_required) as total_usage'),
-                        DB::raw('SUM(tbl_order_items.quantity * tbl_product_items.ingredient_capital) as total_amount'),
                         DB::raw('SUM(tbl_order_items.quantity) as total_quantity')
                     );
 
@@ -769,7 +775,6 @@ class AdminController extends Controller
 
                 $stockOutResult = $stockOutQuery->first();
                 $stock->stock_out = $stockOutResult->total_usage ?? 0;
-                $stock->total_amount = $stockOutResult->total_amount ?? 0;
                 $stock->total_quantity = $stockOutResult->total_quantity ?? 0;
                 $stock->updated_at = date('Y-m-d H:i:s', strtotime($stock->updated_at));
             }
