@@ -382,6 +382,8 @@ class AdminController extends Controller
     }
 
     /**** Stocks ****/
+
+    // DONE
     public function saveStock(Request $request)
     {
         $shopId = $this->getShopId();
@@ -406,25 +408,18 @@ class AdminController extends Controller
                 $ingredient->branch_id = $branchId;
                 $ingredient->save();
 
-                // IngredientsModel::create([
-                //     'ingredient_name' => $item['ingredient_name'],
-                //     'base_unit_id' => $item['base_unit_id'],
-                //     'alert_quantity' => $item['alert_quantity'],
-                //     'availability_id' => 1,
-                //     'shop_id' => $shopId,
-                //     'branch_id' => $branchId,
-                // ]);
-
                 $ingredientId = $ingredient->ingredient_id;
 
                 $batchCode = 'BATCH-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+
+                $quantityRemaining = StockBatchesModel::where('ingredient_id', $ingredientId)->sum('quantity_remaining');
 
                 StockBatchesModel::create([
                     'ingredient_id' => $ingredientId,
                     'batch_code' => $batchCode,
                     'unit_cost' => $item['unit_cost'],
                     'quantity_received' => $item['quantity_received'],
-                    'quantity_remaining' => $item['quantity_remaining'],
+                    'quantity_remaining' => $quantityRemaining + $item['quantity_received'],
                     'shop_id' => $shopId,
                     'branch_id' => $branchId,
                 ]);
@@ -435,6 +430,7 @@ class AdminController extends Controller
                     'description' => 'New Stock Saved',
                     'shop_id' => $shopId,
                     'branch_id' => $branchId,
+                    'user_id' => $this->getUserId(),
                 ]);
             }
             return response()->json([
