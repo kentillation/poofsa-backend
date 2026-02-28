@@ -211,24 +211,35 @@ class AdminController extends Controller
     }
 
     // UPDATED
-    public function getOrdersByDateType($branchId, Request $request)
+    public function getOrdersReport($branchId, Request $request)
     {
         try {
             $shopId = $this->getShopId();
             $dateType = $request->query('date_filter');
 
             $query = OrdersModel::select(
+                'tbl_orders.order_number',
+                'tbl_orders.table_number',
                 'tbl_orders.reference_number',
                 'tbl_orders.total_quantity',
                 'tbl_orders.customer_cash',
                 'tbl_orders.customer_change',
-                'tbl_orders.updated_at',
                 'tbl_sales.total_amount',
                 'tbl_sales.discount_amount',
                 'tbl_payment_method.payment_method',
+                'tbl_sales.payment_method_id',
+                'tbl_sales_status.sales_status',
+                'tbl_order_type.order_type',
+                'tbl_orders.order_type_id',
+                'tbl_order_status.order_status',
+                'tbl_orders.order_status_id',
                 'tbl_cashier.cashier_name',
+                'tbl_orders.updated_at',
             )
                 ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
+                ->join('tbl_sales_status', 'tbl_sales.sales_status_id', '=', 'tbl_sales_status.sales_status_id')
+                ->join('tbl_order_type', 'tbl_orders.order_type_id', '=', 'tbl_order_type.order_type_id')
+                ->join('tbl_order_status', 'tbl_orders.order_status_id', '=', 'tbl_order_status.order_status_id')
                 ->join('tbl_cashier', 'tbl_orders.user_id', '=', 'tbl_cashier.cashier_id')
                 ->join('tbl_payment_method', 'tbl_sales.payment_method_id', '=', 'tbl_payment_method.payment_method_id')
                 ->where('tbl_orders.shop_id', $shopId)

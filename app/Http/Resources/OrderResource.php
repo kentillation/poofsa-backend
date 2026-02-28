@@ -25,6 +25,7 @@ class OrderResource extends JsonResource
             'customer_cash' => $this->customer_cash,
             'customer_change' => $this->customer_change,
             'total_amount' => $this->sale->total_amount ?? 0,
+            'discount_amount' => $this->sale->discount_amount ?? 0,
             'payment_method' => $this->sale->paymentMethod->payment_method ?? 'Unknown',
             'payment_method_id' => $this->sale->payment_method_id ?? 0,
             'sales_status' => $this->sale->salesStatus->sales_status ?? 'Unknown',
