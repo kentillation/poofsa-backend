@@ -33,3 +33,5 @@ class GetRequest extends FormRequest
 // getOrders
 // getProducts
 // getProductsHistory
+// getStocks
+// getStocksHistory
