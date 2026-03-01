@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\GetRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\OrderReportResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductHistoryResource;
 use App\Http\Resources\StockResource;
@@ -221,7 +222,7 @@ class AdminController extends Controller
             dateType: $request->query('date_filter'),
         );
 
-        return OrderResource::collection($result);
+        return OrderReportResource::collection($result);
     }
 
     // UPDATED

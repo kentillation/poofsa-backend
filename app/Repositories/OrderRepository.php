@@ -60,14 +60,25 @@ class OrderRepository
                 case 4: // This week
                     $query->whereDate('updated_at', '>=', now()->startOfWeek());
                     break;
-                case 5: // Last 30 days
+                case 5: // Last week
+                    $query->whereDate('updated_at', '>=', now()->subWeek());
+                    break;
+                case 6: // Last 30 days
                     $query->whereDate('updated_at', '>=', now()->subDays(30));
                     break;
-                case 6: // This month
+                case 7: // This month
                     $query->whereMonth('updated_at', now()->month);
                     break;
-                case 7: // Last month
+                case 8: // Last month
                     $query->whereMonth('updated_at', now()->subMonth()->month);
+                    break;
+                case 9: // This Year
+                    $query->whereMonth('updated_at', now()->year);
+                    break;
+                case 10: // Last Year
+                    $query->whereMonth('updated_at', now()->subYear()->year);
+                    break;
+                default:
                     break;
             }
         }
