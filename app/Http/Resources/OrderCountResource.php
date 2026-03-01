@@ -18,7 +18,7 @@ class OrderCountResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'orders_count' => $this->resource
+            'total_orders' => $this->resource
         ];
     }
 }

@@ -9,7 +9,7 @@ class GetOrdersCountAction
 
     public function execute($shopId, $branchId)
     {
-        return $this->repo->getTotalOrdersCount($shopId, $branchId);
+        return $this->repo->getTotalOrders($shopId, $branchId);
     }
 }
 
