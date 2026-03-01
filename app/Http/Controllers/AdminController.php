@@ -217,8 +217,8 @@ class AdminController extends Controller
         $result = $action->execute(
             shopId: $this->getShopId(),
             branchId: $request->branch_id,
+            perPage: $request->itemsPerPage ?? 10,
             dateType: $request->query('date_filter'),
-            perPage: $request->itemsPerPage ?? 10
         );
 
         return OrderResource::collection($result);

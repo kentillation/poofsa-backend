@@ -53,4 +53,9 @@ class OrdersModel extends Model
     {
         return $this->belongsTo(OrderStatusModel::class, 'order_status_id');
     }
+
+    public function cashier()
+    {
+        return $this->belongsTo(CashierModel::class, 'user_id');
+    }
 }
