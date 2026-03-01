@@ -20,8 +20,6 @@ class OrderResource extends JsonResource
             'table_number' => $this->table_number,
             'reference_number' => $this->reference_number,
             'total_quantity' => $this->total_quantity,
-            'payment_method' => $this->sale->paymentMethod->payment_method ?? 'Unknown',
-            'payment_method_id' => $this->sale->payment_method_id ?? 0,
             'sales_status' => $this->sale->salesStatus->sales_status ?? 'Unknown',
             'order_type' => $this->orderType->order_type ?? 'Unknown',
             'order_type_id' => $this->order_type_id ?? 0,
