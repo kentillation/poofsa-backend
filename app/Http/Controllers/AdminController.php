@@ -8,12 +8,14 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\GetRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\OrderCountResource;
 use App\Http\Resources\OrderReportResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductHistoryResource;
 use App\Http\Resources\StockResource;
 use App\Http\Resources\StockHistoryResource;
 use App\Actions\Orders\GetOrdersAction;
+use App\Actions\Orders\GetOrdersCountAction;
 use App\Actions\Orders\GetOrdersReportAction;
 use App\Actions\Products\GetProductsAction;
 use App\Actions\Products\GetProductsHistoryAction;
@@ -213,6 +215,18 @@ class AdminController extends Controller
     }
 
     // NEW
+    public function getOrdersCount(GetRequest $request, GetOrdersCountAction $action)
+    {
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+            dateType: $request->query('date_filter'),
+        );
+
+        return OrderCountResource::collection($result);
+    }
+
+    // NEW
     public function getOrdersReport(GetRequest $request, GetOrdersReportAction $action)
     {
         $result = $action->execute(
@@ -224,90 +238,6 @@ class AdminController extends Controller
 
         return OrderReportResource::collection($result);
     }
-
-    // UPDATED
-    // public function getOrdersReport($branchId, Request $request)
-    // {
-    //     try {
-    //         $shopId = $this->getShopId();
-    //         $dateType = $request->query('date_filter');
-
-    //         $query = OrdersModel::select(
-    //             'tbl_orders.order_number',
-    //             'tbl_orders.table_number',
-    //             'tbl_orders.reference_number',
-    //             'tbl_orders.total_quantity',
-    //             'tbl_orders.customer_cash',
-    //             'tbl_orders.customer_change',
-    //             'tbl_sales.total_amount',
-    //             'tbl_sales.discount_amount',
-    //             'tbl_payment_method.payment_method',
-    //             'tbl_sales.payment_method_id',
-    //             'tbl_sales_status.sales_status',
-    //             'tbl_order_type.order_type',
-    //             'tbl_orders.order_type_id',
-    //             'tbl_order_status.order_status',
-    //             'tbl_orders.order_status_id',
-    //             'tbl_cashier.cashier_name',
-    //             'tbl_orders.updated_at',
-    //         )
-    //             ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
-    //             ->join('tbl_sales_status', 'tbl_sales.sales_status_id', '=', 'tbl_sales_status.sales_status_id')
-    //             ->join('tbl_order_type', 'tbl_orders.order_type_id', '=', 'tbl_order_type.order_type_id')
-    //             ->join('tbl_order_status', 'tbl_orders.order_status_id', '=', 'tbl_order_status.order_status_id')
-    //             ->join('tbl_cashier', 'tbl_orders.user_id', '=', 'tbl_cashier.cashier_id')
-    //             ->join('tbl_payment_method', 'tbl_sales.payment_method_id', '=', 'tbl_payment_method.payment_method_id')
-    //             ->where('tbl_orders.shop_id', $shopId)
-    //             ->where('tbl_orders.branch_id', $branchId)
-    //             ->where('tbl_orders.order_status_id', 3);
-
-    //         if ($dateType) {
-    //             switch ($dateType) {
-    //                 case 1: // Today
-    //                     $query->whereDate('tbl_orders.updated_at', now());
-    //                     break;
-    //                 case 2: // Yesterday
-    //                     $query->whereDate('tbl_orders.updated_at', now()->subDay());
-    //                     break;
-    //                 case 3: // Last 7 days
-    //                     $query->whereDate('tbl_orders.updated_at', '>=', now()->subDays(7));
-    //                     break;
-    //                 case 4: // This week
-    //                     $query->whereDate('tbl_orders.updated_at', '>=', now()->startOfWeek());
-    //                     break;
-    //                 case 5: // Last 30 days
-    //                     $query->whereDate('tbl_orders.updated_at', '>=', now()->subDays(30));
-    //                     break;
-    //                 case 6: // This month
-    //                     $query->whereMonth('tbl_orders.updated_at', now()->month);
-    //                     break;
-    //                 case 7: // Last month
-    //                     $query->whereMonth('tbl_orders.updated_at', now()->subMonth()->month);
-    //                     break;
-    //             }
-    //         }
-
-    //         $data = $query->orderBy('tbl_orders.created_at', 'desc')->get();
-
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => $data->isEmpty() ? 'No orders found!' : 'Orders fetched successfully!',
-    //             'data' => $data
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         Log::error('Error fetching orders', [
-    //             'shop_id' => $shopId,
-    //             'branch_id' => $branchId,
-    //             'date_filter' => $dateType,
-    //             'error' => $e->getMessage()
-    //         ]);
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Error fetching orders!',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
 
     // UPDATED
     public function getOrdersOnly($branchId, Request $request)

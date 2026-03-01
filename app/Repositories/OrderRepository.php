@@ -85,6 +85,19 @@ class OrderRepository
         }
         return $query->paginate($perPage);
     }
+
+    public function getOrdersCount($shopId, $branchId, $dateType)
+    {
+        $query = OrdersModel::where('shop_id', $shopId)
+            ->where('branch_id', $branchId)
+            ->where('order_status_id', 3);
+
+        if ($dateType) {
+            $query->whereMonth('tbl_orders.updated_at', $dateType)
+                    ->whereYear('tbl_orders.updated_at', date('Y'));
+        }
+        return $query->count();
+    }
 }
 
 // This Repository is for Orders module only
