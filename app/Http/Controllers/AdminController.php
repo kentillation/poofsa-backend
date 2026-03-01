@@ -239,40 +239,6 @@ class AdminController extends Controller
         return OrderReportResource::collection($result);
     }
 
-    // UPDATED
-    public function getOrdersOnly($branchId, Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $dateType = $request->query('date_filter');
-            $query = OrdersModel::select(
-                DB::raw('COUNT(tbl_orders.reference_number) as total_orders'),
-                DB::raw('MAX(tbl_orders.updated_at) as updated_at'),
-            )
-                ->where('tbl_orders.shop_id', $shopId)
-                ->where('tbl_orders.branch_id', $branchId)
-                ->where('tbl_orders.order_status_id', 3);
-            if ($dateType) {
-                $query->whereMonth('tbl_orders.updated_at', $dateType)
-                    ->whereYear('tbl_orders.updated_at', date('Y'));
-            }
-            $totalOrders = $query->first();
-            return response()->json([
-                'status' => true,
-                'message' => 'Total orders fetched successfully!',
-                'data' => [
-                    'total_orders' => $totalOrders->total_orders ?? 0
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching total orders!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     /**** Products ****/
 
     // DONE

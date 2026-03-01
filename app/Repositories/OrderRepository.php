@@ -93,8 +93,8 @@ class OrderRepository
             ->where('order_status_id', 3);
 
         if ($dateType) {
-            $query->whereMonth('tbl_orders.updated_at', $dateType)
-                    ->whereYear('tbl_orders.updated_at', date('Y'));
+            $query->whereMonth('updated_at', $dateType)
+                ->whereYear('updated_at', date('Y'));
         }
         return $query->count();
     }
