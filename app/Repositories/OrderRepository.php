@@ -86,16 +86,12 @@ class OrderRepository
         return $query->paginate($perPage);
     }
 
-    public function getOrdersCount($shopId, $branchId, $dateType)
+    public function getOrdersCount($shopId, $branchId)
     {
         $query = OrdersModel::where('shop_id', $shopId)
             ->where('branch_id', $branchId)
+            ->whereMonth('updated_at', now()->month)
             ->where('order_status_id', 3);
-
-        if ($dateType) {
-            $query->whereMonth('updated_at', $dateType)
-                ->whereYear('updated_at', date('Y'));
-        }
         return $query->count();
     }
 }

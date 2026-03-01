@@ -14,6 +14,8 @@ class OrderCountResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'orders_count' => $this->resource
+        ];
     }
 }

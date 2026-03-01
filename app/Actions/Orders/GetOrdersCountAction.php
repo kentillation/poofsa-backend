@@ -7,9 +7,9 @@ class GetOrdersCountAction
 {
     public function __construct(private OrderRepository $repo) {}
 
-    public function execute($shopId, $branchId, $dateType)
+    public function execute($shopId, $branchId)
     {
-        return $this->repo->getOrdersCount($shopId, $branchId, $dateType);
+        return $this->repo->getOrdersCount($shopId, $branchId);
     }
 }
 

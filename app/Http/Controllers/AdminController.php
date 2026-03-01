@@ -220,10 +220,9 @@ class AdminController extends Controller
         $result = $action->execute(
             shopId: $this->getShopId(),
             branchId: $request->branch_id,
-            dateType: $request->query('date_filter'),
         );
 
-        return OrderCountResource::collection($result);
+        return new OrderCountResource($result);
     }
 
     // NEW
