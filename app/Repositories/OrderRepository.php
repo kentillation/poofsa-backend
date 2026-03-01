@@ -90,8 +90,9 @@ class OrderRepository
     {
         $query = OrdersModel::where('shop_id', $shopId)
             ->where('branch_id', $branchId)
-            ->whereMonth('updated_at', now()->month)
             ->where('order_status_id', 3);
+            // ->whereMonth('updated_at', now()->month);
+
         return $query->count();
     }
 }
