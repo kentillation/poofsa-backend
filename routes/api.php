@@ -87,7 +87,7 @@ Route::middleware('auth:sanctum')->get('/admin/orders-report', [AdminController:
 Route::middleware('auth:sanctum')->get('/admin/gross-sales-by-date/{branchId}', [AdminController::class, 'getSalesByDateType']);
 Route::middleware('auth:sanctum')->get('/admin/gross-sales-only/{branchId}', [AdminController::class, 'getGrossSalesOnly']);
 Route::middleware('auth:sanctum')->get('/admin/sales-by-month/{branchId}', [AdminController::class, 'getSalesByMonth']);
-Route::middleware('auth:sanctum')->get('/admin/orders-count', [AdminController::class, 'getOrdersCount']);
+Route::middleware('auth:sanctum')->get('/admin/total-orders', [AdminController::class, 'getTotalOrdersCount']);
 Route::middleware('auth:sanctum')->get('/admin/stocks-only/{branchId}', [AdminController::class, 'getStocksOnly']);
 Route::middleware('auth:sanctum')->get('/admin/void-orders/{branchId}', [AdminController::class, 'getVoidOrders']);
 Route::middleware('auth:sanctum')->get('/admin/void-status', [AdminController::class, 'getVoidStatus']);

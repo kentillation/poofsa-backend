@@ -86,7 +86,7 @@ class OrderRepository
         return $query->paginate($perPage);
     }
 
-    public function getOrdersCount($shopId, $branchId)
+    public function getTotalOrdersCount($shopId, $branchId)
     {
         $query = OrdersModel::where('shop_id', $shopId)
             ->where('branch_id', $branchId)

@@ -215,7 +215,7 @@ class AdminController extends Controller
     }
 
     // NEW
-    public function getOrdersCount(GetRequest $request, GetOrdersCountAction $action)
+    public function getTotalOrdersCount(GetRequest $request, GetOrdersCountAction $action)
     {
         $result = $action->execute(
             shopId: $this->getShopId(),
