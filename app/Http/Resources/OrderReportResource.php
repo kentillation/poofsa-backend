@@ -23,6 +23,8 @@ class OrderReportResource extends JsonResource
             'order_status' => $this->orderStatus->order_status ?? 'Unknown',
             'order_status_id' => $this->order_status_id ?? null,
             'sales_status' => $this->sale->salesStatus->sales_status ?? 'Unknown',
+            'total_quantity' => $this->total_quantity ?? null,
+            'cashier_name' => $this->cashier->cashier_name ?? 'Unknown',
             'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
         ];
     }

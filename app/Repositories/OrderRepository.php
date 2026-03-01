@@ -39,7 +39,8 @@ class OrderRepository
             'orderType',
             'orderStatus',
             'sale.paymentMethod',
-            'sale.salesStatus'
+            'sale.salesStatus',
+            'cashier'
         ])
             ->where('shop_id', $shopId)
             ->where('branch_id', $branchId)
