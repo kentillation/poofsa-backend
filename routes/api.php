@@ -26,10 +26,6 @@ use App\Models\DevModel;
 
 // DEVELOPER
 Route::post('/dev/login', [DevController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/dev/logout', [DevController::class, 'logout']);
-Route::middleware('auth:sanctum')->post('/dev/save-shop', [DevController::class, 'saveShop']);
-Route::middleware('auth:sanctum')->get('/dev/shops', [DevController::class, 'getShops']);
-Route::middleware('auth:sanctum')->get('/dev/shop-branches/{shop_id}', [DevController::class, 'getShopBranches']);
 Route::post('/dev/registration', function (Request $request) {
     $validated = $request->validate([
         'dev_name' => 'required|string|max:191',
@@ -58,29 +54,40 @@ Route::post('/dev/registration', function (Request $request) {
         ], 500);
     }
 });
+Route::group(['middleware' => 'auth:sanctum'], function () {
+    Route::post('/dev/logout', [DevController::class, 'logout']);
+    Route::post('/dev/save-shop', [DevController::class, 'saveShop']);
+    Route::get('/dev/shops', [DevController::class, 'getShops']);
+    Route::get('/dev/shop-branches/{shop_id}', [DevController::class, 'getShopBranches']);
+});
 
 // ADMIN
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/admin/logout', [AdminAuthController::class, 'logout']);
-
-// Branch Group
+Route::post('/cashier/login', [CashierAuthController::class, 'login']);
+Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
+Route::post('/barista/login', [BaristaAuthController::class, 'login']);
 Route::group(['middleware' => 'auth:sanctum'], function () {
+    Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
+
+    // Branch
     Route::post('/admin/save-branch', [AdminController::class, 'saveBranch']);
     Route::get('/admin/shop-branches', [AdminController::class, 'getShopBranches']);
     Route::get('/admin/branch-details/{branchName}', [AdminController::class, 'getBranchDetails']);
-});
 
-// Orders Group
-Route::group(['middleware' => 'auth:sanctum'], function () {
+    // Orders
     Route::get('/admin/orders', [AdminController::class, 'getOrders']);
     Route::get('/admin/orders-report', [AdminController::class, 'getOrdersReport']);
     Route::get('/admin/total-orders', [AdminController::class, 'getTotalOrdersCount']);
     Route::get('/admin/void-orders/{branchId}', [AdminController::class, 'getVoidOrders']);
     Route::put('/admin/update-void/{branch_id}', [AdminController::class, 'updateVoidOrder']);
-});
 
-// Products Group
-Route::group(['middleware' => 'auth:sanctum'], function () {
+    // Sales
+    Route::get('/admin/gross-sales-by-date/{branchId}', [AdminController::class, 'getSalesByDateType']);
+    Route::get('/admin/gross-sales-only/{branchId}', [AdminController::class, 'getGrossSalesOnly']);
+    Route::get('/admin/sales-by-month/{branchId}', [AdminController::class, 'getSalesByMonth']);
+    Route::get('/admin/total-sales', [AdminController::class, 'getTotalSalesCount']);
+
+    // Products
     Route::post('/admin/save-product', [AdminController::class, 'saveProducts']);
     Route::post('/admin/save-product-items', [AdminController::class, 'saveProductIngredients']);
     Route::get('/admin/products', [AdminController::class, 'getProducts']);
@@ -89,10 +96,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
     Route::put('/admin/update-product/{product_id}', [AdminController::class, 'updateProduct']);
     Route::put('/admin/update-product-items/{ingredient_id}', [AdminController::class, 'updateProductItems']);
-});
 
-// Stocks Group
-Route::group(['middleware' => 'auth:sanctum'], function () {
+    // Stocks
     Route::post('/admin/save-stock', [AdminController::class, 'saveStock']);
     Route::get('/admin/ingredients-name/{branch_id}', [AdminController::class, 'getIngredientsName']);
     Route::get('/admin/stocks', [AdminController::class, 'getStocks']);
@@ -101,29 +106,61 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/admin/low-stocks/{branch_id}', [AdminController::class, 'getLowStock']);
     Route::get('/admin/stocks-only/{branchId}', [AdminController::class, 'getStocksOnly']);
     Route::put('/admin/update-stock/{stock_id}', [AdminController::class, 'updateStock']);
-
     // Route::get('/admin/{branchId}/low-stocks', [AdminController::class, 'getLowStock']);
+
+    // Options
+    Route::get('/admin/void-status', [AdminController::class, 'getVoidStatus']);
+    Route::get('/admin/product-temperature-option', [AdminController::class, 'getProductTemperatures']);
+    Route::get('/admin/product-size-option', [AdminController::class, 'getProductSizes']);
+    Route::get('/admin/product-category-option', [AdminController::class, 'getProductCategories']);
+    Route::get('/admin/product-availability-option', [AdminController::class, 'getAvailabilities']); // to change
+    Route::get('/admin/product-station-option', [AdminController::class, 'getProductStation']);
+    Route::get('/admin/unit-option', [AdminController::class, 'getUnits']);
 });
 
-Route::middleware('auth:sanctum')->get('/admin/gross-sales-by-date/{branchId}', [AdminController::class, 'getSalesByDateType']);
-Route::middleware('auth:sanctum')->get('/admin/gross-sales-only/{branchId}', [AdminController::class, 'getGrossSalesOnly']);
-Route::middleware('auth:sanctum')->get('/admin/sales-by-month/{branchId}', [AdminController::class, 'getSalesByMonth']);
-Route::middleware('auth:sanctum')->get('/admin/total-sales', [AdminController::class, 'getTotalSalesCount']);
-Route::middleware('auth:sanctum')->get('/admin/void-status', [AdminController::class, 'getVoidStatus']);
-Route::middleware('auth:sanctum')->get('/admin/product-temperature-option', [AdminController::class, 'getProductTemperatures']);
-Route::middleware('auth:sanctum')->get('/admin/product-size-option', [AdminController::class, 'getProductSizes']);
-Route::middleware('auth:sanctum')->get('/admin/product-category-option', [AdminController::class, 'getProductCategories']);
-Route::middleware('auth:sanctum')->get('/admin/product-availability-option', [AdminController::class, 'getAvailabilities']); // to change
-Route::middleware('auth:sanctum')->get('/admin/product-station-option', [AdminController::class, 'getProductStation']);
-Route::middleware('auth:sanctum')->get('/admin/unit-option', [AdminController::class, 'getUnits']);
+// EMPLOYEES (Cashier, Kitchen Personnel, and Barista)
+Route::group(['middleware' => 'auth:sanctum'], function () {
+    // CASHIER
+    Route::post('/cashier/logout', [CashierAuthController::class, 'logout']);
+    Route::post('/cashier/submit-transaction', [CashierController::class, 'submitTransaction']);
+    Route::post('/cashier/save-void', [CashierController::class, 'saveVoid']);
+    Route::get('/cashier/current-orders', [CashierController::class, 'getCurrentOrders']);
+    Route::put('/cashier/update-order-status', [CashierController::class, 'updateOrderStatus']);
 
-// CASHIER
-Route::post('/cashier/login', [CashierAuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/cashier/logout', [CashierAuthController::class, 'logout']);
-Route::middleware('auth:sanctum')->get('/cashier/current-orders', [CashierController::class, 'getCurrentOrders']);
-Route::middleware('auth:sanctum')->put('/cashier/update-order-status', [CashierController::class, 'updateOrderStatus']);
-Route::middleware('auth:sanctum')->post('/cashier/submit-transaction', [CashierController::class, 'submitTransaction']);
-Route::middleware('auth:sanctum')->post('/cashier/save-void', [CashierController::class, 'saveVoid']);
+    // KITCHEN PERSONNEL
+    Route::post('/kitchen/logout', [KitchenAuthController::class, 'logout']);
+    Route::get('/kitchen/current-orders', [KitchenController::class, 'getCurrentOrders']);
+    Route::get('/kitchen/kitchen-product-details/{transactionId}', [KitchenController::class, 'getKitchenProductDetails']);
+    Route::get('/kitchen/station-status', [KitchenController::class, 'getStationStatus']);
+    Route::put('/kitchen/update-kitchen-product-status', [KitchenController::class, 'updateKitchenProductStatus']);
+    Route::put('/kitchen/update-order-status', [KitchenController::class, 'updateOrderStatus']);
+
+    // BARISTA
+    Route::post('/barista/logout', [BaristaAuthController::class, 'logout']);
+    Route::get('/barista/current-orders', [BaristaController::class, 'getCurrentOrders']);
+    Route::get('/barista/barista-product-details/{transactionId}', [BaristaController::class, 'getBaristaProductDetails']);
+    Route::get('/barista/station-status', [BaristaController::class, 'getStationStatus']);
+    Route::put('/barista/update-barista-product-status', [BaristaController::class, 'updateBaristaProductStatus']); // Unused
+    Route::put('/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
+
+    // OPEN
+    Route::get('/open/shop-branches', [OpenController::class, 'getShopBranches']);
+    Route::get('/open/branch-details/{branchName}', [OpenController::class, 'getBranchDetails']);
+    Route::get('/open/shop-name', [OpenController::class, 'getShopName']);
+    Route::get('/open/products', [OpenController::class, 'getProducts']);
+    Route::get('/open/stocks/{branch_id}', [OpenController::class, 'getStocks']);
+    Route::get('/open/low-stocks/{branch_id}', [OpenController::class, 'getStockNotifQty']);
+    Route::get('/open/product-temperature-option', [OpenController::class, 'getProductTemperatures']);
+    Route::get('/open/product-size-option', [OpenController::class, 'getProductSizes']);
+    Route::get('/open/product-category-option', [OpenController::class, 'getProductCategories']);
+    Route::get('/open/product-availability-option', [OpenController::class, 'getProductAvailabilities']);
+    Route::get('/open/order-status', [OpenController::class, 'getOrderStatus']);
+    Route::get('/open/order-details/{referenceNumber}', [OpenController::class, 'getOrderDetails']);
+    Route::get('/open/void-orders', [OpenController::class, 'getVoid']);
+    Route::get('/open/get-qr/{referenceNumber}', [OpenController::class, 'getQR']);
+});
+
+// Payment Gateway Group
 Route::prefix('paymongo')->group(function () {
     Route::post('/generate-qr', [PaymentController::class, 'generateQr']);
     Route::post('/payment-intents', [PaymentController::class, 'store']);
@@ -132,39 +169,6 @@ Route::prefix('paymongo')->group(function () {
     Route::post('/webhook/{payment_intent_id}', [PaymongoWebhookController::class, 'handle']);
 });
 
-// KITCHEN
-Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/kitchen/logout', [KitchenAuthController::class, 'logout']);
-Route::middleware('auth:sanctum')->get('/kitchen/current-orders', [KitchenController::class, 'getCurrentOrders']);
-Route::middleware('auth:sanctum')->get('/kitchen/kitchen-product-details/{transactionId}', [KitchenController::class, 'getKitchenProductDetails']);
-Route::middleware('auth:sanctum')->get('/kitchen/station-status', [KitchenController::class, 'getStationStatus']);
-Route::middleware('auth:sanctum')->put('/kitchen/update-kitchen-product-status', [KitchenController::class, 'updateKitchenProductStatus']);
-Route::middleware('auth:sanctum')->put('/kitchen/update-order-status', [KitchenController::class, 'updateOrderStatus']);
-
-// BARISTA
-Route::post('/barista/login', [BaristaAuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/barista/logout', [BaristaAuthController::class, 'logout']);
-Route::middleware('auth:sanctum')->get('/barista/current-orders', [BaristaController::class, 'getCurrentOrders']);
-Route::middleware('auth:sanctum')->get('/barista/barista-product-details/{transactionId}', [BaristaController::class, 'getBaristaProductDetails']);
-Route::middleware('auth:sanctum')->get('/barista/station-status', [BaristaController::class, 'getStationStatus']);
-Route::middleware('auth:sanctum')->put('/barista/update-barista-product-status', [BaristaController::class, 'updateBaristaProductStatus']); // Unused
-Route::middleware('auth:sanctum')->put('/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
-
-// OPEN
-Route::middleware('auth:sanctum')->get('/open/shop-branches', [OpenController::class, 'getShopBranches']);
-Route::middleware('auth:sanctum')->get('/open/branch-details/{branchName}', [OpenController::class, 'getBranchDetails']);
-Route::middleware('auth:sanctum')->get('/open/shop-name', [OpenController::class, 'getShopName']);
-Route::middleware('auth:sanctum')->get('/open/products', [OpenController::class, 'getProducts']);
-Route::middleware('auth:sanctum')->get('/open/stocks/{branch_id}', [OpenController::class, 'getStocks']);
-Route::middleware('auth:sanctum')->get('/open/low-stocks/{branch_id}', [OpenController::class, 'getStockNotifQty']);
-Route::middleware('auth:sanctum')->get('/open/product-temperature-option', [OpenController::class, 'getProductTemperatures']);
-Route::middleware('auth:sanctum')->get('/open/product-size-option', [OpenController::class, 'getProductSizes']);
-Route::middleware('auth:sanctum')->get('/open/product-category-option', [OpenController::class, 'getProductCategories']);
-Route::middleware('auth:sanctum')->get('/open/product-availability-option', [OpenController::class, 'getProductAvailabilities']);
-Route::middleware('auth:sanctum')->get('/open/order-status', [OpenController::class, 'getOrderStatus']);
-Route::middleware('auth:sanctum')->get('/open/order-details/{referenceNumber}', [OpenController::class, 'getOrderDetails']);
-Route::middleware('auth:sanctum')->get('/open/void-orders', [OpenController::class, 'getVoid']);
-Route::middleware('auth:sanctum')->get('/open/get-qr/{referenceNumber}', [OpenController::class, 'getQR']);
 Route::post('/open/submit-message', [OpenController::class, 'submitMessage']);
 Route::post('/open/save-shop', [OpenController::class, 'saveShop']);
 Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
