@@ -240,6 +240,217 @@ class AdminController extends Controller
         return OrderReportResource::collection($result);
     }
 
+    /**** Sales ****/
+
+    // UPDATED
+    public function getSalesByDateType($branchId, Request $request)
+    {
+        try {
+            $shopId = $this->getShopId();
+            $dateType = $request->query('date_filter');
+            $query = OrderItemsModel::select(
+                'tbl_order_items.product_id',
+                DB::raw('SUM(tbl_order_items.quantity) as total_quantity'),
+                DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price) as gross_sales'),
+                DB::raw('MAX(tbl_order_items.updated_at) as updated_at'),
+                'tbl_orders.order_id',
+                'tbl_orders.shop_id',
+                'tbl_orders.branch_id',
+                'tbl_sales.sales_status_id',
+                'tbl_sales_status.sales_status',
+                'tbl_products.product_name',
+                'tbl_products.base_price',
+                'tbl_products.category_id',
+                'tbl_product_category.category_label',
+                'tbl_product_temp.temp_label',
+                'tbl_product_size.size_label'
+            )
+                ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
+                ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
+                ->join('tbl_sales_status', 'tbl_sales.sales_status_id', '=', 'tbl_sales_status.sales_status_id')
+                ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
+                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
+                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
+                ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
+                ->where('tbl_orders.shop_id', $shopId)
+                ->where('tbl_orders.branch_id', $branchId)
+                ->where('tbl_sales.sales_status_id', 4) // PAID
+                ->groupBy(
+                    'tbl_order_items.product_id',
+                    'tbl_orders.order_id',
+                    'tbl_orders.shop_id',
+                    'tbl_orders.branch_id',
+                    'tbl_sales.sales_status_id',
+                    'tbl_sales_status.sales_status',
+                    'tbl_products.product_name',
+                    'tbl_products.base_price',
+                    'tbl_products.category_id',
+                    'tbl_product_category.category_label',
+                    'tbl_product_temp.temp_label',
+                    'tbl_product_size.size_label'
+                );
+
+            if ($dateType) {
+                switch ($dateType) {
+                    case 1:
+                        $query->whereDate('tbl_order_items.updated_at', now());
+                        break;
+                    case 2:
+                        $query->whereDate('tbl_order_items.updated_at', now()->subDay());
+                        break;
+                    case 3:
+                        $query->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(7));
+                        break;
+                    case 4:
+                        $query->whereDate('tbl_order_items.updated_at', '>=', now()->startOfWeek());
+                        break;
+                    case 5:
+                        $query->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(30));
+                        break;
+                    case 6:
+                        $query->whereMonth('tbl_order_items.updated_at', now()->month);
+                        break;
+                    case 7:
+                        $query->whereMonth('tbl_order_items.updated_at', now()->subMonth()->month);
+                        break;
+                }
+            }
+            $totalSalesQuery = OrderItemsModel::select(
+                DB::raw(
+                    'SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales'
+                )
+            )
+                ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
+                ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
+                ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
+                ->where('tbl_orders.shop_id', $shopId)
+                ->where('tbl_orders.branch_id', $branchId)
+                ->where('tbl_sales.sales_status_id', 4);
+
+            if ($dateType) {
+                switch ($dateType) {
+                    case 1:
+                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', now());
+                        break;
+                    case 2:
+                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', now()->subDay());
+                        break;
+                    case 3:
+                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(7));
+                        break;
+                    case 4:
+                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', '>=', now()->startOfWeek());
+                        break;
+                    case 5:
+                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(30));
+                        break;
+                    case 6:
+                        $totalSalesQuery->whereMonth('tbl_order_items.updated_at', now()->month);
+                        break;
+                    case 7:
+                        $totalSalesQuery->whereMonth('tbl_order_items.updated_at', now()->subMonth()->month);
+                        break;
+                }
+            }
+            $totalSales = $totalSalesQuery->first()->discounted_sales ?? 0;
+            $data = $query->orderBy('gross_sales', 'desc')->get();
+            return response()->json([
+                'status' => true,
+                'message' => $data->isEmpty() ? 'No sales found!' : 'Sales fetched successfully!',
+                'data' => $data,
+                'total_sales' => $totalSales,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching sales!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // UPDATED
+    public function getSalesByMonth($branchId, Request $request)
+    {
+        // For Analytics
+        try {
+            $shopId = $this->getShopId();
+            $year = $request->query('year', date('Y'));
+            $dateType = $request->query('date_filter');
+            $day = $request->query('day', date('d'));
+            $query = SalesModel::select(
+                DB::raw('SUM(total_amount) as total_sales'),
+                DB::raw('MAX(updated_at) as updated_at'),
+            )
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->where('sales_status_id', 1);
+            if ($dateType) {
+                $query->whereYear('updated_at', $year)
+                    ->whereMonth('updated_at', $dateType);
+            }
+            $data = $query->groupBy(DB::raw('DATE(updated_at)'))
+                ->orderBy('total_sales', 'desc')
+                ->get();
+            return response()->json([
+                'status' => true,
+                'message' => $data->isEmpty() ? 'No sales found!' : 'Sales by month fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching sales!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // UPDATED
+    public function getGrossSalesOnly($branchId, Request $request)
+    {
+        try {
+            $shopId = $this->getShopId();
+            $dateType = $request->query('date_filter');
+            $query = SalesModel::select(
+                DB::raw('SUM(tbl_sales.total_amount) as total_sales'),
+                DB::raw('MAX(tbl_sales.updated_at) as updated_at'),
+            )
+                ->where('tbl_sales.shop_id', $shopId)
+                ->where('tbl_sales.branch_id', $branchId)
+                ->where('tbl_sales.sales_status_id', 1);
+            if ($dateType) {
+                $query->whereMonth('tbl_sales.updated_at', $dateType)
+                    ->whereYear('tbl_sales.updated_at', date('Y'));
+            }
+            $grossSales = $query->first();
+            return response()->json([
+                'status' => true,
+                'message' => 'Total sales fetched successfully!',
+                'data' => [
+                    'total_sales' => $grossSales->total_sales ?? 0
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching gross sales!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // NEW
+    public function getTotalSalesCount(GetRequest $request, GetSalesCountAction $action)
+    {
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+        );
+
+        return new SaleCountResource($result);
+    }
+
     /**** Products ****/
 
     // DONE
@@ -740,217 +951,6 @@ class AdminController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**** Sales ****/
-
-    // UPDATED
-    public function getSalesByDateType($branchId, Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $dateType = $request->query('date_filter');
-            $query = OrderItemsModel::select(
-                'tbl_order_items.product_id',
-                DB::raw('SUM(tbl_order_items.quantity) as total_quantity'),
-                DB::raw('SUM(tbl_order_items.quantity * tbl_products.base_price) as gross_sales'),
-                DB::raw('MAX(tbl_order_items.updated_at) as updated_at'),
-                'tbl_orders.order_id',
-                'tbl_orders.shop_id',
-                'tbl_orders.branch_id',
-                'tbl_sales.sales_status_id',
-                'tbl_sales_status.sales_status',
-                'tbl_products.product_name',
-                'tbl_products.base_price',
-                'tbl_products.category_id',
-                'tbl_product_category.category_label',
-                'tbl_product_temp.temp_label',
-                'tbl_product_size.size_label'
-            )
-                ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
-                ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
-                ->join('tbl_sales_status', 'tbl_sales.sales_status_id', '=', 'tbl_sales_status.sales_status_id')
-                ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
-                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
-                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
-                ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
-                ->where('tbl_orders.shop_id', $shopId)
-                ->where('tbl_orders.branch_id', $branchId)
-                ->where('tbl_sales.sales_status_id', 4) // PAID
-                ->groupBy(
-                    'tbl_order_items.product_id',
-                    'tbl_orders.order_id',
-                    'tbl_orders.shop_id',
-                    'tbl_orders.branch_id',
-                    'tbl_sales.sales_status_id',
-                    'tbl_sales_status.sales_status',
-                    'tbl_products.product_name',
-                    'tbl_products.base_price',
-                    'tbl_products.category_id',
-                    'tbl_product_category.category_label',
-                    'tbl_product_temp.temp_label',
-                    'tbl_product_size.size_label'
-                );
-
-            if ($dateType) {
-                switch ($dateType) {
-                    case 1:
-                        $query->whereDate('tbl_order_items.updated_at', now());
-                        break;
-                    case 2:
-                        $query->whereDate('tbl_order_items.updated_at', now()->subDay());
-                        break;
-                    case 3:
-                        $query->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(7));
-                        break;
-                    case 4:
-                        $query->whereDate('tbl_order_items.updated_at', '>=', now()->startOfWeek());
-                        break;
-                    case 5:
-                        $query->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(30));
-                        break;
-                    case 6:
-                        $query->whereMonth('tbl_order_items.updated_at', now()->month);
-                        break;
-                    case 7:
-                        $query->whereMonth('tbl_order_items.updated_at', now()->subMonth()->month);
-                        break;
-                }
-            }
-            $totalSalesQuery = OrderItemsModel::select(
-                DB::raw(
-                    'SUM(tbl_order_items.quantity * tbl_products.base_price * (1 - tbl_sales.discount_amount/100)) as discounted_sales'
-                )
-            )
-                ->join('tbl_orders', 'tbl_order_items.order_id', '=', 'tbl_orders.order_id')
-                ->join('tbl_sales', 'tbl_order_items.order_id', '=', 'tbl_sales.order_id')
-                ->join('tbl_products', 'tbl_order_items.product_id', '=', 'tbl_products.product_id')
-                ->where('tbl_orders.shop_id', $shopId)
-                ->where('tbl_orders.branch_id', $branchId)
-                ->where('tbl_sales.sales_status_id', 4);
-
-            if ($dateType) {
-                switch ($dateType) {
-                    case 1:
-                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', now());
-                        break;
-                    case 2:
-                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', now()->subDay());
-                        break;
-                    case 3:
-                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(7));
-                        break;
-                    case 4:
-                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', '>=', now()->startOfWeek());
-                        break;
-                    case 5:
-                        $totalSalesQuery->whereDate('tbl_order_items.updated_at', '>=', now()->subDays(30));
-                        break;
-                    case 6:
-                        $totalSalesQuery->whereMonth('tbl_order_items.updated_at', now()->month);
-                        break;
-                    case 7:
-                        $totalSalesQuery->whereMonth('tbl_order_items.updated_at', now()->subMonth()->month);
-                        break;
-                }
-            }
-            $totalSales = $totalSalesQuery->first()->discounted_sales ?? 0;
-            $data = $query->orderBy('gross_sales', 'desc')->get();
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No sales found!' : 'Sales fetched successfully!',
-                'data' => $data,
-                'total_sales' => $totalSales,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching sales!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // UPDATED
-    public function getSalesByMonth($branchId, Request $request)
-    {
-        // For Analytics
-        try {
-            $shopId = $this->getShopId();
-            $year = $request->query('year', date('Y'));
-            $dateType = $request->query('date_filter');
-            $day = $request->query('day', date('d'));
-            $query = SalesModel::select(
-                DB::raw('SUM(total_amount) as total_sales'),
-                DB::raw('MAX(updated_at) as updated_at'),
-            )
-                ->where('shop_id', $shopId)
-                ->where('branch_id', $branchId)
-                ->where('sales_status_id', 1);
-            if ($dateType) {
-                $query->whereYear('updated_at', $year)
-                    ->whereMonth('updated_at', $dateType);
-            }
-            $data = $query->groupBy(DB::raw('DATE(updated_at)'))
-                ->orderBy('total_sales', 'desc')
-                ->get();
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No sales found!' : 'Sales by month fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching sales!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // UPDATED
-    public function getGrossSalesOnly($branchId, Request $request)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $dateType = $request->query('date_filter');
-            $query = SalesModel::select(
-                DB::raw('SUM(tbl_sales.total_amount) as total_sales'),
-                DB::raw('MAX(tbl_sales.updated_at) as updated_at'),
-            )
-                ->where('tbl_sales.shop_id', $shopId)
-                ->where('tbl_sales.branch_id', $branchId)
-                ->where('tbl_sales.sales_status_id', 1);
-            if ($dateType) {
-                $query->whereMonth('tbl_sales.updated_at', $dateType)
-                    ->whereYear('tbl_sales.updated_at', date('Y'));
-            }
-            $grossSales = $query->first();
-            return response()->json([
-                'status' => true,
-                'message' => 'Total sales fetched successfully!',
-                'data' => [
-                    'total_sales' => $grossSales->total_sales ?? 0
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching gross sales!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // NEW
-    public function getTotalSalesCount(GetRequest $request, GetSalesCountAction $action)
-    {
-        $result = $action->execute(
-            shopId: $this->getShopId(),
-            branchId: $request->branch_id,
-        );
-
-        return new SaleCountResource($result);
     }
 
     /**** Void ****/
