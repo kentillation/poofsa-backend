@@ -101,6 +101,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/admin/low-stocks/{branch_id}', [AdminController::class, 'getLowStock']);
     Route::get('/admin/stocks-only/{branchId}', [AdminController::class, 'getStocksOnly']);
     Route::put('/admin/update-stock/{stock_id}', [AdminController::class, 'updateStock']);
+
     // Route::get('/admin/{branchId}/low-stocks', [AdminController::class, 'getLowStock']);
 });
 
