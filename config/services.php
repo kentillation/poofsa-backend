@@ -2,17 +2,22 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Third Party Services
-    |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
-    */
+    'paymongo' => [
+        'mode' => env('PAYMONGO_MODE', 'live'),
+
+        'public_key' => env(
+            env('PAYMONGO_MODE') === 'live'
+                ? 'PAYMONGO_PUBLIC_KEY_LIVE'
+                : 'PAYMONGO_PUBLIC_KEY_TEST'
+        ),
+
+        'secret_key' => env(
+            env('PAYMONGO_MODE') === 'live'
+                ? 'PAYMONGO_SECRET_KEY_LIVE'
+                : 'PAYMONGO_SECRET_KEY_TEST'
+        ),
+        'base_url' => env('PAYMONGO_BASE_URL'),
+    ],
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
