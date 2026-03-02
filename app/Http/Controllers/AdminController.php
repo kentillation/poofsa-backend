@@ -10,6 +10,7 @@ use App\Http\Requests\GetRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\OrderCountResource;
 use App\Http\Resources\OrderReportResource;
+use App\Http\Resources\SaleCountResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductHistoryResource;
 use App\Http\Resources\StockResource;
@@ -17,6 +18,7 @@ use App\Http\Resources\StockHistoryResource;
 use App\Actions\Orders\GetOrdersAction;
 use App\Actions\Orders\GetOrdersCountAction;
 use App\Actions\Orders\GetOrdersReportAction;
+use App\Actions\Sales\GetSalesCountAction;
 use App\Actions\Products\GetProductsAction;
 use App\Actions\Products\GetProductsHistoryAction;
 use App\Actions\Stocks\GetStocksAction;
@@ -938,6 +940,17 @@ class AdminController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    // NEW
+    public function getTotalSalesCount(GetRequest $request, GetSalesCountAction $action)
+    {
+        $result = $action->execute(
+            shopId: $this->getShopId(),
+            branchId: $request->branch_id,
+        );
+
+        return new SaleCountResource($result);
     }
 
     /**** Void ****/
