@@ -14,7 +14,7 @@ class SaleRepository
             )
             ->where('shop_id', $shopId)
             ->where('branch_id', $branchId)
-            ->where('sales_status_id', 1)
+            ->where('sales_status_id', 4)
             ->first();
 
         return $query ? $query->total_sales : 0;
