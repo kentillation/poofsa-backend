@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id('order_id');
             $table->string('order_number')->unique();
             $table->string('reference_number')->unique();
+            $table->string('customer_name')->nullable();
             $table->decimal('customer_cash', 10, 2);
             $table->decimal('customer_change', 10, 2);
             $table->unsignedBigInteger('order_type_id')->index();

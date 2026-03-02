@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\OrdersModel;
+use App\Models\SalesModel;
 use App\Models\OrderItemsModel;
 use App\Models\VoidOrdersModel;
 use App\Events\NewOrderSubmitted;
@@ -46,7 +47,7 @@ class CashierController extends Controller
                 'tbl_orders.order_status_id',
                 'tbl_order_status.order_status',
                 'tbl_order_items.product_id',
-                'tbl_orders.payment_mode_id',
+                'tbl_orders.payment_method_id',
                 'tbl_orders.total_due',
                 'tbl_orders.updated_at',
             )
@@ -161,18 +162,20 @@ class CashierController extends Controller
         $orderData = isset($input['transactions'])
             ? $input['transactions'][0]
             : $input;
+        $salesData = isset($input['transactions'])
+            ? $input['transactions'][0]
+            : $input;
+
         $validator = Validator::make([
             'reference_number' => $orderData['reference_number'] ?? null,
             'total_quantity' => $orderData['total_quantity'] ?? null,
-            'customer_charge' => $orderData['customer_charge'] ?? null,
-            'total_due' => $orderData['total_due'] ?? null,
+            'total_amount' => $orderData['total_amount'] ?? null,
             'order_type_id' => $orderData['order_type_id'] ?? null,
             'order_type_charge' => $orderData['order_type_charge'] ?? null,
             'customer_cash' => $orderData['customer_cash'] ?? null,
             'customer_change' => $orderData['customer_change'] ?? null,
-            'customer_discount' => $orderData['customer_discount'] ?? null,
-            'computed_discount' => $orderData['computed_discount'] ?? null,
-            'payment_mode_id' => $orderData['payment_mode_id'] ?? null,
+            'discount_amount' => $orderData['discount_amount'] ?? null,
+            'payment_method_id' => $orderData['payment_method_id'] ?? null,
             'table_number' => $orderData['table_number'] ?? null,
             'customer_name' => $orderData['customer_name'] ?? null,
             'order_note' => $orderData['order_note'] ?? null,
@@ -181,21 +184,19 @@ class CashierController extends Controller
         ], [
             'reference_number' => 'required|string|unique:tbl_orders,reference_number',
             'total_quantity' => 'required|integer|min:1',
-            'customer_charge' => 'required|numeric|min:0',
-            'total_due' => 'required|numeric|min:0',
+            'total_amount' => 'required|numeric|min:0',
             'order_type_id' => 'required|integer|min:1',
             'order_type_charge' => 'required|numeric|min:0',
             'customer_cash' => 'required|numeric|min:0',
             'customer_change' => 'required|numeric|min:0',
-            'customer_discount' => 'required|numeric|min:0',
-            'computed_discount' => 'required|numeric|min:0',
-            'payment_mode_id' => 'required|integer|min:1',
+            'discount_amount' => 'required|numeric|min:0',
+            'payment_method_id' => 'required|integer|min:1',
             'table_number' => 'required|integer',
             'customer_name' => 'required|string',
             'order_note' => 'required|string',
             'products' => 'required|array|min:1',
             'products.*.product_id' => 'required|integer',
-            'products.*.station_id' => 'required|integer|min:1',
+            'products.*.shop_station_id' => 'required|integer|min:1',
             'products.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -231,47 +232,62 @@ class CashierController extends Controller
             }
 
             $orderData = [
-                'shop_id' => $user->shop_id,
-                'branch_id' => $user->branch_id,
+                'order_number' => $nextOrderNumber,
                 'reference_number' => $orderData['reference_number'],
-                'total_quantity' => $orderData['total_quantity'],
-                'customer_charge' => $orderData['customer_charge'],
-                'total_due' => $orderData['total_due'],
-                'order_type_id' => $orderData['order_type_id'],
-                'order_type_charge' => $orderData['order_type_charge'],
-                'customer_cash' => $orderData['customer_cash'],
-                'customer_change' => $orderData['customer_change'],
-                'customer_discount' => $orderData['customer_discount'],
-                'computed_discount' => $orderData['computed_discount'],
-                'payment_mode_id' => $orderData['payment_mode_id'],
                 'table_number' => $orderData['table_number'],
                 'customer_name' => $orderData['customer_name'],
-                'order_note' => $orderData['order_note'],
+                'customer_cash' => $orderData['customer_cash'],
+                'customer_change' => $orderData['customer_change'],
+                'order_type_id' => $orderData['order_type_id'],
                 'order_status_id' => 1,
-                'order_number' => $nextOrderNumber,
+                'order_note' => $orderData['order_note'],
+                'total_quantity' => $orderData['total_quantity'],
+                'shop_id' => $user->shop_id,
+                'branch_id' => $user->branch_id,
                 'user_id' => $user->cashier_id,
             ];
 
-            $orders = DB::transaction(function () use ($orderData, $products) {
-                $orders = OrdersModel::create($orderData);
+            $salesData = [
+                'receipt_no' => $salesData['reference_number'],
+                'order_id' => null, // to be updated after order creation
+                'shop_id' => $user->shop_id,
+                'branch_id' => $user->branch_id,
+                'user_id' => $user->cashier_id,
+                'payment_method_id' => $salesData['payment_method_id'],
+                'subtotal' => $salesData['subtotal'],
+                'discount_amount' => $salesData['discount_amount'],
+                'tax_amount' => $salesData['tax_amount'],
+                'order_type_charge' => $salesData['order_type_charge'],
+                'total_amount' => $salesData['total_amount'],
+                'sales_status_id' => 1, // Default status ID for new sales
+            ];
 
-                $orders->orders()->createMany(
-                    collect($products)->map(function ($product) use ($orders) {
+            $orders = DB::transaction(function () use ($orderData, $salesData, $products) {
+                $newOrder = OrdersModel::create($orderData);
+                SalesModel::create(
+                    array_merge(
+                        $salesData,
+                        ['order_id' => $newOrder->order_id]
+                    )
+                );
+                $newOrder->orders()->createMany(
+                    collect($products)->map(function ($product) use ($newOrder) {
                         return [
                             'product_id' => $product['product_id'],
-                            'station_id' => $product['station_id'],
+                            'shop_station_id' => $product['shop_station_id'],
                             'quantity' => $product['quantity'],
                             'station_status_id' => 1,
-                            'shop_id' => $orders->shop_id,
-                            'branch_id' => $orders->branch_id,
+                            'shop_id' => $newOrder->shop_id,
+                            'branch_id' => $newOrder->branch_id,
                         ];
                     })->toArray()
                 );
-                return $orders;
+
+                return $newOrder;
             });
 
             // Real-time Update
-            $stationsToNotify = array_unique(array_column($products, 'station_id'));
+            $stationsToNotify = array_unique(array_column($products, 'shop_station_id'));
             foreach ($stationsToNotify as $stationId) {
                 event(new NewOrderSubmitted(
                     'You have a new order.',
@@ -282,8 +298,8 @@ class CashierController extends Controller
             // Generate QR code
             $newReference = $orders->reference_number;
             $qr_text = "https://poofsa-tend.vercel.app/reference/{$newReference}";
-            $qr_code = QrCode::create($qr_text)
-                ->setSize(100)
+            $qr_code = new QrCode($qr_text);
+            $qr_code->setSize(100)
                 ->setMargin(1);
             $qr_writer = new PngWriter();
             $qr_result = $qr_writer->write($qr_code);
@@ -423,7 +439,7 @@ class CashierController extends Controller
                 OrdersModel::where('order_id', $request->order_id)
                     ->update([
                         'total_quantity' => DB::raw('total_quantity - ' . $quantityReduction),
-                        'customer_charge' => $newSubTotalAfterReduction,
+                        'total_amount' => $newSubTotalAfterReduction,
                         'total_due' => $newTotalDue,
                         'computed_discount' => $newComputedDiscount,
                         'customer_change' => DB::raw('customer_cash - ' . $newTotalDue),

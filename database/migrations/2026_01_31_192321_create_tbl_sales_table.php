@@ -24,6 +24,7 @@ class CreateTblSalesTable extends Migration
             $table->decimal('subtotal', 10, 2);
             $table->decimal('discount_amount', 10, 2)->default(0);
             $table->decimal('tax_amount', 10, 2)->default(0);
+            $table->decimal('order_type_charge', 10, 2)->default(0);
             $table->decimal('total_amount', 10, 2);
             $table->unsignedBigInteger('sales_status_id');
             $table->timestamps();
@@ -32,7 +33,7 @@ class CreateTblSalesTable extends Migration
             $table->index('branch_id');
             $table->index('user_id');
             $table->index('payment_method_id');
-            $table->index('sale_status_id');
+            $table->index('sales_status_id');
             $table->index('created_at');
         });
     }
