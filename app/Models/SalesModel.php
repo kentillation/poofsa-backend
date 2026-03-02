@@ -21,6 +21,7 @@ class SalesModel extends Model
         'receipt_no',
         'order_id',
         'payment_method_id',
+        'order_type_charge',
         'total_amount',
         'subtotal',
         'discount_amount',

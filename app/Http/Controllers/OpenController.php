@@ -18,11 +18,30 @@ use App\Models\CategoryModel;
 use App\Models\AvailabilityModel;
 use App\Models\OrderStatusModel;
 use App\Models\OrdersModel;
-use App\Models\OrdersVoidModel;
+use App\Models\VoidOrdersModel;
 use App\Models\WebsiteMessageModel;
 
 class OpenController extends Controller
 {
+
+protected function getShopId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->shop_id;
+    }
+
+    protected function getBranchId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->branch_id;
+    }
+
+    protected function getUserId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->cashier_id;
+    }
+
     public function submitMessage(Request $request)
     {
         $validated = $request->validate([
@@ -66,9 +85,9 @@ class OpenController extends Controller
         }
     }
 
-    public function getShopName(Request $request)
+    public function getShopName()
     {
-        $shopId = $request->user()->shop_id;
+        $shopId = $this->getShopId();
         $shop = ShopModel::find($shopId);
         if (!$shop) {
             return response()->json(['message' => 'Shop not found'], 404);
@@ -79,14 +98,14 @@ class OpenController extends Controller
     public function getShopBranches()
     {
         try {
-            if (!auth()->check()) {
-                return response()->json(['error' => 'Unauthorized'], 401);
-            }
-            if (!auth()->user()->shop_id) {
+            // if (!auth()->check()) {
+            //     return response()->json(['error' => 'Unauthorized'], 401);
+            // }
+            if (!$this->getShopId()) {
                 return response()->json(['error' => 'Shop ID not found'], 400);
             }
-            $shopId = auth()->user()->shop_id;
-            $branchId = auth()->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
             $branches = BranchModel::where('shop_id', $shopId)
                 ->where('branch_id', $branchId)
                 ->where('status_id', 1)
@@ -101,7 +120,7 @@ class OpenController extends Controller
     {
         try {
             $branch = BranchModel::where('branch_name', urldecode($branchName))
-                ->where('shop_id', auth()->user()->shop_id)
+                ->where('shop_id', $this->getShopId())
                 ->first();
             if (!$branch) {
                 return response()->json(['error' => 'Branch not found'], 404);
@@ -112,33 +131,25 @@ class OpenController extends Controller
         }
     }
 
+    // UPDATED
     public function getProducts()
     {
         try {
-            $shopId = auth()->user()->shop_id;
-            $branchId = auth()->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
             $data = ProductsModel::select(
                 'tbl_products.branch_id',
                 'tbl_products.shop_id',
                 'tbl_products.product_id',
                 'tbl_products.product_name',
-                'tbl_products.product_price',
+                'tbl_products.base_price',
                 'tbl_products.availability_id',
                 'tbl_products.station_id',
-                'tbl_temp.temp_label',
-                'tbl_size.size_label',
-                // 'tbl_products.product_temp_id',
-                // 'tbl_products.product_size_id',
-                // 'tbl_products.updated_at',
-                // 'tbl_products.product_category_id',
-                // 'tbl_category.category_label',
-                // 'tbl_availability.availability_label',
-
+                'tbl_product_temp.temp_label',
+                'tbl_product_size.size_label',
             )
-                // ->join('tbl_category', 'tbl_products.product_category_id', '=', 'tbl_category.category_id')
-                // ->join('tbl_availability', 'tbl_products.availability_id', '=', 'tbl_availability.availability_id')
-                ->join('tbl_temp', 'tbl_products.product_temp_id', '=', 'tbl_temp.temp_id')
-                ->join('tbl_size', 'tbl_products.product_size_id', '=', 'tbl_size.size_id')
+                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
+                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
                 ->where('tbl_products.shop_id', $shopId)
                 ->where('tbl_products.branch_id', $branchId)
                 ->where('tbl_products.availability_id', 1)
@@ -227,8 +238,8 @@ class OpenController extends Controller
                     'temp_label' => $order->product->temperature->temp_label ?? 'N/A',
                     'size_label' => $order->product->size->size_label ?? 'N/A',
                     'quantity' => $order->quantity,
-                    'product_price' => $order->product->product_price,
-                    'subtotal' => $order->quantity * $order->product->product_price,
+                    'base_price' => $order->product->base_price,
+                    'subtotal' => $order->quantity * $order->product->base_price,
                     'station_status_id' => $order->stationStatus->station_status_id ?? 'N/A',
                 ];
             });
@@ -290,8 +301,8 @@ class OpenController extends Controller
                     'temp_label' => $order->product->temperature->temp_label ?? 'N/A',
                     'size_label' => $order->product->size->size_label ?? 'N/A',
                     'quantity' => $order->quantity,
-                    'product_price' => $order->product->product_price,
-                    'subtotal' => $order->quantity * $order->product->product_price,
+                    'base_price' => $order->product->base_price,
+                    'subtotal' => $order->quantity * $order->product->base_price,
                     'created_at' => $order->created_at,
 
                 ];
@@ -327,24 +338,24 @@ class OpenController extends Controller
 
     public function getVoid()
     {
-        $shopId = auth()->user()->shop_id;
-        $branchId = auth()->user()->branch_id;
-        $voids = OrdersVoidModel::select(
+        $shopId = $this->getShopId();
+        $branchId = $this->getBranchId();
+        $voids = VoidOrdersModel::select(
             'tbl_orders_void.reference_number',
             'tbl_orders_void.order_id',
             'tbl_orders_void.table_number',
             'tbl_orders_void.void_status_id',
             'tbl_products.product_name',
-            'tbl_temp.temp_label',
-            'tbl_size.size_label',
+            'tbl_product_temp.temp_label',
+            'tbl_product_size.size_label',
             'tbl_orders_void.from_quantity',
             'tbl_orders_void.to_quantity',
             'tbl_void_status.void_status',
             'tbl_orders_void.updated_at',
         )
             ->join('tbl_products', 'tbl_orders_void.product_id', '=', 'tbl_products.product_id')
-            ->join('tbl_temp', 'tbl_products.product_temp_id', '=', 'tbl_temp.temp_id')
-            ->join('tbl_size', 'tbl_products.product_size_id', '=', 'tbl_size.size_id')
+            ->join('tbl_product_temp', 'tbl_products.product_temp_id', '=', 'tbl_product_temp.temp_id')
+            ->join('tbl_product_size', 'tbl_products.product_size_id', '=', 'tbl_product_size.size_id')
             ->join('tbl_void_status', 'tbl_orders_void.void_status_id', '=', 'tbl_void_status.void_status_id')
             ->where('tbl_orders_void.shop_id', $shopId)
             ->where('tbl_orders_void.branch_id', $branchId)
@@ -385,7 +396,7 @@ class OpenController extends Controller
     public function getStockNotifQty($branch_id)
     {
         try {
-            $shopId = auth()->user()->shop_id;
+            $shopId = $this->getShopId();
             $count = StocksModel::where('branch_id', $branch_id)
                 ->where('shop_id', $shopId)
                 ->whereColumn('stock_in', '<=', 'stock_alert_qty')

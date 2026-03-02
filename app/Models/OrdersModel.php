@@ -20,6 +20,7 @@ class OrdersModel extends Model
     protected $fillable = [
         'order_number',
         'table_number',
+        'customer_name',
         'reference_number',
         'customer_cash',
         'customer_change',

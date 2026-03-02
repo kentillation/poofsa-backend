@@ -42,15 +42,16 @@ class CashierController extends Controller
             $currentDate = now()->format('Y-m-d');
             $data = OrdersModel::select(
                 'tbl_orders.order_id',
-                'tbl_orders.table_number',
                 'tbl_orders.reference_number',
+                'tbl_orders.table_number',
                 'tbl_orders.order_status_id',
+                'tbl_sales.payment_method_id',
+                'tbl_sales.total_amount',
+                'tbl_orders.updated_at',
                 'tbl_order_status.order_status',
                 'tbl_order_items.product_id',
-                'tbl_orders.payment_method_id',
-                'tbl_orders.total_due',
-                'tbl_orders.updated_at',
             )
+                ->join('tbl_sales', 'tbl_orders.order_id', '=', 'tbl_sales.order_id')
                 ->join('tbl_order_status', 'tbl_orders.order_status_id', '=', 'tbl_order_status.order_status_id')
                 ->join('tbl_order_items', 'tbl_orders.order_id', '=', 'tbl_order_items.order_id')
                 ->where('tbl_orders.shop_id', $shopId)
@@ -170,6 +171,7 @@ class CashierController extends Controller
             'reference_number' => $orderData['reference_number'] ?? null,
             'total_quantity' => $orderData['total_quantity'] ?? null,
             'total_amount' => $orderData['total_amount'] ?? null,
+            'subtotal' => $orderData['subtotal'] ?? null,
             'order_type_id' => $orderData['order_type_id'] ?? null,
             'order_type_charge' => $orderData['order_type_charge'] ?? null,
             'customer_cash' => $orderData['customer_cash'] ?? null,
@@ -185,6 +187,7 @@ class CashierController extends Controller
             'reference_number' => 'required|string|unique:tbl_orders,reference_number',
             'total_quantity' => 'required|integer|min:1',
             'total_amount' => 'required|numeric|min:0',
+            'subtotal' => 'required|numeric|min:0',
             'order_type_id' => 'required|integer|min:1',
             'order_type_charge' => 'required|numeric|min:0',
             'customer_cash' => 'required|numeric|min:0',
@@ -196,7 +199,7 @@ class CashierController extends Controller
             'order_note' => 'required|string',
             'products' => 'required|array|min:1',
             'products.*.product_id' => 'required|integer',
-            'products.*.shop_station_id' => 'required|integer|min:1',
+            'products.*.station_id' => 'required|integer|min:1',
             'products.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -256,9 +259,10 @@ class CashierController extends Controller
                 'payment_method_id' => $salesData['payment_method_id'],
                 'subtotal' => $salesData['subtotal'],
                 'discount_amount' => $salesData['discount_amount'],
-                'tax_amount' => $salesData['tax_amount'],
+                // 'tax_amount' => $salesData['tax_amount'],
                 'order_type_charge' => $salesData['order_type_charge'],
                 'total_amount' => $salesData['total_amount'],
+                'subtotal' => $salesData['subtotal'],
                 'sales_status_id' => 1, // Default status ID for new sales
             ];
 
@@ -270,11 +274,11 @@ class CashierController extends Controller
                         ['order_id' => $newOrder->order_id]
                     )
                 );
-                $newOrder->orders()->createMany(
+                $newOrder->items()->createMany(
                     collect($products)->map(function ($product) use ($newOrder) {
                         return [
                             'product_id' => $product['product_id'],
-                            'shop_station_id' => $product['shop_station_id'],
+                            'shop_station_id' => $product['station_id'],
                             'quantity' => $product['quantity'],
                             'station_status_id' => 1,
                             'shop_id' => $newOrder->shop_id,
@@ -287,7 +291,7 @@ class CashierController extends Controller
             });
 
             // Real-time Update
-            $stationsToNotify = array_unique(array_column($products, 'shop_station_id'));
+            $stationsToNotify = array_unique(array_column($products, 'station_id'));
             foreach ($stationsToNotify as $stationId) {
                 event(new NewOrderSubmitted(
                     'You have a new order.',
@@ -296,18 +300,18 @@ class CashierController extends Controller
             }
 
             // Generate QR code
-            $newReference = $orders->reference_number;
-            $qr_text = "https://poofsa-tend.vercel.app/reference/{$newReference}";
-            $qr_code = new QrCode($qr_text);
-            $qr_code->setSize(100)
-                ->setMargin(1);
-            $qr_writer = new PngWriter();
-            $qr_result = $qr_writer->write($qr_code);
-            $qrCodePath = '../../qr-codes/' . $newReference . '.png';
-            if (!file_exists(dirname($qrCodePath))) {
-                mkdir(dirname($qrCodePath), 0755, true);
-            }
-            $qr_result->saveToFile($qrCodePath);
+            // $newReference = $orders->reference_number;
+            // $qr_text = "https://poofsa-tend.vercel.app/reference/{$newReference}";
+            // $qr_code = QrCode::create($qr_text)
+            //     ->setSize(100)
+            //     ->setMargin(1);
+            // $qr_writer = new PngWriter();
+            // $qr_result = $qr_writer->write($qr_code);
+            // $qrCodePath = '../../qr-codes/' . $newReference . '.png';
+            // if (!file_exists(dirname($qrCodePath))) {
+            //     mkdir(dirname($qrCodePath), 0755, true);
+            // }
+            // $qr_result->saveToFile($qrCodePath);
 
             // Low Stock Real-time Update
             // The low stock check MUST be placed immediately after ingredient deduction there.
@@ -428,11 +432,11 @@ class CashierController extends Controller
                 }
 
                 // Calculate new values based on frontend logic
-                $newSubTotal = $orders->total_due / (1 - ($orders->customer_discount / 100));
+                $newSubTotal = $orders->total_amount / (1 - ($orders->discount_amount / 100));
                 $newSubTotalAfterReduction = $newSubTotal - $amountReduction;
 
                 // Apply the same discount percentage to the new subtotal
-                $newComputedDiscount = $newSubTotalAfterReduction * ($orders->customer_discount / 100);
+                $newComputedDiscount = $newSubTotalAfterReduction * ($orders->discount_amount / 100);
                 $newTotalDue = $newSubTotalAfterReduction - $newComputedDiscount;
 
                 // Update the main order
@@ -440,7 +444,7 @@ class CashierController extends Controller
                     ->update([
                         'total_quantity' => DB::raw('total_quantity - ' . $quantityReduction),
                         'total_amount' => $newSubTotalAfterReduction,
-                        'total_due' => $newTotalDue,
+                        'total_amount' => $newTotalDue,
                         'computed_discount' => $newComputedDiscount,
                         'customer_change' => DB::raw('customer_cash - ' . $newTotalDue),
                         'updated_at' => now()
