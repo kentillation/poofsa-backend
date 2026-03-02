@@ -881,17 +881,17 @@ class AdminController extends Controller
             $dateType = $request->query('date_filter');
             $day = $request->query('day', date('d'));
             $query = SalesModel::select(
-                DB::raw('SUM(tbl_sales.total_amount) as total_sales'),
-                DB::raw('MAX(tbl_sales.updated_at) as updated_at'),
+                DB::raw('SUM(total_amount) as total_sales'),
+                DB::raw('MAX(updated_at) as updated_at'),
             )
-                ->where('tbl_sales.shop_id', $shopId)
-                ->where('tbl_sales.branch_id', $branchId)
-                ->where('tbl_sales.sales_status_id', 1);
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->where('sales_status_id', 1);
             if ($dateType) {
-                $query->whereYear('tbl_sales.updated_at', $year)
-                    ->whereMonth('tbl_sales.updated_at', $dateType);
+                $query->whereYear('updated_at', $year)
+                    ->whereMonth('updated_at', $dateType);
             }
-            $data = $query->groupBy(DB::raw('DATE(tbl_sales.updated_at)'))
+            $data = $query->groupBy(DB::raw('DATE(updated_at)'))
                 ->orderBy('total_sales', 'desc')
                 ->get();
             return response()->json([

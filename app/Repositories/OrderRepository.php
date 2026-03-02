@@ -18,6 +18,7 @@ class OrderRepository
             ->where('branch_id', $branchId)
             ->when($search, function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
+                    ->orWhere('reference_number', 'like', "%{$search}%")
                     ->orWhereHas(
                         'orderType',
                         fn($q) =>
