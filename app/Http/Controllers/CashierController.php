@@ -8,20 +8,36 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\OrdersModel;
 use App\Models\OrderItemsModel;
-use App\Models\OrdersVoidModel;
-use App\Models\StocksModel;
+use App\Models\VoidOrdersModel;
 use App\Events\NewOrderSubmitted;
-use App\Events\LowStockLevel;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\QrCode;
 
 class CashierController extends Controller
 {
+    protected function getShopId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->shop_id;
+    }
+
+    protected function getBranchId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->branch_id;
+    }
+
+    protected function getUserId(): int
+    {
+        $user = auth('sanctum')->user();
+        return $user->cashier_id;
+    }
+
     public function getCurrentOrders()
     {
         try {
-            $shopId = auth()->user()->shop_id;
-            $branchId = auth()->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
             $currentDate = now()->format('Y-m-d');
             $data = OrdersModel::select(
                 'tbl_orders.order_id',
@@ -60,8 +76,8 @@ class CashierController extends Controller
     public function updateOrderStatus(Request $request)
     {
         try {
-            $shopId = auth()->user()->shop_id;
-            $branchId = auth()->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
             if (!$shopId || !$branchId) {
                 return response()->json([
                     'status' => false,
@@ -329,7 +345,7 @@ class CashierController extends Controller
             'to_quantity' => 'required|integer',
         ]);
 
-        $exists = OrdersVoidModel::where([
+        $exists = VoidOrdersModel::where([
             'reference_number' => $request->reference_number,
             'order_id' => $request->order_id,
             'product_id'     => $request->product_id,
@@ -344,12 +360,12 @@ class CashierController extends Controller
 
         try {
             DB::transaction(function () use ($request) {
-                $userId = auth()->user()->cashier_id;
-                $shopId = auth()->user()->shop_id;
-                $branchId = auth()->user()->branch_id;
+                $userId = $this->getUserId();
+                $shopId = $this->getShopId();
+                $branchId = $this->getBranchId();
 
                 // Save the void record
-                $voidData = new OrdersVoidModel();
+                $voidData = new VoidOrdersModel();
                 $voidData->reference_number = $request->input('reference_number');
                 $voidData->order_id = $request->input('order_id');
                 $voidData->table_number = $request->input('table_number');
