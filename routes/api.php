@@ -24,48 +24,17 @@ use App\Models\KitchenPersonnelModel;
 use App\Models\BaristaModel;
 use App\Models\DevModel;
 
-// DEVELOPER
-Route::post('/dev/login', [DevController::class, 'login']);
-Route::post('/dev/registration', function (Request $request) {
-    $validated = $request->validate([
-        'dev_name' => 'required|string|max:191',
-        'dev_email' => 'required|string|email|max:191|unique:tbl_dev,dev_email',
-        'dev_password' => 'required|string|min:8',
-    ]);
-    DB::beginTransaction();
-    try {
-        $dev = DevModel::create([
-            'dev_name' => $validated['dev_name'],
-            'dev_email' => $validated['dev_email'],
-            'dev_password' => Hash::make($validated['dev_password']),
-        ]);
-        $token = $dev->createToken('auth-token')->plainTextToken;
-        DB::commit();
-        return response()->json([
-            'message' => 'Developer registration successful',
-            'data' => $dev,
-            'token' => $token,
-        ], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'Registration failed!',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-});
-Route::group(['middleware' => 'auth:sanctum'], function () {
-    Route::post('/dev/logout', [DevController::class, 'logout']);
-    Route::post('/dev/save-shop', [DevController::class, 'saveShop']);
-    Route::get('/dev/shops', [DevController::class, 'getShops']);
-    Route::get('/dev/shop-branches/{shop_id}', [DevController::class, 'getShopBranches']);
-});
-
-// ADMIN
+// Login and others
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
 Route::post('/cashier/login', [CashierAuthController::class, 'login']);
 Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
 Route::post('/barista/login', [BaristaAuthController::class, 'login']);
+Route::post('/open/submit-message', [OpenController::class, 'submitMessage']);
+Route::post('/open/save-shop', [OpenController::class, 'saveShop']);
+Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
+Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
+
+// Admin management
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
 
@@ -118,7 +87,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/admin/unit-option', [AdminController::class, 'getUnits']);
 });
 
-// EMPLOYEES (Cashier, Kitchen Personnel, and Barista)
+// Employees (Cashier, Kitchen Personnel, and Barista)
 Route::group(['middleware' => 'auth:sanctum'], function () {
     // CASHIER
     Route::post('/cashier/logout', [CashierAuthController::class, 'logout']);
@@ -170,11 +139,44 @@ Route::prefix('paymongo')->group(function () {
     Route::post('/webhook/{payment_intent_id}', [PaymongoWebhookController::class, 'handle']);
 });
 
-Route::post('/open/submit-message', [OpenController::class, 'submitMessage']);
-Route::post('/open/save-shop', [OpenController::class, 'saveShop']);
-Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
-Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
+// Dev
+Route::post('/dev/login', [DevController::class, 'login']);
+Route::post('/dev/registration', function (Request $request) {
+    $validated = $request->validate([
+        'dev_name' => 'required|string|max:191',
+        'dev_email' => 'required|string|email|max:191|unique:tbl_dev,dev_email',
+        'dev_password' => 'required|string|min:8',
+    ]);
+    DB::beginTransaction();
+    try {
+        $dev = DevModel::create([
+            'dev_name' => $validated['dev_name'],
+            'dev_email' => $validated['dev_email'],
+            'dev_password' => Hash::make($validated['dev_password']),
+        ]);
+        $token = $dev->createToken('auth-token')->plainTextToken;
+        DB::commit();
+        return response()->json([
+            'message' => 'Developer registration successful',
+            'data' => $dev,
+            'token' => $token,
+        ], 201);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => 'Registration failed!',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+Route::group(['middleware' => 'auth:sanctum'], function () {
+    Route::post('/dev/logout', [DevController::class, 'logout']);
+    Route::post('/dev/save-shop', [DevController::class, 'saveShop']);
+    Route::get('/dev/shops', [DevController::class, 'getShops']);
+    Route::get('/dev/shop-branches/{shop_id}', [DevController::class, 'getShopBranches']);
+});
 
+// Shop Register Account
 Route::post('/registerAccount', function (Request $request) {
     $validated = $request->validate([
         'shop_name' => 'required|string|max:50',
