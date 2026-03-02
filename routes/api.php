@@ -144,6 +144,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::put('/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
 
     // OPEN
+    Route::post('/open/account-registration', [OpenController::class, 'accountRegistration']);
     Route::get('/open/shop-branches', [OpenController::class, 'getShopBranches']);
     Route::get('/open/branch-details/{branchName}', [OpenController::class, 'getBranchDetails']);
     Route::get('/open/shop-name', [OpenController::class, 'getShopName']);
