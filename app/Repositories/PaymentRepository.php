@@ -101,23 +101,6 @@ class PaymentRepository
         }
     }
 
-    public function attachPaymentMethod(string $intentId, string $type, array $billing): array
-    {
-        try {
-            if ($type === 'qrph') {
-                return $this->attachQrph($intentId, $billing);
-            } else {
-                return $this->attachWallet($intentId, $type, $billing);
-            }
-        } catch (\Throwable $e) {
-            return [
-                'ok'     => false,
-                'status' => 500,
-                'body'   => ['error' => $e->getMessage()],
-            ];
-        }
-    }
-
     public function attachQrph(string $intentId, array $billing): array
     {
         $response = $this->client()->post("{$this->baseUrl}/v1/payment_methods", [
@@ -157,6 +140,24 @@ class PaymentRepository
             'ok' => true,
             'qr_image' => $attach->json('data.attributes.next_action.code.image_url'),
         ];
+    }
+
+    // If direct to GCash, Maya or Banks
+    public function attachPaymentMethod(string $intentId, string $type, array $billing): array
+    {
+        try {
+            if ($type === 'qrph') {
+                return $this->attachQrph($intentId, $billing);
+            } else {
+                return $this->attachWallet($intentId, $type, $billing);
+            }
+        } catch (\Throwable $e) {
+            return [
+                'ok'     => false,
+                'status' => 500,
+                'body'   => ['error' => $e->getMessage()],
+            ];
+        }
     }
 
     protected function attachWallet(string $intentId, string $type, array $billing): array
