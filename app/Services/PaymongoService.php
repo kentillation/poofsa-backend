@@ -24,6 +24,7 @@ class PaymongoService
         ])->withBasicAuth($this->secret, '');
     }
 
+    // Create a payment intent with specified amount and options
     public function createPaymentIntent(int $amount, array $opts = []): array
     {
         try {
@@ -79,6 +80,7 @@ class PaymongoService
         }
     }
 
+    // Attach a payment method to the intent.
     public function attachPaymentMethod(string $intentId, string $type, array $billing): array
     {
         try {
@@ -96,6 +98,7 @@ class PaymongoService
         }
     }
 
+    // If QRPh, we need to create the payment method first, then attach to intent to get the QR code URL
     public function attachQrph(string $intentId, array $billing): array
     {
         $response = $this->client()->post("{$this->baseUrl}/v1/payment_methods", [
@@ -137,6 +140,7 @@ class PaymongoService
         ];
     }
 
+    // For GCASH and PayMaya, we can attach directly to intent and get the redirect URL
     protected function attachWallet(string $intentId, string $type, array $billing): array
     {
         $response = $this->client()->post("{$this->baseUrl}/v1/payment_methods", [
@@ -186,6 +190,7 @@ class PaymongoService
         ];
     }
 
+    // Monitor the payment intent status and optionally fetch the latest payment details
     public function monitorPaymentIntent(string $intentId, bool $fetchLatest = true): array
     {
         try {
@@ -222,6 +227,7 @@ class PaymongoService
         }
     }
 
+    // Get the current status of the payment intent and map it to a more user-friendly status, also include payment details if available
     public function getPaymentIntentStatus(string $intentId): array
     {
         try {
@@ -297,6 +303,7 @@ class PaymongoService
         }
     }
 
+    // Get all payments associated with a payment intent, useful for monitoring and debugging
     public function getPaymentsForIntent(string $intentId): array
     {
         try {
@@ -368,154 +375,4 @@ class PaymongoService
         ];
     }
 
-    // public function getPayments(array $params = []): array
-    // {
-    //     try {
-    //         $defaultParams = [
-    //             'limit' => 20,
-    //             'before' => null,
-    //             'after' => null,
-    //         ];
-
-    //         $queryParams = array_merge($defaultParams, array_filter($params));
-
-    //         $response = $this->client()->get("{$this->baseUrl}/v1/payments", [
-    //             'query' => array_filter($queryParams, fn($value) => $value !== null)
-    //         ]);
-
-    //         if ($response->failed()) {
-    //             Log::warning('PayMongo getPayments failed', [
-    //                 'params' => $params,
-    //                 'status' => $response->status(),
-    //                 'response' => $response->json(),
-    //             ]);
-
-    //             return [
-    //                 'ok' => false,
-    //                 'status' => $response->status(),
-    //                 'body' => $response->json(),
-    //             ];
-    //         }
-
-    //         $data = $response->json();
-
-    //         return [
-    //             'ok' => true,
-    //             'payments' => $data['data'] ?? [],
-    //             'has_more' => $data['has_more'] ?? false,
-    //             'before' => $data['data']['0']['id'] ?? null,
-    //             'after' => $data['data'][count($data['data'] ?? []) - 1]['id'] ?? null,
-    //             'total' => count($data['data'] ?? []),
-    //         ];
-    //     } catch (\Exception $e) {
-    //         Log::error('PayMongo getPayments exception', [
-    //             'params' => $params,
-    //             'error' => $e->getMessage(),
-    //         ]);
-
-    //         return [
-    //             'ok' => false,
-    //             'status' => 500,
-    //             'body' => ['error' => $e->getMessage()],
-    //         ];
-    //     }
-    // }
-
-    // protected function attachToIntent(string $intentId, string $paymentMethodId): array
-    // {
-    //     $response = $this->client()->post(
-    //         "{$this->baseUrl}/v1/payment_intents/{$intentId}/attach",
-    //         [
-    //             'data' => [
-    //                 'attributes' => [
-    //                     'payment_method' => $paymentMethodId,
-    //                     'return_url'     => config('app.frontend_url') . '/cashier',
-    //                 ],
-    //             ],
-    //         ]
-    //     );
-
-    //     if ($response->failed()) {
-    //         return $this->fail('Attach payment method failed', $response);
-    //     }
-
-    //     return [
-    //         'ok'          => true,
-    //         'data'        => $response->json('data'),
-    //         'next_action' => $response->json('data.attributes.next_action'),
-    //     ];
-    // }
-
-    // public function cancelPaymentIntent(string $intentId): array
-    // {
-    //     try {
-    //         $response = $this->client()->post("{$this->baseUrl}/v1/payment_intents/{$intentId}/cancel");
-
-    //         if ($response->failed()) {
-    //             Log::error('PayMongo cancelPaymentIntent failed', [
-    //                 'intent_id' => $intentId,
-    //                 'status' => $response->status(),
-    //                 'response' => $response->json(),
-    //             ]);
-
-    //             return [
-    //                 'ok'     => false,
-    //                 'status' => $response->status(),
-    //                 'body'   => $response->json(),
-    //             ];
-    //         }
-
-    //         $data = $response->json('data');
-
-    //         return [
-    //             'ok'     => true,
-    //             'id'     => $data['id'],
-    //             'status' => $data['attributes']['status'],
-    //             'data'   => $data,
-    //         ];
-    //     } catch (\Exception $e) {
-    //         Log::error('PayMongo cancelPaymentIntent exception', [
-    //             'intent_id' => $intentId,
-    //             'error' => $e->getMessage(),
-    //         ]);
-
-    //         return [
-    //             'ok'     => false,
-    //             'status' => 500,
-    //             'body'   => ['error' => $e->getMessage()],
-    //         ];
-    //     }
-    // }
-
-    // public function isPaymentSuccessful(string $intentId): bool
-    // {
-    //     $status = $this->getPaymentIntentStatus($intentId);
-
-    //     if (!$status['ok']) {
-    //         return false;
-    //     }
-
-    //     $successStatuses = ['succeeded'];
-    //     $failedStatuses = ['failed', 'cancelled', 'expired'];
-
-    //     if (in_array($status['status'], $successStatuses)) {
-    //         return true;
-    //     }
-
-    //     if (in_array($status['status'], $failedStatuses)) {
-    //         return false;
-    //     }
-
-    //     $payments = $this->getPaymentsForIntent($intentId);
-    //     if ($payments['ok'] && count($payments['payments']) > 0) {
-    //         foreach ($payments['payments'] as $payment) {
-    //             $paymentStatus = $payment['attributes']['status'] ?? '';
-    //             if ($paymentStatus === 'paid') {
-    //                 return true;
-    //             }
-    //         }
-    //     }
-
-    //     return false;
-    // }
 }
