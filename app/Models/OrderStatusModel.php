@@ -17,6 +17,12 @@ class OrderStatusModel extends Model
 
     protected $keyType = 'int';
 
+    protected $casts = [
+        'order_status_id' => 'integer',
+    ];
+
+    protected $hidden = ['created_at', 'updated_at'];
+
     public function transactions()
     {
         return $this->hasMany(OrdersModel::class, 'order_status_id', 'order_status_id');

@@ -11,8 +11,8 @@ use App\Models\SalesModel;
 use App\Models\OrderItemsModel;
 use App\Models\VoidOrdersModel;
 use App\Events\NewOrderSubmitted;
-use Endroid\QrCode\Writer\PngWriter;
-use Endroid\QrCode\QrCode;
+// use Endroid\QrCode\Writer\PngWriter;
+// use Endroid\QrCode\QrCode;
 
 class CashierController extends Controller
 {
@@ -216,18 +216,18 @@ class CashierController extends Controller
         }
 
         try {
-            $user = $request->user();
-            $shopId = $request->user()->shop_id;
-            $branchId = $request->user()->branch_id;
+            $shopId = $this->getShopId();
+            $branchId = $this->getBranchId();
+            $userId = $this->getUserId();
             $currentDate = now()->format('Y-m-d');
 
             // Compute next order_number
             $latestOrder = OrdersModel::where('shop_id', $shopId)
                 ->where('branch_id', $branchId)
                 ->whereDate('created_at', $currentDate) // check today’s orders
-                ->orderBy('created_at', 'desc')
+                ->orderBy('order_id', 'desc')
                 ->first();
-            if ($latestOrder && $latestOrder->order_number) {
+            if ($latestOrder) {
                 $lastNumber = $latestOrder->order_number; // 00001 → 1
                 $nextOrderNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT); // 00002
             } else {
@@ -245,28 +245,27 @@ class CashierController extends Controller
                 'order_status_id' => 1,
                 'order_note' => $orderData['order_note'],
                 'total_quantity' => $orderData['total_quantity'],
-                'shop_id' => $user->shop_id,
-                'branch_id' => $user->branch_id,
-                'user_id' => $user->cashier_id,
+                'shop_id' => $shopId,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
             ];
 
             $salesData = [
                 'receipt_no' => $salesData['reference_number'],
                 'order_id' => null, // to be updated after order creation
-                'shop_id' => $user->shop_id,
-                'branch_id' => $user->branch_id,
-                'user_id' => $user->cashier_id,
+                'shop_id' => $shopId,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
                 'payment_method_id' => $salesData['payment_method_id'],
                 'subtotal' => $salesData['subtotal'],
                 'discount_amount' => $salesData['discount_amount'],
                 // 'tax_amount' => $salesData['tax_amount'],
                 'order_type_charge' => $salesData['order_type_charge'],
                 'total_amount' => $salesData['total_amount'],
-                'subtotal' => $salesData['subtotal'],
                 'sales_status_id' => 1, // Default status ID for new sales
             ];
 
-            $orders = DB::transaction(function () use ($orderData, $salesData, $products) {
+            DB::transaction(function () use ($orderData, $salesData, $products) {
                 $newOrder = OrdersModel::create($orderData);
                 SalesModel::create(
                     array_merge(
@@ -299,47 +298,6 @@ class CashierController extends Controller
                 ));
             }
 
-            // Generate QR code
-            // $newReference = $orders->reference_number;
-            // $qr_text = "https://poofsa-tend.vercel.app/reference/{$newReference}";
-            // $qr_code = QrCode::create($qr_text)
-            //     ->setSize(100)
-            //     ->setMargin(1);
-            // $qr_writer = new PngWriter();
-            // $qr_result = $qr_writer->write($qr_code);
-            // $qrCodePath = '../../qr-codes/' . $newReference . '.png';
-            // if (!file_exists(dirname($qrCodePath))) {
-            //     mkdir(dirname($qrCodePath), 0755, true);
-            // }
-            // $qr_result->saveToFile($qrCodePath);
-
-            // Low Stock Real-time Update
-            // The low stock check MUST be placed immediately after ingredient deduction there.
-            // $lowStockItems = StockBatchesModel::select(
-            //         'tbl_stock_batches.ingredient_id',
-            //         'tbl_ingredients.ingredient_name',
-            //         'tbl_ingredients.alert_quantity',
-            //         DB::raw('SUM(tbl_stock_batches.quantity_remaining) as total_remaining')
-            //     )
-            //     ->join('tbl_ingredients', 'tbl_stock_batches.ingredient_id', '=', 'tbl_ingredients.ingredient_id')
-            //     ->where('tbl_stock_batches.shop_id', $shopId)
-            //     ->where('tbl_stock_batches.branch_id', $branchId)
-            //     ->groupBy(
-            //         'tbl_stock_batches.ingredient_id',
-            //         'tbl_ingredients.ingredient_name',
-            //         'tbl_ingredients.alert_quantity'
-            //     )
-            //     ->havingRaw('SUM(tbl_stock_batches.quantity_remaining) <= tbl_ingredients.alert_quantity')
-            //     ->get();
-
-            // if ($lowStockItems->isNotEmpty()) {
-            //     event(new LowStockLevel(
-            //         $shopId,
-            //         $branchId,
-            //         $lowStockItems
-            //     ));
-            // }
-
             return response()->json([
                 'status' => true,
                 'message' => 'Order created successfully',
@@ -349,7 +307,7 @@ class CashierController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to create order',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -444,7 +402,7 @@ class CashierController extends Controller
                     ->update([
                         'total_quantity' => DB::raw('total_quantity - ' . $quantityReduction),
                         'total_amount' => $newSubTotalAfterReduction,
-                        'total_amount' => $newTotalDue,
+                        // 'total_amount' => $newTotalDue,
                         'computed_discount' => $newComputedDiscount,
                         'customer_change' => DB::raw('customer_cash - ' . $newTotalDue),
                         'updated_at' => now()

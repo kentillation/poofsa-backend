@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tbl_orders', function (Blueprint $table) {
             $table->id('order_id');
-            $table->string('order_number')->unique();
+            $table->string('order_number');
             $table->string('reference_number')->unique();
             $table->string('customer_name')->nullable();
             $table->decimal('customer_cash', 10, 2);
