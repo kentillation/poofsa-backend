@@ -15,7 +15,6 @@ class GenerateQrPaymentAction
     {
         $idempotencyKey = hash('sha256', $referenceNumber);
 
-        // 🔐 Idempotency check
         $existing = PaymentModel::where('idempotency_key', $idempotencyKey)->first();
 
         if ($existing && $existing->payment_intent_id) {
@@ -28,7 +27,6 @@ class GenerateQrPaymentAction
 
         $amountInCentavos = $amount * 100;
 
-        // 🔁 Retry logic handled inside repository
         $intent = $this->paymongo->createPaymentIntent(
             $amountInCentavos,
             [
@@ -39,9 +37,7 @@ class GenerateQrPaymentAction
             ]
         );
 
-        if (!$intent['ok']) {
-            throw new \RuntimeException('Payment intent failed');
-        }
+        abort_if(!$intent['ok'], 500, 'Payment intent failed');
 
         $qr = $this->paymongo->attachQrph($intent['id'], [
             'name' => 'Poofsa Cashier',
@@ -49,23 +45,20 @@ class GenerateQrPaymentAction
             'phone' => '09453145499',
         ]);
 
-        if (!$qr['ok']) {
-            throw new \RuntimeException('QR generation failed');
-        }
+        abort_if(!$qr['ok'], 500, 'QR generation failed');
 
-        $payment = PaymentModel::create([
+        PaymentModel::create([
             'idempotency_key' => $idempotencyKey,
             'payment_intent_id' => $intent['id'],
             'reference_number' => $referenceNumber,
             'amount' => $amountInCentavos,
             'status' => 'pending',
-            'qr_image' => $qr['qr_image'],
         ]);
 
         return [
-            'payment_intent_id' => $payment->payment_intent_id,
-            'qr_image' => $payment->qr_image,
-            'status' => $payment->status,
+            'payment_intent_id' => $intent['id'],
+            'qr_image' => $qr['qr_image'],
+            'status' => 'Pending',
         ];
     }
 }

@@ -137,6 +137,7 @@ Route::prefix('paymongo')->group(function () {
     Route::post('/payment-intents/attach', [PaymentController::class, 'attach']);
     Route::get('/payment-intents/{intentId}/status', [PaymentController::class, 'checkStatus']);
     Route::post('/webhook/{payment_intent_id}', [PaymongoWebhookController::class, 'handle']);
+    // Route::post('/webhooks/paymongo', PaymongoWebhookController::class);
 });
 
 // Dev
