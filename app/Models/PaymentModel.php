@@ -29,6 +29,7 @@ class PaymentModel extends Model
 
     protected $fillable = [
         'payment_intent_id',
+        'idempotency_key',
         'reference_number',
         'paymongo_payment_id',
         'amount',

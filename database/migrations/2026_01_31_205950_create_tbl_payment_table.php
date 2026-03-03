@@ -15,12 +15,13 @@ class CreateTblPaymentTable extends Migration
     {
         Schema::create('tbl_payment', function (Blueprint $table) {
             $table->id('payment_id');
-            $table->text('payment_intent_id');
+            $table->text('payment_intent_id')->nullable();
+            $table->string('idempotency_key')->unique();
             $table->string('reference_number')->nullable();
             $table->unsignedBigInteger('paymongo_payment_id')->nullable();
             $table->decimal('amount', 10, 2);
-            $table->string('status', 20);
-            $table->dateTime('paid_at')->nullable();
+            $table->string('status', 20)->default('pending');
+            $table->timestamp('paid_at')->nullable();
             $table->timestamps();
         });
     }

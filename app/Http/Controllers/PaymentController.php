@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Payment\GenerateQrPaymentAction;
 use App\Services\PaymongoService;
+use App\Http\Resources\GenerateQrResource;
+use App\Http\Resources\PaymentResource;
+use App\Models\PaymentModel;
+use App\Http\Requests\GenerateQrRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\PaymentModel;
+
 
 class PaymentController extends Controller
 {
@@ -14,6 +19,16 @@ class PaymentController extends Controller
     public function __construct(PaymongoService $paymongo)
     {
         $this->paymongo = $paymongo;
+    }
+
+    public function generatingQRCode(GenerateQrRequest $request, GenerateQrPaymentAction $action)
+    {
+        $result = $action->execute(
+            amount: $request->amount,
+            referenceNumber: $request->reference_number
+        );
+
+        return new GenerateQrResource($result);
     }
 
     public function generateQr(Request $request)
@@ -147,9 +162,11 @@ class PaymentController extends Controller
 
             if ($result['original_status'] === 'succeeded') {
                 PaymentModel::where('payment_intent_id', $intentId)
-                    ->update(['status' => 'Paid',
+                    ->update([
+                        'status' => 'Paid',
                         'paid_at' => now(),
-                        'reference_number' => $result['metadata']['reference_number']]);
+                        'reference_number' => $result['metadata']['reference_number']
+                    ]);
             }
 
             return response()->json([
