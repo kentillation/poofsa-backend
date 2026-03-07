@@ -9,15 +9,9 @@ class PaymentModel extends Model
 {
     use HasFactory;
 
-    // protected $fillable = [
-    //     'payment_intent_id',
-    //     'paymongo_payment_id',
-    //     'amount',
-    //     'status',
-    //     'paid_at',
-    //     'created_at',
-    //     'updated_at',
-    // ];
+    const STATUS_PENDING = 'pending';
+    const STATUS_PAID = 'paid';
+    const STATUS_FAILED = 'failed';
 
     protected $table = 'tbl_payment';
 
