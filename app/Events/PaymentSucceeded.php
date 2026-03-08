@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -22,7 +21,18 @@ class PaymentSucceeded implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        // return new Channel('payments');
         return new PrivateChannel('payments.' . $this->referenceNumber);
+    }
+
+    public function broadcastAs()
+    {
+        return 'payment.succeeded';
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'referenceNumber' => $this->referenceNumber,
+        ];
     }
 }
