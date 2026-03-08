@@ -31,48 +31,41 @@ class PaymentController extends Controller
         return new GenerateQrResource($result);
     }
 
-    public function handle(Request $request, string $payment_intent_id)
+    public function handlePayment(Request $request)
     {
         try {
+
             $payload = $request->all();
+
             Log::info('PayMongo Webhook Received', $payload);
-            // $eventType = $payload['data']['attributes']['type'] ?? null;
-            $paymentIntentId = $payload['data']['attributes']['data']['id'] ?? null;
-            $status = $payload['data']['attributes']['data']['attributes']['status'] ?? null;
+
+            $eventType = $payload['data']['attributes']['type'] ?? null;
+
+            $paymentIntentId = $payload['data']['attributes']['data']['attributes']['payment_intent_id'] ?? null;
 
             if (!$paymentIntentId) {
-                return response()->json([
-                    'message' => 'Invalid payload'
-                ], 400);
+                return response()->json(['message' => 'Invalid payload'], 400);
             }
 
             $payment = PaymentModel::where('payment_intent_id', $paymentIntentId)->first();
 
             if (!$payment) {
-                return response()->json([
-                    'message' => 'Payment not found'
-                ], 404);
+                return response()->json(['message' => 'Payment not found'], 404);
             }
 
-            switch ($status) {
+            switch ($eventType) {
 
-                case 'succeeded':
-                    broadcast(new PaymentSucceeded($payment->reference_number));
+                case 'payment.paid':
+
                     $payment->update([
                         'status' => PaymentModel::STATUS_PAID
                     ]);
 
-                    break;
-
-                case 'awaiting_next_action':
-
-                    $payment->update([
-                        'status' => PaymentModel::STATUS_PENDING
-                    ]);
+                    broadcast(new PaymentSucceeded($payment->reference_number));
 
                     break;
 
-                case 'failed':
+                case 'payment.failed':
 
                     $payment->update([
                         'status' => PaymentModel::STATUS_FAILED

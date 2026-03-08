@@ -133,7 +133,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 // Payment Gateway Group
 Route::prefix('paymongo')->group(function () {
     Route::post('/generate-qr', [PaymentController::class, 'generatingQRCode']);
-    Route::post('/webhook/{payment_intent_id}', [PaymentController::class, 'handle']);
+    Route::post('/webhook/paymongo', [PaymentController::class, 'handlePayment']);
     // Route::post('/payment-intents', [PaymentController::class, 'store']);
     // Route::post('/payment-intents/attach', [PaymentController::class, 'attach']);
     // Route::get('/payment-intents/{intentId}/status', [PaymentController::class, 'checkStatus']);
