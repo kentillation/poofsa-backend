@@ -194,7 +194,7 @@ class CashierController extends Controller
             'customer_change' => 'required|numeric|min:0',
             'discount_amount' => 'required|numeric|min:0',
             'payment_method_id' => 'required|integer|min:1',
-            'table_number' => 'required|integer',
+            'table_number' => 'nullable|integer',
             'customer_name' => 'required|string',
             'order_note' => 'required|string',
             'products' => 'required|array|min:1',
