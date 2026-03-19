@@ -23,6 +23,7 @@ class ShopModel extends Model
         'shop_address',
         'shop_email',
         'shop_contact_number',
+        'shop_type',
         'is_active',
     ];
 

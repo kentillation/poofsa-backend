@@ -13,6 +13,7 @@ use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\BaristaAuthController;
 use App\Http\Controllers\BaristaController;
 use App\Http\Controllers\OpenController;
+use App\Http\Controllers\PublicController;
 use App\Http\Controllers\DevController;
 use App\Http\Controllers\PaymentController;
 use App\Models\ShopModel;
@@ -22,6 +23,13 @@ use App\Models\CashierModel;
 use App\Models\KitchenPersonnelModel;
 use App\Models\BaristaModel;
 use App\Models\DevModel;
+
+
+// Public
+Route::get('/public/products', [PublicController::class, 'getProducts']);
+Route::get('/public/product-category', [PublicController::class, 'getProductCategories']);
+Route::get('/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
+Route::get('/public/shop-list', [PublicController::class, 'getShopList']);
 
 // Login and others
 Route::post('/admin/login', [AdminAuthController::class, 'login']);

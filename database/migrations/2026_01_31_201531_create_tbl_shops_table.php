@@ -20,6 +20,7 @@ class CreateTblShopsTable extends Migration
             $table->string('shop_address', 255);
             $table->string('shop_email', 100)->unique();
             $table->string('shop_contact_number', 13);
+            $table->string('shop_type', 150);
             $table->boolean('is_active')->default(true); // active/inactive status
             $table->timestamps();
         });
