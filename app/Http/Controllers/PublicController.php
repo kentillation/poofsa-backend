@@ -64,9 +64,11 @@ class PublicController extends Controller
             ], 500);
         }
     }
-    public function getProducts()
+    public function getProducts(Request $request)
     {
         try {
+            $requestedCategory = $request->requested_category;
+
             $data = ProductsModel::select(
                 'tbl_products.branch_id',
                 'tbl_products.shop_id',
@@ -83,6 +85,12 @@ class PublicController extends Controller
                 ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
                 ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
                 ->where('tbl_products.availability_id', 1)
+
+                // FILTER HERE
+                ->when($requestedCategory, function ($query) use ($requestedCategory) {
+                    $query->where('tbl_product_category.category_label', $requestedCategory);
+                })
+
                 ->orderBy('tbl_products.product_name')
                 ->get();
 
