@@ -17,6 +17,13 @@ class ProductBaseCategoryModel extends Model
 
     public $incrementing = true;
 
+    public $fillable = [
+        'product_base_category',
+        'category_subtitle_hiligaynon',
+        'category_subtitle_bisaya',
+        'category_subtitle_tagalog',
+    ];
+
     protected $hidden = [
         'created_at',
         'updated_at'

@@ -3,35 +3,49 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
-use App\Models\ShopModel;
+use Illuminate\Http\Request;
 use App\Models\ProductsModel;
 use App\Models\CategoryModel;
 use App\Models\ProductBaseCategoryModel;
 
 class PublicController extends Controller
 {
-    public function getShopList()
+    public function getShops(Request $request)
     {
         try {
+            $requestedCategory = $request->requestedCategory;
 
             $sub = DB::table('tbl_products')
                 ->select(
                     'tbl_products.shop_id',
                     'tbl_products.base_price',
                     'tbl_product_category.category_label',
-                    DB::raw('ROW_NUMBER() OVER (PARTITION BY tbl_products.shop_id ORDER BY tbl_products.base_price ASC) as rn')
+                    DB::raw('ROW_NUMBER() OVER (
+                    PARTITION BY tbl_products.shop_id 
+                    ORDER BY tbl_products.base_price ASC, tbl_products.product_id ASC
+                ) as rn')
                 )
-                ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id');
+                ->join(
+                    'tbl_product_category',
+                    'tbl_products.category_id',
+                    '=',
+                    'tbl_product_category.product_category_id'
+                )
+                // ✅ FILTER HERE
+                ->when($requestedCategory, function ($query) use ($requestedCategory) {
+                    $query->where('tbl_product_category.category_label', $requestedCategory);
+                });
 
-            $data = ShopModel::select(
-                'tbl_shops.shop_id',
-                'tbl_shops.shop_name',
-                'p.base_price as lowest_price',
-                'p.category_label'
-            )
+            $data = DB::table('tbl_shops')
+                ->select(
+                    'tbl_shops.shop_id',
+                    'tbl_shops.shop_name',
+                    'tbl_shops.shop_type',
+                    'p.base_price as lowest_price',
+                )
                 ->joinSub($sub, 'p', function ($join) {
                     $join->on('tbl_shops.shop_id', '=', 'p.shop_id')
-                        ->where('p.rn', 1); // 👈 ONLY ONE per shop
+                        ->where('p.rn', 1); // ✅ still ensures ONE per shop
                 })
                 ->get();
 
@@ -48,7 +62,6 @@ class PublicController extends Controller
             ], 500);
         }
     }
-
     public function getProducts()
     {
         try {

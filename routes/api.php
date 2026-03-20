@@ -29,7 +29,7 @@ use App\Models\DevModel;
 Route::get('/public/products', [PublicController::class, 'getProducts']);
 Route::get('/public/product-category', [PublicController::class, 'getProductCategories']);
 Route::get('/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
-Route::get('/public/shop-list', [PublicController::class, 'getShopList']);
+Route::get('/public/shops', [PublicController::class, 'getShops']);
 
 // Login and others
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
