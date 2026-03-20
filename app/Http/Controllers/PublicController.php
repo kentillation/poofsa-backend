@@ -19,11 +19,12 @@ class PublicController extends Controller
                 ->select(
                     'tbl_products.shop_id',
                     'tbl_products.base_price',
+                    'tbl_products.product_name',
                     'tbl_product_category.category_label',
                     DB::raw('ROW_NUMBER() OVER (
-                    PARTITION BY tbl_products.shop_id 
-                    ORDER BY tbl_products.base_price ASC, tbl_products.product_id ASC
-                ) as rn')
+                        PARTITION BY tbl_products.shop_id 
+                        ORDER BY tbl_products.base_price ASC, tbl_products.product_id ASC
+                    ) as rn')
                 )
                 ->join(
                     'tbl_product_category',
@@ -31,7 +32,7 @@ class PublicController extends Controller
                     '=',
                     'tbl_product_category.product_category_id'
                 )
-                // ✅ FILTER HERE
+                // FILTER HERE
                 ->when($requestedCategory, function ($query) use ($requestedCategory) {
                     $query->where('tbl_product_category.category_label', $requestedCategory);
                 });
@@ -42,10 +43,11 @@ class PublicController extends Controller
                     'tbl_shops.shop_name',
                     'tbl_shops.shop_type',
                     'p.base_price as lowest_price',
+                    'p.product_name',
                 )
                 ->joinSub($sub, 'p', function ($join) {
                     $join->on('tbl_shops.shop_id', '=', 'p.shop_id')
-                        ->where('p.rn', 1); // ✅ still ensures ONE per shop
+                        ->where('p.rn', 1); // still ensures ONE per shop
                 })
                 ->get();
 
@@ -101,7 +103,9 @@ class PublicController extends Controller
     public function getProductBaseCategories()
     {
         try {
-            $data = ProductBaseCategoryModel::orderBy('product_base_category_id', 'asc')->get();
+            $data = ProductBaseCategoryModel::orderBy('product_base_category_id', 'asc')
+            ->limit(10)
+            ->get();
             return response()->json([
                 'success' => true,
                 'message' => $data->isEmpty() ? 'No product base category found!' : 'Product base categories fetched successfully!',
