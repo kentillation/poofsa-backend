@@ -13,7 +13,7 @@ class PublicController extends Controller
     public function getShops(Request $request)
     {
         try {
-            $requestedCategory = $request->requestedCategory;
+            $requestedCategory = $request->requested_category;
 
             $sub = DB::table('tbl_products')
                 ->select(
