@@ -19,6 +19,7 @@ return [
         'https://poofsa-stom.vercel.app',
         'https://poofsa-yals.vercel.app',
         'https://poofsa-dev.vercel.app',
+        'https://poofsa-marketplace.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],

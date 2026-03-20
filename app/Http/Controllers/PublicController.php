@@ -67,7 +67,7 @@ class PublicController extends Controller
     public function getProducts(Request $request)
     {
         try {
-            $requestedCategory = $request->requested_category;
+            $shopId = $request->shop_id;
 
             $data = ProductsModel::select(
                 'tbl_products.branch_id',
@@ -87,8 +87,8 @@ class PublicController extends Controller
                 ->where('tbl_products.availability_id', 1)
 
                 // FILTER HERE
-                ->when($requestedCategory, function ($query) use ($requestedCategory) {
-                    $query->where('tbl_product_category.category_label', $requestedCategory);
+                ->when($shopId, function ($query) use ($shopId) {
+                    $query->where('tbl_products.shop_id', $shopId);
                 })
 
                 ->orderBy('tbl_products.product_name')
