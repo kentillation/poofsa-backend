@@ -36,8 +36,8 @@ class ShopModel extends Model
     {
         return $this->hasOne(ProductsModel::class, 'shop_id', 'shop_id')
             ->where('availability_id', 1)
-            ->orderBy('base_price')
-            ->orderBy('product_id');
+            ->orderBy('base_price', 'asc')
+            ->orderBy('product_id', 'asc');
     }
 
 }
