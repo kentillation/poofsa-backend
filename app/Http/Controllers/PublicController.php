@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use App\Models\ShopModel;
 use App\Models\ProductsModel;
 use App\Models\CategoryModel;
 use App\Models\ProductBaseCategoryModel;
@@ -15,46 +16,32 @@ class PublicController extends Controller
         try {
             $requestedCategory = $request->requested_category;
 
-            $sub = DB::table('tbl_products')
-                ->select(
-                    'tbl_products.shop_id',
-                    'tbl_products.base_price',
-                    'tbl_products.product_name',
-                    'tbl_product_category.category_label',
-                    DB::raw('ROW_NUMBER() OVER (
-                        PARTITION BY tbl_products.shop_id 
-                        ORDER BY tbl_products.base_price ASC, tbl_products.product_id ASC
-                    ) as rn')
-                )
-                ->join(
-                    'tbl_product_category',
-                    'tbl_products.category_id',
-                    '=',
-                    'tbl_product_category.product_category_id'
-                )
-                // FILTER HERE
-                ->when($requestedCategory, function ($query) use ($requestedCategory) {
-                    $query->where('tbl_product_category.category_label', $requestedCategory);
+            $shops = ShopModel::with(['lowestPricedProduct' => function ($q) use ($requestedCategory) {
+                $q->when($requestedCategory, function ($qq) use ($requestedCategory) {
+                    $qq->whereHas('category', function ($cat) use ($requestedCategory) {
+                        $cat->where('category_label', $requestedCategory);
+                    });
                 });
+            }])
+                ->get()
+                ->map(function ($shop) {
+                    $product = $shop->lowestPricedProduct;
 
-            $data = DB::table('tbl_shops')
-                ->select(
-                    'tbl_shops.shop_id',
-                    'tbl_shops.shop_name',
-                    'tbl_shops.shop_type',
-                    'p.base_price as lowest_price',
-                    'p.product_name',
-                )
-                ->joinSub($sub, 'p', function ($join) {
-                    $join->on('tbl_shops.shop_id', '=', 'p.shop_id')
-                        ->where('p.rn', 1); // still ensures ONE per shop
+                    return $product ? [
+                        'shop_id' => $shop->shop_id,
+                        'shop_name' => $shop->shop_name,
+                        'shop_type' => $shop->shop_type,
+                        'lowest_price' => $product->base_price,
+                        'product_name' => $product->product_name,
+                    ] : null;
                 })
-                ->get();
+                ->filter()
+                ->values();
 
             return response()->json([
                 'success' => true,
-                'message' => $data->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
-                'data' => $data
+                'message' => $shops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
+                'data' => $shops
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -69,30 +56,27 @@ class PublicController extends Controller
         try {
             $shopId = $request->shop_id;
 
-            $data = ProductsModel::select(
-                'tbl_products.branch_id',
-                'tbl_products.shop_id',
-                'tbl_products.product_id',
-                'tbl_products.product_name',
-                'tbl_products.base_price',
-                'tbl_products.availability_id',
-                'tbl_products.station_id',
-                'tbl_product_temp.temp_label',
-                'tbl_product_size.size_label',
-                'tbl_product_category.category_label',
-            )
-                ->join('tbl_product_temp', 'tbl_products.temp_id', '=', 'tbl_product_temp.product_temp_id')
-                ->join('tbl_product_size', 'tbl_products.size_id', '=', 'tbl_product_size.product_size_id')
-                ->join('tbl_product_category', 'tbl_products.category_id', '=', 'tbl_product_category.product_category_id')
-                ->where('tbl_products.availability_id', 1)
-
-                // FILTER HERE
+            $data = ProductsModel::with(['size', 'temperature', 'category'])
+                ->where('availability_id', 1)
                 ->when($shopId, function ($query) use ($shopId) {
-                    $query->where('tbl_products.shop_id', $shopId);
+                    $query->where('shop_id', $shopId);
                 })
-
-                ->orderBy('tbl_products.product_name')
-                ->get();
+                ->orderBy('product_name')
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'branch_id' => $product->branch_id,
+                        'shop_id' => $product->shop_id,
+                        'product_id' => $product->product_id,
+                        'product_name' => $product->product_name,
+                        'base_price' => $product->base_price,
+                        'availability_id' => $product->availability_id,
+                        'station_id' => $product->station_id,
+                        'temp_label' => $product->temperature->temp_label ?? null,
+                        'size_label' => $product->size->size_label ?? null,
+                        'category_label' => $product->category->category_label ?? null,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -107,13 +91,12 @@ class PublicController extends Controller
             ], 500);
         }
     }
-
     public function getProductBaseCategories()
     {
         try {
             $data = ProductBaseCategoryModel::orderBy('product_base_category_id', 'asc')
-            ->limit(10)
-            ->get();
+                ->limit(10)
+                ->get();
             return response()->json([
                 'success' => true,
                 'message' => $data->isEmpty() ? 'No product base category found!' : 'Product base categories fetched successfully!',
@@ -135,8 +118,8 @@ class PublicController extends Controller
             $data = CategoryModel::when($shopId, function ($query) use ($shopId) {
                 $query->where('shop_id', $shopId);
             })
-            ->orderBy('category_label', 'asc')
-            ->get();
+                ->orderBy('category_label', 'asc')
+                ->get();
             return response()->json([
                 'success' => true,
                 'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',

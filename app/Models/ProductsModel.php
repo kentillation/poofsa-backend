@@ -34,15 +34,10 @@ class ProductsModel extends Model
         'user_id',
     ];
 
-    // public function ingredients()
-    // {
-    //     return $this->belongsToMany(
-    //         ProductItemsModel::class,
-    //         'tbl_product_items',
-    //         'product_id',
-    //         'ingredient_id'
-    //     )->withPivot('quantity_required');
-    // }
+    public function shop()
+    {
+        return $this->belongsTo(ShopModel::class, 'shop_id', 'shop_id');
+    }
 
     public function productItems()
     {
@@ -93,5 +88,15 @@ class ProductsModel extends Model
     //     }
 
     //     return false;
+    // }
+
+    // public function ingredients()
+    // {
+    //     return $this->belongsToMany(
+    //         ProductItemsModel::class,
+    //         'tbl_product_items',
+    //         'product_id',
+    //         'ingredient_id'
+    //     )->withPivot('quantity_required');
     // }
 }

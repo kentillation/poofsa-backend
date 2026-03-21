@@ -19,12 +19,25 @@ class ShopModel extends Model
 
     protected $fillable = [
         'shop_name',
+        'shop_type',
         'shop_owner',
         'shop_address',
         'shop_email',
         'shop_contact_number',
-        'shop_type',
         'is_active',
     ];
+
+    public function products()
+    {
+        return $this->hasMany(ProductsModel::class, 'shop_id', 'shop_id');
+    }
+
+    public function lowestPricedProduct()
+    {
+        return $this->hasOne(ProductsModel::class, 'shop_id', 'shop_id')
+            ->where('availability_id', 1)
+            ->orderBy('base_price')
+            ->orderBy('product_id');
+    }
 
 }
