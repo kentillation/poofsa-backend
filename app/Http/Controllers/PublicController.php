@@ -128,10 +128,15 @@ class PublicController extends Controller
         }
     }
 
-    public function getProductCategories()
+    public function getProductCategories(Request $request)
     {
         try {
-            $data = CategoryModel::orderBy('category_label', 'asc')->get();
+            $shopId = $request->shop_id;
+            $data = CategoryModel::when($shopId, function ($query) use ($shopId) {
+                $query->where('shop_id', $shopId);
+            })
+            ->orderBy('category_label', 'asc')
+            ->get();
             return response()->json([
                 'success' => true,
                 'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
