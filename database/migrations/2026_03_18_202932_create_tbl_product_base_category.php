@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('tbl_product_base_category', function (Blueprint $table) {
             $table->id('product_base_category_id');
             $table->string('product_base_category');
+            $table->unsignedBigInteger('meal_type_id')->index();
             $table->string('category_subtitle_hiligaynon')->nullable();
             $table->string('category_subtitle_bisaya')->nullable();
             $table->string('category_subtitle_tagalog')->nullable();

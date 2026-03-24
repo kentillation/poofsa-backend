@@ -94,9 +94,7 @@ class PublicController extends Controller
     public function getProductBaseCategories()
     {
         try {
-            $data = ProductBaseCategoryModel::orderBy('product_base_category_id', 'asc')
-                ->limit(10)
-                ->get();
+            $data = ProductBaseCategoryModel::orderBy('product_base_category_id', 'asc')->get();
             return response()->json([
                 'success' => true,
                 'message' => $data->isEmpty() ? 'No product base category found!' : 'Product base categories fetched successfully!',
