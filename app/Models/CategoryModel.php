@@ -16,7 +16,9 @@ class CategoryModel extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'product_category_id', 'category_label',
+        'product_category_id', 
+        'category_label', 
+        'product_base_category_id',
     ];
 
     protected $hidden = [
@@ -24,5 +26,10 @@ class CategoryModel extends Model
         'created_at',
         'updated_at',
     ];
+
+    public function baseCategory()
+    {
+        return $this->belongsTo(ProductBaseCategoryModel::class, 'product_base_category_id', 'product_base_category_id');
+    }
 
 }

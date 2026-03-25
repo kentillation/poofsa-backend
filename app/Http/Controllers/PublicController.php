@@ -14,34 +14,67 @@ class PublicController extends Controller
     public function getShops(Request $request)
     {
         try {
-            $requestedCategory = $request->requested_category;
+            $requestedCategory = $request->input('requested_category');
+            $requestedMealType = $request->input('requested_meal_type');
 
-            $shops = ShopModel::with(['lowestPricedProduct' => function ($q) use ($requestedCategory) {
-                $q->when($requestedCategory, function ($qq) use ($requestedCategory) {
-                    $qq->whereHas('category', function ($cat) use ($requestedCategory) {
+            $query = ShopModel::query();
+
+            $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType) {
+                $q->where('availability_id', 1);
+
+                // Filter by category
+                if ($requestedCategory) {
+                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
                         $cat->where('category_label', $requestedCategory);
                     });
-                });
-            }])
-                ->get()
-                ->map(function ($shop) {
-                    $product = $shop->lowestPricedProduct;
+                }
 
-                    return $product ? [
+                // Filter by meal type (JSON array)
+                if ($requestedMealType) {
+                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+                        // MySQL JSON contains query
+                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+                    });
+                }
+            });
+
+            $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType) {
+                $q->where('availability_id', 1);
+
+                if ($requestedCategory) {
+                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
+                        $cat->where('category_label', $requestedCategory);
+                    });
+                }
+
+                if ($requestedMealType) {
+                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+                    });
+                }
+            }])->get();
+
+            $filteredShops = $shops->map(function ($shop) {
+                $lowestProduct = $shop->products->sortBy('base_price')->first();
+
+                if ($lowestProduct) {
+                    return [
                         'shop_id' => $shop->shop_id,
                         'shop_name' => $shop->shop_name,
                         'shop_type' => $shop->shop_type,
-                        'lowest_price' => $product->base_price,
-                        'product_name' => $product->product_name,
-                    ] : null;
-                })
-                ->filter()
-                ->values();
+                        'lowest_price' => $lowestProduct->base_price,
+                        'product_name' => $lowestProduct->product_name,
+                        'category_label' => $lowestProduct->category->category_label ?? null,
+                    ];
+                }
+
+                return null;
+            })->filter()->values();
 
             return response()->json([
                 'success' => true,
-                'message' => $shops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
-                'data' => $shops
+                'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
+                'data' => $filteredShops
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -108,7 +141,6 @@ class PublicController extends Controller
             ], 500);
         }
     }
-
     public function getProductCategories(Request $request)
     {
         try {

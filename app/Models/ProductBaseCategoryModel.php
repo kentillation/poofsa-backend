@@ -19,13 +19,15 @@ class ProductBaseCategoryModel extends Model
 
     public $fillable = [
         'product_base_category',
-        'meal_type_id',
+        'meal_type',
         'category_subtitle_hiligaynon',
         'category_subtitle_bisaya',
         'category_subtitle_tagalog',
     ];
 
     protected $hidden = [
+        'category_subtitle_bisaya',
+        'category_subtitle_tagalog',
         'created_at',
         'updated_at'
     ];
