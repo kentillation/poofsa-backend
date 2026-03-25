@@ -22,17 +22,14 @@ class PublicController extends Controller
             $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType) {
                 $q->where('availability_id', 1);
 
-                // Filter by category
                 if ($requestedCategory) {
                     $q->whereHas('category', function ($cat) use ($requestedCategory) {
                         $cat->where('category_label', $requestedCategory);
                     });
                 }
 
-                // Filter by meal type (JSON array)
                 if ($requestedMealType) {
                     $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                        // MySQL JSON contains query
                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
                     });
                 }
