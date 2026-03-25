@@ -18,8 +18,8 @@ class CreateTblProductsTable extends Migration
             $table->string('product_name');
             $table->string('sku')->nullable();
             $table->unsignedBigInteger('category_id')->nullable();
-            $table->integer('size_id')->index();
-            $table->integer('temp_id')->index();
+            $table->unsignedBigInteger('size_id');
+            $table->unsignedBigInteger('temp_id');
             $table->decimal('base_price', 10, 2); // current price only
             $table->decimal('cost_estimate', 10, 2)->nullable();
             $table->boolean('is_active')->default(true);
@@ -30,6 +30,9 @@ class CreateTblProductsTable extends Migration
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
             $table->index('category_id');
+            $table->index('size_id');
+            $table->index('temp_id');
+            $table->index('availability_id');
             $table->index('station_id');
             $table->index('shop_id');
             $table->index('branch_id');
