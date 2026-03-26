@@ -121,6 +121,128 @@ class PublicController extends Controller
             ], 500);
         }
     }
+    // Add this new method to PublicController.php
+    public function getProductsByMealType(Request $request)
+    {
+        try {
+            $mealType = $request->meal_type;
+
+            if (!$mealType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'meal_type is required'
+                ], 400);
+            }
+
+            $data = ProductsModel::with(['size', 'temperature', 'category', 'category.baseCategory'])
+                ->where('availability_id', 1)
+                ->whereHas('category.baseCategory', function ($query) use ($mealType) {
+                    $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
+                })
+                ->orderBy('product_name')
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'branch_id' => $product->branch_id,
+                        'shop_id' => $product->shop_id,
+                        'product_id' => $product->product_id,
+                        'product_name' => $product->product_name,
+                        'base_price' => $product->base_price,
+                        'availability_id' => $product->availability_id,
+                        'station_id' => $product->station_id,
+                        'temp_label' => $product->temperature->temp_label ?? null,
+                        'size_label' => $product->size->size_label ?? null,
+                        'category_label' => $product->category->category_label ?? null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No products found!' : 'Products fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching products!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function getProductCategories(Request $request)
+    {
+        try {
+            $shopId = $request->shop_id;
+            $data = CategoryModel::with('baseCategory')
+                ->when($shopId, function ($query) use ($shopId) {
+                    $query->where('shop_id', $shopId);
+                })
+                ->orderBy('category_label', 'asc')
+                ->get()
+                ->map(function ($data) {
+                    return [
+                        'shop_id' => $data->shop_id,
+                        'product_category_id' => $data->product_category_id,
+                        'category_label' => $data->category_label,
+                        'meal_type' => $data->baseCategory->meal_type,
+                        'product_base_category_id' => $data->product_base_category_id,
+                    ];
+                });
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching categories!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    // Add this method to get categories by meal_type
+    public function getCategoriesByMealType(Request $request)
+    {
+        try {
+            $mealType = $request->meal_type;
+
+            if (!$mealType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'meal_type is required'
+                ], 400);
+            }
+
+            $data = CategoryModel::with('baseCategory')
+                ->whereHas('baseCategory', function ($query) use ($mealType) {
+                    $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
+                })
+                ->orderBy('category_label', 'asc')
+                ->get()
+                ->map(function ($data) {
+                    return [
+                        'shop_id' => $data->shop_id,
+                        'product_category_id' => $data->product_category_id,
+                        'category_label' => $data->category_label,
+                        'meal_type' => $data->baseCategory->meal_type,
+                        'product_base_category_id' => $data->product_base_category_id,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching categories!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     public function getProductBaseCategories()
     {
         try {
@@ -134,28 +256,6 @@ class PublicController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching product base categories!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-    public function getProductCategories(Request $request)
-    {
-        try {
-            $shopId = $request->shop_id;
-            $data = CategoryModel::when($shopId, function ($query) use ($shopId) {
-                $query->where('shop_id', $shopId);
-            })
-                ->orderBy('category_label', 'asc')
-                ->get();
-            return response()->json([
-                'success' => true,
-                'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error fetching categories!',
                 'error' => $e->getMessage()
             ], 500);
         }

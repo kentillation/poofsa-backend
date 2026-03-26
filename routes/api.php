@@ -26,10 +26,12 @@ use App\Models\DevModel;
 
 
 // Public
+Route::get('/public/shops', [PublicController::class, 'getShops']);
 Route::get('/public/products', [PublicController::class, 'getProducts']);
+Route::get('/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
+Route::get('/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
 Route::get('/public/product-category', [PublicController::class, 'getProductCategories']);
 Route::get('/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
-Route::get('/public/shops', [PublicController::class, 'getShops']);
 
 // Login and others
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
