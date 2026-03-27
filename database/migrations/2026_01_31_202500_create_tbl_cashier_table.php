@@ -18,7 +18,7 @@ class CreateTblCashierTable extends Migration
             $table->string('cashier_name', 150);
             $table->string('cashier_email', 100)->unique();
             $table->string('cashier_password');
-            $table->string('cashier_mpin');
+            $table->string('cashier_mpin')->nullable();
             $table->unsignedBigInteger('shop_id')->index();
             $table->unsignedBigInteger('branch_id')->index();
             $table->boolean('is_active')->default(true); // active/inactive status

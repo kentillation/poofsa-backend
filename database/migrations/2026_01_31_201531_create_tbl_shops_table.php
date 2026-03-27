@@ -15,12 +15,12 @@ class CreateTblShopsTable extends Migration
     {
         Schema::create('tbl_shops', function (Blueprint $table) {
             $table->id('shop_id');
-            $table->string('shop_name', 150);
-            $table->string('shop_owner', 150);
-            $table->string('shop_address', 255);
-            $table->string('shop_email', 100)->unique();
+            $table->string('shop_name');
+            $table->string('shop_owner');
+            $table->string('shop_address');
+            $table->string('shop_email')->unique();
             $table->string('shop_contact_number', 13);
-            $table->string('shop_type', 150);
+            $table->string('shop_type');
             $table->boolean('is_active')->default(true); // active/inactive status
             $table->timestamps();
         });

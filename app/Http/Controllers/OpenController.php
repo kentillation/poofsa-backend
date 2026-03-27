@@ -24,7 +24,7 @@ use App\Models\WebsiteMessageModel;
 class OpenController extends Controller
 {
 
-protected function getShopId(): int
+    protected function getShopId(): int
     {
         $user = auth('sanctum')->user();
         return $user->shop_id;

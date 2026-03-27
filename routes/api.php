@@ -26,6 +26,7 @@ use App\Models\DevModel;
 
 
 // Public
+Route::post('/public/save-shop', [PublicController::class, 'saveShop']);
 Route::get('/public/shops', [PublicController::class, 'getShops']);
 Route::get('/public/products', [PublicController::class, 'getProducts']);
 Route::get('/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
@@ -39,7 +40,6 @@ Route::post('/cashier/login', [CashierAuthController::class, 'login']);
 Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
 Route::post('/barista/login', [BaristaAuthController::class, 'login']);
 Route::post('/open/submit-message', [OpenController::class, 'submitMessage']);
-Route::post('/open/save-shop', [OpenController::class, 'saveShop']);
 Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
 Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
 

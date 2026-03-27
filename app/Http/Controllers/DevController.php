@@ -152,7 +152,7 @@ class DevController extends Controller
     public function saveShop(Request $request)
     {
         $validated = $request->validate([
-            'shop_name' => 'required|string|max:50',
+            'shop_name' => 'required|string|max:50|unique:tbl_shops,shop_email',
             'shop_owner' => 'required|string|max:50',
             'shop_location' => 'required|string',
             'shop_email' => 'required|string|email|max:50|unique:tbl_shops,shop_email',
