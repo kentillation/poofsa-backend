@@ -121,7 +121,6 @@ class PublicController extends Controller
             ], 500);
         }
     }
-    // Add this new method to PublicController.php
     public function getProductsByMealType(Request $request)
     {
         try {
@@ -134,7 +133,7 @@ class PublicController extends Controller
                 ], 400);
             }
 
-            $data = ProductsModel::with(['size', 'temperature', 'category', 'category.baseCategory'])
+            $data = ProductsModel::with(['shop', 'size', 'temperature', 'category', 'category.baseCategory'])
                 ->where('availability_id', 1)
                 ->whereHas('category.baseCategory', function ($query) use ($mealType) {
                     $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
@@ -145,6 +144,7 @@ class PublicController extends Controller
                     return [
                         'branch_id' => $product->branch_id,
                         'shop_id' => $product->shop_id,
+                        'shop_name' => $product->shop->shop_name,
                         'product_id' => $product->product_id,
                         'product_name' => $product->product_name,
                         'base_price' => $product->base_price,
@@ -201,7 +201,6 @@ class PublicController extends Controller
             ], 500);
         }
     }
-    // Add this method to get categories by meal_type
     public function getCategoriesByMealType(Request $request)
     {
         try {
@@ -228,7 +227,9 @@ class PublicController extends Controller
                         'meal_type' => $data->baseCategory->meal_type,
                         'product_base_category_id' => $data->product_base_category_id,
                     ];
-                });
+                })
+                ->unique('category_label')  // This removes duplicates by category_label
+                ->values();  // This resets the keys
 
             return response()->json([
                 'success' => true,
