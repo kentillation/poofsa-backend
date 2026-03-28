@@ -126,7 +126,6 @@ class PublicController extends Controller
             ], 500);
         }
     }
-
     public function getShops(Request $request)
     {
         try {
@@ -261,6 +260,7 @@ class PublicController extends Controller
                         'branch_id' => $product->branch_id,
                         'shop_id' => $product->shop_id,
                         'shop_name' => $product->shop->shop_name,
+                        'shop_type' => $product->shop->shop_type,
                         'product_id' => $product->product_id,
                         'product_name' => $product->product_name,
                         'base_price' => $product->base_price,
