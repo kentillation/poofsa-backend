@@ -25,6 +25,8 @@ class ShopModel extends Model
         'shop_email',
         'shop_contact_number',
         'is_active',
+        'open_at',
+        'close_at'
     ];
 
     public function products()

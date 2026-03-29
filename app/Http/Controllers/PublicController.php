@@ -131,10 +131,11 @@ class PublicController extends Controller
         try {
             $requestedCategory = $request->input('requested_category');
             $requestedMealType = $request->input('requested_meal_type');
+            $requestedTimeBetween = $request->input('requested_time_between'); // between 'open_at' and 'close_at'
 
             $query = ShopModel::query();
 
-            $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType) {
+            $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
                 $q->where('availability_id', 1);
 
                 if ($requestedCategory) {
@@ -148,9 +149,17 @@ class PublicController extends Controller
                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
                     });
                 }
+
+                if ($requestedTimeBetween) {
+                    $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
+                        $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
+                                ->whereTime('close_at', '>=', $requestedTimeBetween);
+                    });
+                }
+                
             });
 
-            $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType) {
+            $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
                 $q->where('availability_id', 1);
 
                 if ($requestedCategory) {
