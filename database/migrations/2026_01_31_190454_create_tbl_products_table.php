@@ -23,6 +23,7 @@ class CreateTblProductsTable extends Migration
             $table->decimal('base_price', 10, 2); // current price only
             $table->decimal('cost_estimate', 10, 2)->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_new')->default(false);
             $table->unsignedBigInteger('availability_id');
             $table->unsignedBigInteger('station_id');
             $table->unsignedBigInteger('shop_id');

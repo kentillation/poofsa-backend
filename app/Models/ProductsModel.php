@@ -27,6 +27,7 @@ class ProductsModel extends Model
         'base_price',
         'cost_estimate',
         'is_active',
+        'is_new',
         'availability_id',
         'station_id',
         'shop_id',
