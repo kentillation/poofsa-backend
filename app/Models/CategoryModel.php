@@ -19,6 +19,7 @@ class CategoryModel extends Model
         'product_category_id', 
         'category_label', 
         'product_base_category_id',
+        'shop_id'
     ];
 
     protected $hidden = [
@@ -30,6 +31,11 @@ class CategoryModel extends Model
     public function baseCategory()
     {
         return $this->belongsTo(ProductBaseCategoryModel::class, 'product_base_category_id', 'product_base_category_id');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(ProductsModel::class, 'category_id');
     }
 
 }

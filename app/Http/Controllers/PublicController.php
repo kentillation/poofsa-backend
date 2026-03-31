@@ -117,7 +117,6 @@ class PublicController extends Controller
                 'barista' => $barista->makeHidden(['barista_password']),
                 'token' => $token,
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -153,10 +152,9 @@ class PublicController extends Controller
                 if ($requestedTimeBetween) {
                     $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
                         $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
-                                ->whereTime('close_at', '>=', $requestedTimeBetween);
+                            ->whereTime('close_at', '>=', $requestedTimeBetween);
                     });
                 }
-                
             });
 
             $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
@@ -241,6 +239,86 @@ class PublicController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching products!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function getNewProducts(Request $request)
+    {
+        try {
+            $newProduct = $request->new_products;
+
+            $data = ProductsModel::with(['shop', 'size', 'temperature', 'category'])
+                ->where('availability_id', 1)
+                ->when($newProduct, function ($query) use ($newProduct) {
+                    $query->where('is_new', $newProduct);
+                })
+                ->orderBy('product_name')
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'branch_id' => $product->branch_id,
+                        'shop_id' => $product->shop->shop_id,
+                        'shop_name' => $product->shop->shop_name,
+                        'product_id' => $product->product_id,
+                        'product_name' => $product->product_name,
+                        'base_price' => $product->base_price,
+                        'availability_id' => $product->availability_id,
+                        'temp_label' => $product->temperature->temp_label ?? null,
+                        'size_label' => $product->size->size_label ?? null,
+                        'category_label' => $product->category->category_label ?? null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No products found!' : 'Products fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching products!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCategoriesByNewProducts(Request $request)
+    {
+        try {
+            $newProduct = $request->new_product;
+
+            $data = CategoryModel::with('baseCategory')
+                ->whereHas('products', function ($query) use ($newProduct) {
+                    $query->where('availability_id', 1)
+                        ->when($newProduct, function ($q) use ($newProduct) {
+                            $q->where('is_new', $newProduct);
+                        });
+                })
+                ->orderBy('category_label', 'asc')
+                ->get()
+                ->map(function ($data) {
+                    return [
+                        'shop_id' => $data->shop_id,
+                        'product_category_id' => $data->product_category_id,
+                        'category_label' => $data->category_label,
+                        'meal_type' => $data->baseCategory->meal_type ?? null,
+                        'product_base_category_id' => $data->product_base_category_id,
+                    ];
+                })
+                ->unique('category_label')
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No category found!' : 'Categories fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching categories!',
                 'error' => $e->getMessage()
             ], 500);
         }
