@@ -26,15 +26,17 @@ use App\Models\DevModel;
 
 
 // Public
-Route::post('/public/save-shop', [PublicController::class, 'saveShop']);
-Route::get('/public/shops', [PublicController::class, 'getShops']);
-Route::get('/public/products', [PublicController::class, 'getProducts']);
-Route::get('/public/new-products', [PublicController::class, 'getNewProducts']);
-Route::get('/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
-Route::get('/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
-Route::get('/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
-Route::get('/public/product-category', [PublicController::class, 'getProductCategories']);
-Route::get('/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
+Route::post('v1/public/save-shop', [PublicController::class, 'saveShop']);
+Route::get('v1/public/shops', [PublicController::class, 'getShops']);
+Route::get('v1/public/products', [PublicController::class, 'getProducts']);
+Route::get('v1/public/all-products', [PublicController::class, 'getAllPublicProducts']); //new
+Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
+Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
+Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
+Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
+Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
+Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
+Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
 
 // Login and others
 Route::post('/admin/login', [AdminAuthController::class, 'login']);

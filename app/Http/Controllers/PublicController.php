@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\GetPublicProductsRequest;
+use App\Actions\Products\GetPublicProductsAction;
+use App\Http\Resources\GetPublicProductsResource;
 use App\Models\AdminModel;
 use App\Models\CashierModel;
 use App\Models\KitchenModel;
@@ -175,10 +178,12 @@ class PublicController extends Controller
 
             $filteredShops = $shops->map(function ($shop) {
                 $lowestProduct = $shop->products->sortBy('base_price')->first();
+                $branchId = $shop->products->first()->branch_id ?? null;
 
                 if ($lowestProduct) {
                     return [
                         'shop_id' => $shop->shop_id,
+                        'branch_id' => $branchId,
                         'shop_name' => $shop->shop_name,
                         'shop_type' => $shop->shop_type,
                         'lowest_price' => $lowestProduct->base_price,
@@ -243,6 +248,23 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
+    // New Structured Code for Get All Public Products with Pagination and Search
+    public function getAllPublicProducts(GetPublicProductsRequest $request, GetPublicProductsAction $action)
+    {
+        $result = $action->execute(
+            shopId: $request->shop_id,
+            branchId: $request->branch_id,
+            search: $request->search,
+            perPage: $request->itemsPerPage ?? 10
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicProductsResource::collection($result)
+        ]);
+    }
+
     public function getNewProducts(Request $request)
     {
         try {
