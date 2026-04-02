@@ -19,6 +19,9 @@ class PublicProductsRepository
             ->when($search, function ($query) use ($search) {
                 $query->where('product_name', 'like', '%' . $search . '%');
             })
+            ->when($perPage, function ($query) use ($perPage) {
+                $query->paginate($perPage);
+            })
             ->orderBy('product_name');
 
         // Or if you want all results without pagination:

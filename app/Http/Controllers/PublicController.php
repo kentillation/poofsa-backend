@@ -188,6 +188,7 @@ class PublicController extends Controller
                         'shop_type' => $shop->shop_type,
                         'lowest_price' => $lowestProduct->base_price,
                         'product_name' => $lowestProduct->product_name,
+                        'product_id' => $lowestProduct->product_id,
                         'category_label' => $lowestProduct->category->category_label ?? null,
                     ];
                 }
