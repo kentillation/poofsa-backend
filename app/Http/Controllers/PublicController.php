@@ -268,12 +268,12 @@ class PublicController extends Controller
     public function getNewProducts(Request $request)
     {
         try {
-            $newProduct = $request->new_products;
+            $isNew = $request->is_new;
 
             $data = ProductsModel::with(['shop', 'size', 'temperature', 'category'])
                 ->where('availability_id', 1)
-                ->when($newProduct, function ($query) use ($newProduct) {
-                    $query->where('is_new', $newProduct);
+                ->when($isNew, function ($query) use ($isNew) {
+                    $query->where('is_new', $isNew);
                 })
                 ->orderBy('product_name')
                 ->get()
@@ -309,13 +309,13 @@ class PublicController extends Controller
     public function getCategoriesByNewProducts(Request $request)
     {
         try {
-            $newProduct = $request->new_product;
+            $isNew = $request->is_new;
 
             $data = CategoryModel::with('baseCategory')
-                ->whereHas('products', function ($query) use ($newProduct) {
+                ->whereHas('products', function ($query) use ($isNew) {
                     $query->where('availability_id', 1)
-                        ->when($newProduct, function ($q) use ($newProduct) {
-                            $q->where('is_new', $newProduct);
+                        ->when($isNew, function ($q) use ($isNew) {
+                            $q->where('is_new', $isNew);
                         });
                 })
                 ->orderBy('category_label', 'asc')
