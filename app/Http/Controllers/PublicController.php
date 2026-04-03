@@ -233,6 +233,7 @@ class PublicController extends Controller
                         'temp_label' => $product->temperature->temp_label ?? null,
                         'size_label' => $product->size->size_label ?? null,
                         'category_label' => $product->category->category_label ?? null,
+                        'is_new' => $product->is_new,
                     ];
                 });
 
