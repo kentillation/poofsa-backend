@@ -28,9 +28,9 @@ use App\Models\DevModel;
 // Public
 Route::post('v1/public/save-shop', [PublicController::class, 'saveShop']);
 // Route::get('v1/public/shops', [PublicController::class, 'getShops']);
-Route::get('v1/public/shops', [PublicController::class, 'getAllPublicShops']); //new structure
+Route::get('v1/public/all-shops', [PublicController::class, 'getAllPublicShops']); //new structure
 // Route::get('v1/public/products', [PublicController::class, 'getProducts']);
-Route::get('v1/public/products', [PublicController::class, 'getAllPublicProducts']); //new structure
+Route::get('v1/public/all-products', [PublicController::class, 'getAllPublicProducts']); //new structure
 Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
 Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
 Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
