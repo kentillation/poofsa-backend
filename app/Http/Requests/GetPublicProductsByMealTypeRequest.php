@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetPublicProductsRequest extends FormRequest
+class GetPublicProductsByMealTypeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,11 @@ class GetPublicProductsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shop_id'     => 'required|integer|exists:tbl_shops,shop_id',
-            'branch_id'     => 'required|integer|exists:tbl_shop_branch,branch_id',
+            'meal_type' => 'required|string|max:255',
             'items_per_page' => 'nullable|integer|min:1|max:100',
             'search'        => 'nullable|string',
         ];
     }
 }
+
+// This request is for fetching all public products based on meal type with pagination and search functionality

@@ -7,9 +7,9 @@ class GetPublicProductsAction
 {
     public function __construct(private PublicProductsRepository $publicProductRepository) {}
 
-    public function execute($shopId, $branchId, $search, $perPage)
+    public function execute($shopId, $branchId, $perPage, $search)
     {
-        return $this->publicProductRepository->getAllPublicProducts($shopId, $branchId, $search, $perPage);
+        return $this->publicProductRepository->getAllPublicProducts($shopId, $branchId, $perPage, $search);
     }
 }
 

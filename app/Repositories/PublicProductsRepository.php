@@ -6,7 +6,7 @@ use App\Models\ProductsModel;
 
 class PublicProductsRepository
 {
-    public function getAllPublicProducts($shopId, $branchId, $search, $perPage)
+    public function getAllPublicProducts($shopId, $branchId, $perPage, $search = null)
     {
         $query = ProductsModel::with(['size', 'temperature', 'category'])
             ->where('availability_id', 1)
@@ -16,19 +16,19 @@ class PublicProductsRepository
             ->when($branchId, function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
             })
-            ->when($search, function ($query) use ($search) {
-                $query->where('product_name', 'like', '%' . $search . '%');
-            })
             ->when($perPage, function ($query) use ($perPage) {
                 $query->paginate($perPage);
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('product_name');
 
         // Or if you want all results without pagination:
-        return $query->get();
+        // return $query->get();
 
         // Return paginated results
-        //return $query->paginate($perPage);
+        return $query->paginate($perPage);
     }
 }
 

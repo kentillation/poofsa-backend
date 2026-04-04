@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetPublicProductsRequest extends FormRequest
+class GetPublicShopsRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +22,10 @@ class GetPublicProductsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shop_id'     => 'required|integer|exists:tbl_shops,shop_id',
-            'branch_id'     => 'required|integer|exists:tbl_shop_branch,branch_id',
-            'items_per_page' => 'nullable|integer|min:1|max:100',
+            'requested_category'     => 'nullable|string',
+            'requested_meal_type'     => 'nullable|string',
+            'requested_time_between'     => 'nullable|string',
+            'items_per_page'  => 'nullable|integer|min:1',
             'search'        => 'nullable|string',
         ];
     }

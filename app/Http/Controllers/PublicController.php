@@ -6,8 +6,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\GetPublicProductsRequest;
+use App\Http\Requests\GetPublicProductsByMealTypeRequest;
+use App\Http\Requests\GetPublicShopsRequest;
 use App\Actions\Products\GetPublicProductsAction;
+use App\Actions\Products\GetPublicProductsByMealTypeAction;
+use App\Actions\Shops\GetPublicShopsAction;
 use App\Http\Resources\GetPublicProductsResource;
+use App\Http\Resources\GetPublicProductsByMealTypeResource;
+use App\Http\Resources\GetPublicShopsResource;
 use App\Models\AdminModel;
 use App\Models\CashierModel;
 use App\Models\KitchenModel;
@@ -20,6 +26,53 @@ use App\Models\ProductBaseCategoryModel;
 
 class PublicController extends Controller
 {
+
+    // NEW STRUCTURED CODE
+    public function getAllPublicShops(GetPublicShopsRequest $request, GetPublicShopsAction $action)
+    {
+        // execute if from GetPublicShopsAction
+        $result = $action->execute(
+            categoryLabel: $request->requested_category,
+            mealType: $request->requested_meal_type,
+            timeBetween: $request->requested_time_between,
+            perPage: $request->items_per_page ?? 10,
+            search: $request->search ?? null,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicShopsResource::collection($result)
+        ]);
+    }
+
+    public function getAllPublicProducts(GetPublicProductsRequest $request, GetPublicProductsAction $action)
+    {
+        $result = $action->execute(
+            shopId: $request->shop_id,
+            branchId: $request->branch_id,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicProductsResource::collection($result)
+        ]);
+    }
+
+    public function getAllPublicProductsByMealType(GetPublicProductsByMealTypeRequest $request, GetPublicProductsByMealTypeAction $action)
+    {
+        $result = $action->execute(
+            mealType: $request->meal_type,
+            perPage: $request->items_per_page ?? 20
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicProductsByMealTypeResource::collection($result)
+        ]);
+    }
+
     public function saveShop(Request $request)
     {
         $validated = $request->validate([
@@ -128,6 +181,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
     public function getShops(Request $request)
     {
         try {
@@ -209,6 +263,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
     public function getProducts(Request $request)
     {
         try {
@@ -249,22 +304,6 @@ class PublicController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    // New Structured Code for Get All Public Products with Pagination and Search
-    public function getAllPublicProducts(GetPublicProductsRequest $request, GetPublicProductsAction $action)
-    {
-        $result = $action->execute(
-            shopId: $request->shop_id,
-            branchId: $request->branch_id,
-            search: $request->search,
-            perPage: $request->itemsPerPage ?? 10
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicProductsResource::collection($result)
-        ]);
     }
 
     public function getNewProducts(Request $request)
@@ -347,6 +386,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
     public function getProductsByMealType(Request $request)
     {
         try {
@@ -396,6 +436,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
     public function getProductCategories(Request $request)
     {
         try {
@@ -428,6 +469,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
     public function getCategoriesByMealType(Request $request)
     {
         try {
