@@ -33,6 +33,7 @@ Route::post('v1/public/save-shop', [PublicController::class, 'saveShop']);
 // Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
 // Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
 // Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
+// Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
 
 Route::get('v1/public/all-shops', [PublicController::class, 'getAllPublicShops']); // new structure
 Route::get('v1/public/all-products', [PublicController::class, 'getAllPublicProductsFromShop']); // new structure
@@ -40,7 +41,7 @@ Route::get('v1/public/new-products', [PublicController::class, 'getAllNewPublicP
 Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getAllPublicProductsByMealType']); // new structure
 Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getAllCategoriesByNewProducts']); // new structure
 Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getAllCategoriesByMealType']); // new structure
-Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
+Route::get('v1/public/product-category', [PublicController::class, 'getAllProductCategories']);
 Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
 
 // Login and others

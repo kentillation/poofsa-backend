@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Actions\Products;
-use App\Repositories\PublicNewProductsRepository;
+use App\Repositories\PublicProductsAndCategoriesRepository;
 
 class GetPublicNewProductsAction
 {
-    public function __construct(private PublicNewProductsRepository $repository) {}
+    public function __construct(private PublicProductsAndCategoriesRepository $repository) {}
 
     public function execute($isNew, $perPage, $search)
     {

@@ -11,7 +11,6 @@ class PublicCategoriesByMealTypeRepository
     public function getAllPublicCategoriesByMealType($mealType, $perPage, $search = null)
     {
         $query = CategoryModel::with('baseCategory')
-            ->where('availability_id', 1)
             ->whereHas('baseCategory', function (Builder $query) use ($mealType) {
                 $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
             })

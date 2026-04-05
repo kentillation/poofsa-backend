@@ -6,7 +6,7 @@ use App\Models\ProductsModel;
 use App\Models\CategoryModel;
 
 
-class PublicNewProductsRepository
+class PublicProductsAndCategoriesRepository
 {
     public function getAllPublicNewProducts($isNew, $perPage, $search = null)
     {
@@ -63,6 +63,30 @@ class PublicNewProductsRepository
 
         return $query;
     }
+
+    public function getAllProductCategories($shopId, $branchId, $perPage, $search = null)
+    {
+        $query = CategoryModel::with([
+            'baseCategory' => function ($querySelectMeal) {
+                $querySelectMeal->select('meal_type');
+            },
+        ])
+            ->when($shopId, function ($queryShop) use ($shopId) {
+                $queryShop->where('shop_id', $shopId);
+            })
+            ->when($branchId, function ($queryBranch) use ($branchId) {
+                $queryBranch->where('branch_id', $branchId);
+            })
+            ->when($perPage, function ($queryPaginate) use ($perPage) {
+                $queryPaginate->paginate($perPage ?? 20);
+            })
+            ->when($search, function ($querySearch) use ($search) {
+                $querySearch->where('product_name', 'like', '%' . $search . '%');
+            })
+            ->orderBy('category_label', 'asc');
+
+        return $query;
+    }
 }
 
-// This Repository is for Products module only
+// This Repository is for Products and Categories module only

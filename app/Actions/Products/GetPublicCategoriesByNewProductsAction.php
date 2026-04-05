@@ -2,11 +2,11 @@
 
 namespace App\Actions\Products;
 
-use App\Repositories\PublicNewProductsRepository;
+use App\Repositories\PublicProductsAndCategoriesRepository;
 
 class GetPublicCategoriesByNewProductsAction
 {
-    public function __construct(private PublicNewProductsRepository $repository) {}
+    public function __construct(private PublicProductsAndCategoriesRepository $repository) {}
 
     public function execute($isNew, $perPage, $search)
     {

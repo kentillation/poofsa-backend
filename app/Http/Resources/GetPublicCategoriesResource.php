@@ -19,7 +19,7 @@ class GetPublicCategoriesResource extends JsonResource
             'shop_id' => $this->shop_id,
             'product_category_id' => $this->product_category_id,
             'category_label' => $this->category_label,
-            'meal_type' => $this->baseCategory->category->meal_type ?? null,
+            'meal_type' => $this->baseCategory->meal_type ?? null,
             'product_base_category_id' => $this->product_base_category_id,
         ];
     }

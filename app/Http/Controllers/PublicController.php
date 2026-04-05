@@ -14,6 +14,7 @@ use App\Actions\Products\GetPublicNewProductsAction;
 use App\Actions\Products\GetPublicProductsByMealTypeAction;
 use App\Actions\Products\GetPublicCategoriesByNewProductsAction;
 use App\Actions\Products\GetPublicCategoriesByMealTypeAction;
+use App\Actions\Products\GetPublicProductCategoriesAction;
 use App\Actions\Shops\GetPublicShopsAction;
 use App\Http\Resources\GetPublicProductsResource;
 use App\Http\Resources\GetPublicNewProductsResource;
@@ -121,7 +122,22 @@ class PublicController extends Controller
             'data' => GetPublicCategoriesResource::collection($result)
         ]);
     }
-    // END NEW STRUCTURED CODE
+
+    public function getAllProductCategories(GetPublicProductsRequest $request, GetPublicProductCategoriesAction $action)
+    {
+        $result = $action->execute(
+            shopId: $request->shop_id,
+            branchId: $request->branch_id,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicCategoriesResource::collection($result)
+        ]);
+    }
+    // END OF NEW STRUCTURED CODE
 
     public function saveShop(Request $request)
     {

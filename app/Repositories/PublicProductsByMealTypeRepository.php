@@ -23,12 +23,9 @@ class PublicProductsByMealTypeRepository
             'category' => function ($query) {
                 $query->select('product_category_id', 'category_label', 'product_base_category_id');
             },
-            'category.baseCategory' => function ($query) {
+            'category.baseCategory' => function ($query) use ($mealType) {
                 $query->select('product_base_category_id', 'meal_type');
             }
-            // 'category.baseCategory' => function ($query) use ($mealType) {
-            //     $query->select('product_base_category_id', 'meal_type');
-            // }
         ])
             ->where('availability_id', 1)
             ->whereHas('category.baseCategory', function (Builder $query) use ($mealType) {

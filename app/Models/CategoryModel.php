@@ -30,7 +30,7 @@ class CategoryModel extends Model
 
     public function baseCategory()
     {
-        return $this->belongsTo(ProductBaseCategoryModel::class, 'product_base_category_id', 'product_base_category_id');
+        return $this->belongsTo(ProductBaseCategoryModel::class, 'product_base_category_id');
     }
 
     public function products()
