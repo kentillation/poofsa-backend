@@ -15,12 +15,7 @@ class GetPublicCategoriesResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'branch_id' => $this->branch_id,
-            'shop_id' => $this->shop_id,
-            'product_category_id' => $this->product_category_id,
             'category_label' => $this->category_label,
-            'meal_type' => $this->baseCategory->meal_type ?? null,
-            'product_base_category_id' => $this->product_base_category_id,
         ];
     }
 }

@@ -31,14 +31,11 @@ class PublicProductsByMealTypeRepository
             ->whereHas('category.baseCategory', function (Builder $query) use ($mealType) {
                 $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
             })
-            ->when($perPage, function ($queryPaginate) use ($perPage) {
-                $queryPaginate->paginate($perPage ?? 20);
-            })
             ->when($search, function ($querySearch) use ($search) {
                 $querySearch->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('product_name');
 
-        return $query;
+        return $query->paginate($perPage ?? 20);
     }
 }

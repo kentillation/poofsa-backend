@@ -38,4 +38,9 @@ class CategoryModel extends Model
         return $this->hasMany(ProductsModel::class, 'category_id');
     }
 
+    public function shop()
+    {
+        return $this->belongsTo(ShopModel::class, 'shop_id');
+    }
+
 }
