@@ -12,10 +12,12 @@ use App\Http\Requests\GetPublicShopsRequest;
 use App\Actions\Products\GetPublicProductsAction;
 use App\Actions\Products\GetPublicNewProductsAction;
 use App\Actions\Products\GetPublicProductsByMealTypeAction;
+use App\Actions\Products\GetPublicCategoriesByNewProductsAction;
 use App\Actions\Shops\GetPublicShopsAction;
 use App\Http\Resources\GetPublicProductsResource;
 use App\Http\Resources\GetPublicNewProductsResource;
 use App\Http\Resources\GetPublicProductsByMealTypeResource;
+use App\Http\Resources\GetPublicCategoriesByNewProductResource;
 use App\Http\Resources\GetPublicShopsResource;
 use App\Models\AdminModel;
 use App\Models\CashierModel;
@@ -38,8 +40,8 @@ class PublicController extends Controller
             categoryLabel: $request->requested_category,
             mealType: $request->requested_meal_type,
             timeBetween: $request->requested_time_between,
-            perPage: $request->items_per_page ?? 10,
-            search: $request->search ?? null,
+            perPage: $request->items_per_page,
+            search: $request->search,
         );
 
         return response()->json([
@@ -87,6 +89,20 @@ class PublicController extends Controller
         return response()->json([
             'success' => true,
             'data' => GetPublicProductsByMealTypeResource::collection($result)
+        ]);
+    }
+
+    public function getAllCategoriesByNewProducts(GetPublicNewProductsRequest $request, GetPublicCategoriesByNewProductsAction $action)
+    {
+        $result = $action->execute(
+            isNew: $request->is_new,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicCategoriesByNewProductResource::collection($result)
         ]);
     }
     // END NEW STRUCTURED CODE

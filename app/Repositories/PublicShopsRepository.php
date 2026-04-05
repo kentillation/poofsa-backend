@@ -12,30 +12,30 @@ class PublicShopsRepository
     {
         // Step 1: Get only 10 shop IDs
         $shopIds = ShopModel::query()
-            ->when($timeBetween, function ($q) use ($timeBetween) {
-                $q->whereTime('open_at', '<=', $timeBetween)
+            ->when($timeBetween, function ($query) use ($timeBetween) {
+                $query->whereTime('open_at', '<=', $timeBetween)
                     ->whereTime('close_at', '>=', $timeBetween);
             })
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->where('shop_name', 'LIKE', "%{$search}%")
-                        ->orWhere('shop_type', 'LIKE', "%{$search}%");
-                });
-            })
-            ->whereHas('products', function (Builder $q) use ($categoryLabel, $mealType) {
-                $q->where('availability_id', 1);
+            ->whereHas('products', function (Builder $query) use ($categoryLabel, $mealType) {
+                $query->where('availability_id', 1);
 
                 if ($categoryLabel) {
-                    $q->whereHas('category', function (Builder $cat) use ($categoryLabel) {
-                        $cat->where('category_label', $categoryLabel);
+                    $query->whereHas('category', function (Builder $category) use ($categoryLabel) {
+                        $category->where('category_label', $categoryLabel);
                     });
                 }
 
                 if ($mealType) {
-                    $q->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
+                    $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
                     });
                 }
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($sub) use ($search) {
+                    $sub->where('shop_name', 'LIKE', "%{$search}%")
+                        ->orWhere('shop_type', 'LIKE', "%{$search}%");
+                });
             })
             ->limit($perPage)
             ->pluck('shop_id')
@@ -99,27 +99,27 @@ class PublicShopsRepository
 
         // Step 5: Get total count
         $total = ShopModel::query()
-            ->when($timeBetween, function ($q) use ($timeBetween) {
-                $q->whereTime('open_at', '<=', $timeBetween)
+            ->when($timeBetween, function ($query) use ($timeBetween) {
+                $query->whereTime('open_at', '<=', $timeBetween)
                     ->whereTime('close_at', '>=', $timeBetween);
             })
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($sub) use ($search) {
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($sub) use ($search) {
                     $sub->where('shop_name', 'LIKE', "%{$search}%")
                         ->orWhere('shop_type', 'LIKE', "%{$search}%");
                 });
             })
-            ->whereHas('products', function (Builder $q) use ($categoryLabel, $mealType) {
-                $q->where('availability_id', 1);
+            ->whereHas('products', function (Builder $query) use ($categoryLabel, $mealType) {
+                $query->where('availability_id', 1);
 
                 if ($categoryLabel) {
-                    $q->whereHas('category', function (Builder $cat) use ($categoryLabel) {
-                        $cat->where('category_label', $categoryLabel);
+                    $query->whereHas('category', function (Builder $category) use ($categoryLabel) {
+                        $category->where('category_label', $categoryLabel);
                     });
                 }
 
                 if ($mealType) {
-                    $q->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
+                    $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
                     });
                 }

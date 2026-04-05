@@ -7,7 +7,7 @@ use App\Models\ProductsHistoryModel;
 
 class ProductRepository
 {
-    public function getProducts($shopId, $branchId, $search, $perPage)
+    public function getProducts($shopId, $branchId, $perPage, $search = null)
     {
         return ProductsModel::with([
             'temperature',
@@ -37,10 +37,10 @@ class ProductRepository
                     });
             })
             ->orderByDesc('updated_at')
-            ->paginate($perPage);
+            ->paginate($perPage ?? 20);
     }
 
-    public function getProductsHistory($shopId, $branchId, $search, $perPage)
+    public function getProductsHistory($shopId, $branchId, $perPage, $search = null)
     {
         return ProductsHistoryModel::select(
             'tbl_products.product_name',
@@ -61,7 +61,7 @@ class ProductRepository
                     ->orWhere('tbl_products_history.description', 'like', "%{$search}%");
             })
             ->orderByDesc('updated_at')
-            ->paginate($perPage);
+            ->paginate($perPage ?? 20);
     }
 }
 

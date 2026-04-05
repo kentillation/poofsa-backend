@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\ProductsModel;
+use App\Models\CategoryModel;
+
 
 class PublicNewProductsRepository
 {
@@ -33,6 +35,28 @@ class PublicNewProductsRepository
                 $query->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('product_name');
+
+        return $query->paginate($perPage ?? 20);
+    }
+
+    public function getAllCategoriesByNewProducts($isNew, $perPage = 20, $search = null)
+    {
+        $query = CategoryModel::with([
+            'baseCategory' => function ($query) {
+                $query->select('meal_type');
+            },
+        ])
+            ->whereHas('products', function ($query) use ($isNew) {
+                $query->where('availability_id', 1)
+                    ->when($isNew, function ($q) use ($isNew) {
+                        $q->where('is_new', $isNew);
+                    });
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->where('product_name', 'like', '%' . $search . '%');
+            })
+            ->orderBy('category_label', 'asc')
+            ->distinct('category_label');
 
         return $query->paginate($perPage ?? 20);
     }
