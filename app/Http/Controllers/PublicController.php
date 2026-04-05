@@ -51,7 +51,7 @@ class PublicController extends Controller
         ]);
     }
 
-    public function getAllPublicProducts(GetPublicProductsRequest $request, GetPublicProductsAction $action)
+    public function getAllPublicProductsFromShop(GetPublicProductsRequest $request, GetPublicProductsAction $action)
     {
         $result = $action->execute(
             shopId: $request->shop_id,
