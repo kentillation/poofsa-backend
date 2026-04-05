@@ -6,12 +6,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\GetPublicProductsRequest;
+use App\Http\Requests\GetPublicNewProductsRequest;
 use App\Http\Requests\GetPublicProductsByMealTypeRequest;
 use App\Http\Requests\GetPublicShopsRequest;
 use App\Actions\Products\GetPublicProductsAction;
+use App\Actions\Products\GetPublicNewProductsAction;
 use App\Actions\Products\GetPublicProductsByMealTypeAction;
 use App\Actions\Shops\GetPublicShopsAction;
 use App\Http\Resources\GetPublicProductsResource;
+use App\Http\Resources\GetPublicNewProductsResource;
 use App\Http\Resources\GetPublicProductsByMealTypeResource;
 use App\Http\Resources\GetPublicShopsResource;
 use App\Models\AdminModel;
@@ -60,6 +63,20 @@ class PublicController extends Controller
         ]);
     }
 
+    public function getAllNewPublicProducts(GetPublicNewProductsRequest $request, GetPublicNewProductsAction $action)
+    {
+        $result = $action->execute(
+            isNew: $request->is_new,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicNewProductsResource::collection($result)
+        ]);
+    }
+
     public function getAllPublicProductsByMealType(GetPublicProductsByMealTypeRequest $request, GetPublicProductsByMealTypeAction $action)
     {
         $result = $action->execute(
@@ -72,6 +89,7 @@ class PublicController extends Controller
             'data' => GetPublicProductsByMealTypeResource::collection($result)
         ]);
     }
+    // END NEW STRUCTURED CODE
 
     public function saveShop(Request $request)
     {
@@ -321,12 +339,10 @@ class PublicController extends Controller
                 ->map(function ($product) {
                     return [
                         'branch_id' => $product->branch_id,
-                        'shop_id' => $product->shop->shop_id,
                         'shop_name' => $product->shop->shop_name,
                         'product_id' => $product->product_id,
                         'product_name' => $product->product_name,
                         'base_price' => $product->base_price,
-                        'availability_id' => $product->availability_id,
                         'temp_label' => $product->temperature->temp_label ?? null,
                         'size_label' => $product->size->size_label ?? null,
                         'category_label' => $product->category->category_label ?? null,
@@ -513,6 +529,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
     public function getProductBaseCategories()
     {
         try {
