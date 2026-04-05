@@ -24,11 +24,7 @@ class PublicProductsRepository
             })
             ->orderBy('product_name');
 
-        // Or if you want all results without pagination:
-        // return $query->get();
-
-        // Return paginated results
-        return $query->paginate($perPage);
+        return $query->paginate($perPage ?? 20);
     }
 }
 

@@ -5,12 +5,12 @@ use App\Repositories\PublicProductsByMealTypeRepository;
 
 class GetPublicProductsByMealTypeAction
 {
-    public function __construct(private PublicProductsByMealTypeRepository $publicProductRepository) {}
+    public function __construct(private PublicProductsByMealTypeRepository $repository) {}
 
-    public function execute($mealType, $perPage)
+    public function execute($mealType, $perPage, $search)
     {
-        return $this->publicProductRepository->getAllPublicProductsByMealType($mealType, $perPage);
+        return $this->repository->getAllPublicProductsByMealType($mealType, $perPage, $search);
     }
 }
 
-// This Action is for fetching all public products based on meal type with pagination and search functionality
+// This Action is for fetching all public products by meal type only

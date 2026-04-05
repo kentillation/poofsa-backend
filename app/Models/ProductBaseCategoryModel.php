@@ -26,6 +26,7 @@ class ProductBaseCategoryModel extends Model
     ];
 
     protected $hidden = [
+        'category_subtitle_hiligaynon',
         'category_subtitle_bisaya',
         'category_subtitle_tagalog',
         'created_at',

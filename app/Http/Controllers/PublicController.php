@@ -7,17 +7,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\GetPublicProductsRequest;
 use App\Http\Requests\GetPublicNewProductsRequest;
-use App\Http\Requests\GetPublicProductsByMealTypeRequest;
+use App\Http\Requests\GetPublicByMealTypeRequest;
 use App\Http\Requests\GetPublicShopsRequest;
 use App\Actions\Products\GetPublicProductsAction;
 use App\Actions\Products\GetPublicNewProductsAction;
 use App\Actions\Products\GetPublicProductsByMealTypeAction;
 use App\Actions\Products\GetPublicCategoriesByNewProductsAction;
+use App\Actions\Products\GetPublicCategoriesByMealTypeAction;
 use App\Actions\Shops\GetPublicShopsAction;
 use App\Http\Resources\GetPublicProductsResource;
 use App\Http\Resources\GetPublicNewProductsResource;
 use App\Http\Resources\GetPublicProductsByMealTypeResource;
-use App\Http\Resources\GetPublicCategoriesByNewProductResource;
+use App\Http\Resources\GetPublicCategoriesResource;
 use App\Http\Resources\GetPublicShopsResource;
 use App\Models\AdminModel;
 use App\Models\CashierModel;
@@ -79,11 +80,12 @@ class PublicController extends Controller
         ]);
     }
 
-    public function getAllPublicProductsByMealType(GetPublicProductsByMealTypeRequest $request, GetPublicProductsByMealTypeAction $action)
+    public function getAllPublicProductsByMealType(GetPublicByMealTypeRequest $request, GetPublicProductsByMealTypeAction $action)
     {
         $result = $action->execute(
             mealType: $request->meal_type,
-            perPage: $request->items_per_page ?? 20
+            perPage: $request->items_per_page,
+            search: $request->search
         );
 
         return response()->json([
@@ -102,7 +104,21 @@ class PublicController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => GetPublicCategoriesByNewProductResource::collection($result)
+            'data' => GetPublicCategoriesResource::collection($result)
+        ]);
+    }
+
+    public function getAllCategoriesByMealType(GetPublicByMealTypeRequest $request, GetPublicCategoriesByMealTypeAction $action)
+    {
+        $result = $action->execute(
+            mealType: $request->meal_type,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicCategoriesResource::collection($result)
         ]);
     }
     // END NEW STRUCTURED CODE
