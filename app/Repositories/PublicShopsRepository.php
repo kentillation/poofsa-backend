@@ -50,7 +50,25 @@ class PublicShopsRepository
             ->get()
             ->keyBy('shop_id');
 
-        // Step 3: Get lowest priced product for each shop (without GROUP BY)
+        // Step 3: Get lowest priced product for each shop (WITH category filter)
+        // Step 3: Get lowest priced product for each shop (WITH category filter)
+        // First, get the minimum price per shop with filters applied
+        $minPricesSubquery = DB::table('tbl_products as p')
+            ->select('p.shop_id', DB::raw('MIN(p.base_price) as min_price'))
+            ->leftJoin('tbl_product_category as c', 'p.category_id', '=', 'c.product_category_id')
+            ->whereIn('p.shop_id', $shopIds)
+            ->where('p.availability_id', 1)
+            ->when($categoryLabel, function ($query) use ($categoryLabel) {
+                $query->where('c.category_label', $categoryLabel);
+            })
+            ->when($mealType, function ($query) use ($mealType) {
+                $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
+                    $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
+                });
+            })
+            ->groupBy('p.shop_id');
+
+        // Then get the actual product details by joining with the min prices
         $lowestProducts = DB::table('tbl_products as p')
             ->select(
                 'p.shop_id',
@@ -61,19 +79,21 @@ class PublicShopsRepository
                 'c.category_label'
             )
             ->leftJoin('tbl_product_category as c', 'p.category_id', '=', 'c.product_category_id')
-            ->join(DB::raw("(
-                SELECT shop_id, MIN(base_price) as min_price 
-                FROM tbl_products 
-                WHERE shop_id IN (" . implode(',', $shopIds) . ") 
-                AND availability_id = 1 
-                GROUP BY shop_id
-                ) as min_prices"), function ($join) {
+            ->joinSub($minPricesSubquery, 'min_prices', function ($join) {
                 $join->on('p.shop_id', '=', 'min_prices.shop_id')
                     ->on('p.base_price', '=', 'min_prices.min_price');
             })
             ->whereIn('p.shop_id', $shopIds)
             ->where('p.availability_id', 1)
-            // Remove GROUP BY - it's not needed
+            // Apply filters again to ensure the product matches
+            ->when($categoryLabel, function ($query) use ($categoryLabel) {
+                $query->where('c.category_label', $categoryLabel);
+            })
+            ->when($mealType, function ($query) use ($mealType) {
+                $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
+                    $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
+                });
+            })
             ->get()
             ->keyBy('shop_id');
 
