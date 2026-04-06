@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class PublicShopsRepository
 {
-    public function getAllPublicShops($categoryLabel, $mealType, $timeBetween, $perPage = 10, $search = null)
+    public function getAllPublicShops($categoryLabel, $mealType, $timeBetween, $perPage, $search = null)
     {
         // Step 1: Get only 10 shop IDs
         $shopIds = ShopModel::query()
@@ -50,7 +50,6 @@ class PublicShopsRepository
             ->get()
             ->keyBy('shop_id');
 
-        // Step 3: Get lowest priced product for each shop (WITH category filter)
         // Step 3: Get lowest priced product for each shop (WITH category filter)
         // First, get the minimum price per shop with filters applied
         $minPricesSubquery = DB::table('tbl_products as p')

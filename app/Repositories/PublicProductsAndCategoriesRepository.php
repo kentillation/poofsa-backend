@@ -52,8 +52,9 @@ class PublicProductsAndCategoriesRepository
             ->when($search, function ($querySearch) use ($search) {
                 $querySearch->where('product_name', 'like', '%' . $search . '%');
             })
-            ->orderBy('category_label', 'asc')
-            ->distinct('category_label');
+            ->select('category_label', 'product_base_category_id')
+            ->distinct('category_label')
+            ->orderBy('category_label', 'asc');
 
         return $query->paginate($perPage ?? 20);
     }
