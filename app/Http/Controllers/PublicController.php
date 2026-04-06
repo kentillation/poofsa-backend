@@ -127,7 +127,6 @@ class PublicController extends Controller
     {
         $result = $action->execute(
             shopId: $request->shop_id,
-            branchId: $request->branch_id,
             perPage: $request->items_per_page,
             search: $request->search,
         );

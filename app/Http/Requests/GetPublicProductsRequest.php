@@ -23,7 +23,7 @@ class GetPublicProductsRequest extends FormRequest
     {
         return [
             'shop_id'     => 'required|integer|exists:tbl_shops,shop_id',
-            'branch_id'     => 'required|integer|exists:tbl_shop_branch,branch_id',
+            'branch_id'     => 'nullable|integer|exists:tbl_shop_branch,branch_id',
             'items_per_page' => 'nullable|integer|min:1|max:100',
             'search'        => 'nullable|string',
         ];

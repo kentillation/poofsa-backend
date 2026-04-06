@@ -28,15 +28,12 @@ class PublicProductsAndCategoriesRepository
             ->when($isNew, function ($queryNew) use ($isNew) {
                 $queryNew->where('is_new', $isNew);
             })
-            ->when($perPage, function ($queryPaginate) use ($perPage) {
-                $queryPaginate->paginate($perPage ?? 20);
-            })
             ->when($search, function ($querySearch) use ($search) {
                 $querySearch->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('product_name');
 
-        return $query;
+        return $query->paginate($perPage ?? 20);
     }
 
     public function getAllCategoriesByNewProducts($isNew, $perPage, $search = null)
@@ -52,19 +49,16 @@ class PublicProductsAndCategoriesRepository
                         $q->where('is_new', $isNew);
                     });
             })
-            ->when($perPage, function ($queryPaginate) use ($perPage) {
-                $queryPaginate->paginate($perPage ?? 20);
-            })
             ->when($search, function ($querySearch) use ($search) {
                 $querySearch->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('category_label', 'asc')
             ->distinct('category_label');
 
-        return $query;
+        return $query->paginate($perPage ?? 20);
     }
 
-    public function getAllProductCategories($shopId, $branchId, $perPage, $search = null)
+    public function getAllProductCategories($shopId, $perPage, $search = null)
     {
         $query = CategoryModel::with([
             'baseCategory' => function ($querySelectMeal) {
@@ -74,18 +68,12 @@ class PublicProductsAndCategoriesRepository
             ->when($shopId, function ($queryShop) use ($shopId) {
                 $queryShop->where('shop_id', $shopId);
             })
-            ->when($branchId, function ($queryBranch) use ($branchId) {
-                $queryBranch->where('branch_id', $branchId);
-            })
-            ->when($perPage, function ($queryPaginate) use ($perPage) {
-                $queryPaginate->paginate($perPage ?? 20);
-            })
             ->when($search, function ($querySearch) use ($search) {
                 $querySearch->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('category_label', 'asc');
 
-        return $query;
+        return $query->paginate($perPage ?? 20);
     }
 }
 

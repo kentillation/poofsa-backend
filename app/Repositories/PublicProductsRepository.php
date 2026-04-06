@@ -16,15 +16,12 @@ class PublicProductsRepository
             ->when($branchId, function ($queryBranch) use ($branchId) {
                 $queryBranch->where('branch_id', $branchId);
             })
-            ->when($perPage, function ($queryPaginate) use ($perPage) {
-                $queryPaginate->paginate($perPage ?? 20);
-            })
             ->when($search, function ($querySearch) use ($search) {
                 $querySearch->where('product_name', 'like', '%' . $search . '%');
             })
             ->orderBy('product_name');
 
-        return $query;
+        return $query->paginate($perPage ?? 20);
     }
 }
 
