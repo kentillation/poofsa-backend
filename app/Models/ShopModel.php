@@ -31,12 +31,12 @@ class ShopModel extends Model
 
     public function products()
     {
-        return $this->hasMany(ProductsModel::class, 'shop_id', 'shop_id');
+        return $this->hasMany(ProductsModel::class, 'shop_id');
     }
 
     public function lowestPricedProduct()
     {
-        return $this->hasOne(ProductsModel::class, 'shop_id', 'shop_id')
+        return $this->hasOne(ProductsModel::class, 'shop_id')
             ->where('availability_id', 1)
             ->orderBy('base_price', 'asc')
             ->orderBy('product_id', 'asc');

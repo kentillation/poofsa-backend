@@ -5,151 +5,103 @@ namespace App\Repositories;
 use App\Models\ShopModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PublicShopsRepository
 {
     public function getAllPublicShops($categoryLabel, $mealType, $timeBetween, $perPage, $search = null)
     {
-        // Step 1: Get only 10 shop IDs
-        $shopIds = ShopModel::query()
+        // Validate perPage
+        $perPage = $perPage > 0 ? $perPage : 10;
+        $currentPage = request()->get('page', 1);
+
+        // Build the base query for shops WITHOUT the whereHas condition
+        $shopQuery = ShopModel::query()
             ->when($timeBetween, function ($query) use ($timeBetween) {
-                $query->whereTime('open_at', '<=', $timeBetween)
-                    ->whereTime('close_at', '>=', $timeBetween);
-            })
-            ->whereHas('products', function (Builder $query) use ($categoryLabel, $mealType) {
-                $query->where('availability_id', 1);
-
-                if ($categoryLabel) {
-                    $query->whereHas('category', function (Builder $category) use ($categoryLabel) {
-                        $category->where('category_label', $categoryLabel);
-                    });
-                }
-
-                if ($mealType) {
-                    $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
-                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
-                    });
-                }
+                $formattedTime = date('H:i:s', strtotime($timeBetween));
+                $query->whereTime('open_at', '<=', $formattedTime)
+                    ->whereTime('close_at', '>=', $formattedTime);
             })
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($sub) use ($search) {
                     $sub->where('shop_name', 'LIKE', "%{$search}%")
                         ->orWhere('shop_type', 'LIKE', "%{$search}%");
                 });
-            })
-            ->limit($perPage)
+            });
+        // REMOVED: ->whereHas('products', ...)
+
+        // Get total count
+        $total = $shopQuery->count();
+        Log::info('Total shops: ' . $total);
+
+        // Get paginated shop IDs
+        $shopIds = $shopQuery
+            ->skip(($currentPage - 1) * $perPage)
+            ->take($perPage)
             ->pluck('shop_id')
             ->toArray();
 
+        Log::info('Shop IDs: ' . json_encode($shopIds));
+
         if (empty($shopIds)) {
-            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage, 1);
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage, $currentPage, [
+                'path' => request()->url(),
+                'query' => request()->query()
+            ]);
         }
 
-        // Step 2: Get shops
-        $shops = ShopModel::whereIn('shop_id', $shopIds)
-            ->get()
-            ->keyBy('shop_id');
-
-        // Step 3: Get lowest priced product for each shop (WITH category filter)
-        // First, get the minimum price per shop with filters applied
-        $minPricesSubquery = DB::table('tbl_products as p')
-            ->select('p.shop_id', DB::raw('MIN(p.base_price) as min_price'))
-            ->leftJoin('tbl_product_category as c', 'p.category_id', '=', 'c.product_category_id')
-            ->whereIn('p.shop_id', $shopIds)
-            ->where('p.availability_id', 1)
-            ->when($categoryLabel, function ($query) use ($categoryLabel) {
-                $query->where('c.category_label', $categoryLabel);
-            })
-            ->when($mealType, function ($query) use ($mealType) {
-                $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
-                    $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
-                });
-            })
-            ->groupBy('p.shop_id');
-
-        // Then get the actual product details by joining with the min prices
-        $lowestProducts = DB::table('tbl_products as p')
-            ->select(
-                'p.shop_id',
-                'p.product_id',
-                'p.product_name',
-                'p.base_price',
-                'p.branch_id',
-                'c.category_label'
-            )
-            ->leftJoin('tbl_product_category as c', 'p.category_id', '=', 'c.product_category_id')
-            ->joinSub($minPricesSubquery, 'min_prices', function ($join) {
-                $join->on('p.shop_id', '=', 'min_prices.shop_id')
-                    ->on('p.base_price', '=', 'min_prices.min_price');
-            })
-            ->whereIn('p.shop_id', $shopIds)
-            ->where('p.availability_id', 1)
-            // Apply filters again to ensure the product matches
-            ->when($categoryLabel, function ($query) use ($categoryLabel) {
-                $query->where('c.category_label', $categoryLabel);
-            })
-            ->when($mealType, function ($query) use ($mealType) {
-                $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
-                    $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
-                });
-            })
-            ->get()
-            ->keyBy('shop_id');
-
-        // Step 4: Combine results
+        // Get shops with their products
         $results = collect();
+
         foreach ($shopIds as $shopId) {
-            $shop = $shops->get($shopId);
-            $product = $lowestProducts->get($shopId);
+            $shop = ShopModel::find($shopId);
 
-            if ($shop && $product) {
-                $results->push([
-                    'shop_id' => $shop->shop_id,
-                    'branch_id' => $product->branch_id ?? null,
-                    'shop_name' => $shop->shop_name,
-                    'shop_type' => $shop->shop_type,
-                    'lowest_price' => $product->base_price,
-                    'product_name' => $product->product_name,
-                    'product_id' => $product->product_id,
-                    'category_label' => $product->category_label ?? null,
-                ]);
+            if (!$shop) {
+                continue;
             }
-        }
 
-        // Step 5: Get total count
-        $total = ShopModel::query()
-            ->when($timeBetween, function ($query) use ($timeBetween) {
-                $query->whereTime('open_at', '<=', $timeBetween)
-                    ->whereTime('close_at', '>=', $timeBetween);
-            })
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($sub) use ($search) {
-                    $sub->where('shop_name', 'LIKE', "%{$search}%")
-                        ->orWhere('shop_type', 'LIKE', "%{$search}%");
-                });
-            })
-            ->whereHas('products', function (Builder $query) use ($categoryLabel, $mealType) {
-                $query->where('availability_id', 1);
+            // Try to get a product, but don't require it
+            $productQuery = DB::table('tbl_products')
+                ->where('shop_id', $shopId);
+
+            // Apply category and meal type filters if provided
+            if ($categoryLabel || $mealType) {
+                $productQuery->leftJoin('tbl_product_category as c', 'tbl_products.category_id', '=', 'c.product_category_id');
 
                 if ($categoryLabel) {
-                    $query->whereHas('category', function (Builder $category) use ($categoryLabel) {
-                        $category->where('category_label', $categoryLabel);
-                    });
+                    $productQuery->where('c.category_label', $categoryLabel);
                 }
 
                 if ($mealType) {
-                    $query->whereHas('category.baseCategory', function (Builder $base) use ($mealType) {
-                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
-                    });
+                    $productQuery->leftJoin('tbl_base_category as bc', 'c.base_category_id', '=', 'bc.base_category_id')
+                        ->whereRaw('JSON_CONTAINS(bc.meal_type, ?)', [json_encode($mealType)]);
                 }
-            })
-            ->count();
+            }
+
+            $lowestProduct = $productQuery
+                ->orderBy('tbl_products.base_price', 'asc')
+                ->first();
+
+            // Always include the shop, even without products
+            $results->push([
+                'shop_id' => $shop->shop_id,
+                'branch_id' => $lowestProduct->branch_id ?? null,
+                'shop_name' => $shop->shop_name,
+                'shop_type' => $shop->shop_type,
+                'lowest_price' => $lowestProduct->base_price ?? null,
+                'product_name' => $lowestProduct->product_name ?? null,
+                'product_id' => $lowestProduct->product_id ?? null,
+                'category_label' => $lowestProduct->category_label ?? null,
+            ]);
+        }
+
+        Log::info('Final results count: ' . $results->count());
 
         return new \Illuminate\Pagination\LengthAwarePaginator(
             $results,
             $total,
             $perPage,
-            request()->get('page', 1),
+            $currentPage,
             ['path' => request()->url(), 'query' => request()->query()]
         );
     }
