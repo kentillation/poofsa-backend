@@ -30,8 +30,8 @@ Route::post('v1/public/save-shop', [PublicController::class, 'saveShop']);
 // Route::get('v1/public/shops', [PublicController::class, 'getShops']);
 // Route::get('v1/public/products', [PublicController::class, 'getProducts']);
 // Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
-// Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
 // Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
+// Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
 // Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
 // Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
 
