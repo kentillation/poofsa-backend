@@ -30,6 +30,7 @@ use App\Models\StocksHistoryModel;
 use App\Models\TemperatureModel;
 use App\Models\SizeModel;
 use App\Models\CategoryModel;
+use App\Models\ProductBaseCategoryModel;
 use App\Models\AvailabilityModel;
 use App\Models\UnitModel;
 use App\Models\StationModel;
@@ -1130,8 +1131,17 @@ class AdminController extends Controller
     public function getProductCategories()
     {
         try {
-            $data = CategoryModel::all();
-            return response()->json($data);
+            // $data = CategoryModel::all();
+            $data = ProductBaseCategoryModel::all();
+            $transformedData = $data->map(function ($item) {
+                return [
+                    'product_category_id' => $item->product_base_category_id,
+                    'category_label' => $item->product_base_category,
+                    'meal_type' => $item->meal_type,
+                ];
+            });
+            
+            return response()->json($transformedData);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
