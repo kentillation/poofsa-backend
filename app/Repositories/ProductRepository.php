@@ -9,8 +9,6 @@ class ProductRepository
 {
     public function getProducts($shopId, $branchId, $perPage, $search = null)
     {
-        $perPage = (int) $perPage ?: 10;
-
         return ProductsModel::with([
             'temperature',
             'size',
@@ -39,7 +37,7 @@ class ProductRepository
                     });
             })
             ->orderByDesc('updated_at')
-            ->paginate($perPage ?? 20);
+            ->paginate($perPage ?? 10);
     }
 
     public function getProductsHistory($shopId, $branchId, $perPage, $search = null)

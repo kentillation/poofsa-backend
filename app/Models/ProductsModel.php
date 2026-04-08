@@ -34,6 +34,14 @@ class ProductsModel extends Model
         'user_id',
     ];
 
+    protected $casts = [
+        'size_id' => 'integer',
+        'temp_id' => 'integer',
+        'category_id' => 'integer',
+        'station_id' => 'integer',
+        'availability_id' => 'integer'
+    ];
+
     public function shop()
     {
         return $this->belongsTo(ShopModel::class, 'shop_id', 'shop_id');

@@ -510,8 +510,8 @@ class AdminController extends Controller
         $result = $action->execute(
             shopId: $request->shop_id,
             branchId: $request->branch_id,
+            perPage: $request->itemsPerPage,
             search: $request->search,
-            perPage: $request->itemsPerPage ?? 10
         );
 
         return ProductResource::collection($result);
