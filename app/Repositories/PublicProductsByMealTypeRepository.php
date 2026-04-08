@@ -10,6 +10,8 @@ class PublicProductsByMealTypeRepository
 
     public function getAllPublicProductsByMealType($mealType, $perPage, $search)
     {
+        $perPage = (int) $perPage ?: 20;
+        
         $query = ProductsModel::with([
             'shop' => function ($query) {
                 $query->select('shop_id', 'shop_name', 'shop_type');

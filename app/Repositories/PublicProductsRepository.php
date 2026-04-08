@@ -8,6 +8,8 @@ class PublicProductsRepository
 {
     public function getAllPublicProducts($shopId, $branchId, $perPage, $search = null)
     {
+        $perPage = (int) $perPage ?: 20;
+        
         $query = ProductsModel::with(['size', 'temperature', 'category'])
             ->where('availability_id', 1)
             ->when($shopId, function ($queryShop) use ($shopId) {

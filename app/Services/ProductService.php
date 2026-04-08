@@ -205,17 +205,17 @@ class ProductService
         return $result;
     }
 
-    public static function getTotalProductsCountService($shopId, $branchId)
-    {
-        $totalProducts = ProductsModel::select(
-            DB::raw('COUNT(tbl_products.product_id) as total_products')
-        )
-            ->where('tbl_products.shop_id', $shopId)
-            ->where('tbl_products.branch_id', $branchId)
-            ->first();
+    // public static function getTotalProductsCountService($shopId, $branchId)
+    // {
+    //     $totalProducts = ProductsModel::select(
+    //         DB::raw('COUNT(tbl_products.product_id) as total_products')
+    //     )
+    //         ->where('tbl_products.shop_id', $shopId)
+    //         ->where('tbl_products.branch_id', $branchId)
+    //         ->first();
 
-        return $totalProducts;
-    }
+    //     return $totalProducts;
+    // }
 
     public static function getProductItemsService($shopId, $productId)
     {

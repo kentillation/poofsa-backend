@@ -9,6 +9,8 @@ class StockRepository
 {
     public function getStocks($shopId, $branchId, $search, $perPage)
     {
+        $perPage = (int) $perPage ?: 20;
+
         return IngredientsModel::with(['unit', 'availability'])
             ->where('shop_id', $shopId)
             ->where('branch_id', $branchId)
@@ -22,7 +24,7 @@ class StockRepository
                     });
             })
             ->orderByDesc('updated_at')
-            ->paginate($perPage);
+            ->paginate($perPage ?? 20);
     }
 
     public function getStocksHistory($shopId, $branchId, $search, $perPage) {

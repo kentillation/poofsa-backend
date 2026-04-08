@@ -9,6 +9,8 @@ class ProductRepository
 {
     public function getProducts($shopId, $branchId, $perPage, $search = null)
     {
+        $perPage = (int) $perPage ?: 10;
+
         return ProductsModel::with([
             'temperature',
             'size',

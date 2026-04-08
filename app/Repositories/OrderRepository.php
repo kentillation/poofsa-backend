@@ -8,6 +8,8 @@ class OrderRepository
 {
     public function getOrders($shopId, $branchId, $search, $perPage)
     {
+        $perPage = (int) $perPage ?: 10;
+
         return OrdersModel::with([
             'orderType',
             'orderStatus',

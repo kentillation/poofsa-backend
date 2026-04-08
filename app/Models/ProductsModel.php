@@ -18,7 +18,6 @@ class ProductsModel extends Model
     protected $keyType = 'int';
 
     protected $fillable = [
-        'product_id',
         'product_name',
         'sku',
         'size_id',

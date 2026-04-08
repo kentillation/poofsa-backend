@@ -10,6 +10,8 @@ class PublicProductsAndCategoriesRepository
 {
     public function getAllPublicNewProducts($isNew, $perPage, $search = null)
     {
+        $perPage = (int) $perPage ?: 20;
+
         $query = ProductsModel::with([
             'shop' => function ($queryShop) {
                 $queryShop->select('shop_id', 'shop_name', 'shop_type');
@@ -38,6 +40,8 @@ class PublicProductsAndCategoriesRepository
 
     public function getAllCategoriesByNewProducts($isNew, $perPage, $search = null)
     {
+        $perPage = (int) $perPage ?: 20;
+
         $query = CategoryModel::with([
             'baseCategory' => function ($querySelectMeal) {
                 $querySelectMeal->select('meal_type');
@@ -61,6 +65,8 @@ class PublicProductsAndCategoriesRepository
 
     public function getAllProductCategories($shopId, $perPage, $search = null)
     {
+        $perPage = (int) $perPage ?: 20;
+        
         $query = CategoryModel::with([
             'baseCategory' => function ($querySelectMeal) {
                 $querySelectMeal->select('meal_type');

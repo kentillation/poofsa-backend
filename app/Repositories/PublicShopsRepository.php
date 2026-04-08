@@ -12,7 +12,7 @@ class PublicShopsRepository
     public function getAllPublicShops($categoryLabel, $mealType, $timeBetween, $perPage, $search = null)
     {
         // Validate perPage
-        $perPage = $perPage > 0 ? $perPage : 10;
+        $perPage = (int)  $perPage > 0 ? (int)  $perPage : 10;
         $currentPage = request()->get('page', 1);
 
         // Build the base query for shops WITHOUT the whereHas condition
