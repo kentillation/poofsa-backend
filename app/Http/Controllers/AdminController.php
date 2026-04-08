@@ -510,7 +510,7 @@ class AdminController extends Controller
         $result = $action->execute(
             shopId: $request->shop_id,
             branchId: $request->branch_id,
-            perPage: $request->itemsPerPage,
+            perPage: $request->itemsPerPage ?? 10,
             search: $request->search,
         );
 
