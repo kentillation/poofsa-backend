@@ -531,28 +531,28 @@ class AdminController extends Controller
     }
 
     // DONE
-    // public function getTotalProductsCount($branchId)
-    // {
-    //     // For Dashboard
-    //     try {
-    //         $shopId = $this->getShopId();
-    //         $totalProducts = ProductService::getTotalProductsCountService($shopId, $branchId);
+    public function getTotalProductsCount($branchId)
+    {
+        // For Dashboard
+        try {
+            $shopId = $this->getShopId();
+            $totalProducts = ProductService::getTotalProductsCountService($shopId, $branchId);
 
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'Total products fetched successfully!',
-    //             'data' => [
-    //                 'total_products' => $totalProducts->total_products ?? 0
-    //             ]
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Error fetching total orders!',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'status' => true,
+                'message' => 'Total products fetched successfully!',
+                'data' => [
+                    'total_products' => $totalProducts->total_products ?? 0
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching total orders!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**** Product Ingredients ****/
 
