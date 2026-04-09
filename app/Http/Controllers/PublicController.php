@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\GetPublicProductsRequest;
 use App\Http\Requests\GetPublicNewProductsRequest;
 use App\Http\Requests\GetPublicByMealTypeRequest;
@@ -138,37 +139,28 @@ class PublicController extends Controller
     }
     // END OF NEW STRUCTURED CODE
 
-    public function saveShop(Request $request)
+    public function shopRegistration(Request $request)
     {
-        $validated = $request->validate([
-            'shop_name' => 'required|string|max:50|unique:tbl_shops,shop_name',
-            'shop_type' => 'required|string|max:50',
-            'shop_owner' => 'required|string|max:50',
+        $validator = Validator::make($request->all(), [
+            'shop_name' => 'required|string|max:255',
+            'shop_type' => 'required|string',
+            'shop_owner' => 'required|string',
             'shop_address' => 'required|string',
-            'shop_email' => 'required|string|email|max:191|unique:tbl_shops,shop_email',
-            'shop_contact_number' => 'required|string|max:13',
-
-            'branch_name' => 'required|string|max:50|unique:tbl_shop_branch,branch_name',
-            'branch_address' => 'required|string',
-            'branch_manager_name' => 'required|string|max:50',
-            'branch_contact_number' => 'required|string|max:13',
-
-            'admin_name' => 'required|string|max:191',
-            'admin_email' => 'required|string|email|max:191|unique:tbl_admin,admin_email',
-            'admin_password' => 'required|string|min:8',
-
-            'cashier_name' => 'required|string|max:191',
-            'cashier_email' => 'required|string|email|max:191|unique:tbl_cashier,cashier_email',
-            'cashier_password' => 'required|string|min:8',
-
-            'kitchen_personnel_name' => 'required|string|max:191',
-            'kitchen_personnel_email' => 'required|string|email|max:191|unique:tbl_kitchen_personnel,kitchen_personnel_email',
-            'kitchen_personnel_password' => 'required|string|min:8',
-
-            'barista_name' => 'required|string|max:191',
-            'barista_email' => 'required|string|email|max:191|unique:tbl_barista,barista_email',
-            'barista_password' => 'required|string|min:8',
+            'shop_email' => 'required|email',
+            'shop_contact_number' => 'required|string',
+            'open_at' => 'required',
+            'close_at' => 'required',
+            'admin_password' => 'required|min:6',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validated = $validator->validated();
 
         DB::beginTransaction();
 
@@ -176,54 +168,31 @@ class PublicController extends Controller
 
             $shop = ShopModel::create([
                 'shop_name' => $validated['shop_name'],
+                'shop_type' => $validated['shop_type'],
                 'shop_owner' => $validated['shop_owner'],
-                'shop_location' => $validated['shop_location'],
+                'shop_address' => $validated['shop_address'],
                 'shop_email' => $validated['shop_email'],
                 'shop_contact_number' => $validated['shop_contact_number'],
-                'shop_status_id' => $validated['shop_status_id'],
+                'open_at' => $validated['open_at'],
+                'close_at' => $validated['close_at'],
             ]);
             $shopId = $shop->shop_id;
 
             $branch = BranchModel::create([
                 'shop_id' => $shopId,
-                'branch_name' => $validated['branch_name'],
-                'branch_address' => $validated['branch_address'],
-                'branch_manager_name' => $validated['branch_manager_name'],
-                'branch_contact_number' => $validated['branch_contact_number'],
+                'branch_name' => 'Main',
+                'branch_address' => $validated['shop_address'],
+                'branch_manager_name' => $validated['shop_owner'],
+                'branch_contact_number' => $validated['shop_contact_number'],
             ]);
-            $branchId = $branch->branch_id;
 
             $admin = AdminModel::create([
-                'admin_name' => $validated['admin_name'],
-                'admin_email' => $validated['admin_email'],
+                'admin_name' => $validated['shop_owner'],
+                'admin_email' => $validated['shop_email'],
                 'admin_password' => Hash::make($validated['admin_password']),
                 'shop_id' => $shopId,
             ]);
-
-            $cashier = CashierModel::create([
-                'cashier_name' => $validated['cashier_name'],
-                'cashier_email' => $validated['cashier_email'],
-                'cashier_password' => Hash::make($validated['cashier_password']),
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-            ]);
-
-            $kitchen = KitchenModel::create([
-                'kitchen_personnel_name' => $validated['kitchen_personnel_name'],
-                'kitchen_personnel_email' => $validated['kitchen_personnel_email'],
-                'kitchen_personnel_password' => Hash::make($validated['kitchen_personnel_password']),
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-            ]);
-
-            $barista = BaristaModel::create([
-                'barista_name' => $validated['barista_name'],
-                'barista_email' => $validated['barista_email'],
-                'barista_password' => Hash::make($validated['barista_password']),
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-            ]);
-
+            
             $token = $shop->createToken('auth-token')->plainTextToken;
 
             DB::commit();
@@ -233,9 +202,6 @@ class PublicController extends Controller
                 'shop' => $shop,
                 'branch' => $branch,
                 'admin' => $admin->makeHidden(['admin_password', 'admin_mpin']),
-                'cashier' => $cashier->makeHidden(['cashier_password']),
-                'kitchen' => $kitchen->makeHidden(['kitchen_personnel_password']),
-                'barista' => $barista->makeHidden(['barista_password']),
                 'token' => $token,
             ], 200);
         } catch (\Exception $e) {
