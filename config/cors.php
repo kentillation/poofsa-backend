@@ -10,7 +10,6 @@ return [
         'http://localhost:8080',
         'http://localhost:8081',
         'http://localhost:8082',
-        'https://poofsa.com',
         'https://locinder.poofsa.com',
         'https://poofsa-vent.vercel.app',
         'https://poofsa-tend.vercel.app',
