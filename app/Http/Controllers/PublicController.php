@@ -199,10 +199,9 @@ class PublicController extends Controller
 
             return response()->json([
                 'message' => 'Registration successful',
-                'shop' => $shop,
-                'branch' => $branch,
-                'admin' => $admin->makeHidden(['admin_password', 'admin_mpin']),
-                'token' => $token,
+                'shop_id' => $shop->shop_id,
+                'shop_name' => $shop->shop_name,
+                'access_token' => $token,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();

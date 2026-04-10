@@ -168,18 +168,18 @@ class AdminController extends Controller
                 'tbl_shop_branch.branch_manager_name',
                 'tbl_shop_branch.branch_contact_number',
                 'tbl_admin.admin_name',
-                'tbl_cashier.cashier_name',
-                'tbl_cashier.cashier_email',
-                'tbl_barista.barista_name',
-                'tbl_barista.barista_email',
-                'tbl_kitchen_personnel.kitchen_personnel_name',
-                'tbl_kitchen_personnel.kitchen_personnel_email',
+                // 'tbl_cashier.cashier_name',
+                // 'tbl_cashier.cashier_email',
+                // 'tbl_barista.barista_name',
+                // 'tbl_barista.barista_email',
+                // 'tbl_kitchen_personnel.kitchen_personnel_name',
+                // 'tbl_kitchen_personnel.kitchen_personnel_email',
             )
                 ->join('tbl_shops', 'tbl_shop_branch.shop_id', '=', 'tbl_shops.shop_id')
                 ->join('tbl_admin', 'tbl_shops.shop_id', '=', 'tbl_admin.shop_id')
-                ->join('tbl_cashier', 'tbl_shops.shop_id', '=', 'tbl_cashier.shop_id')
-                ->join('tbl_barista', 'tbl_shops.shop_id', '=', 'tbl_barista.shop_id')
-                ->join('tbl_kitchen_personnel', 'tbl_shops.shop_id', '=', 'tbl_kitchen_personnel.shop_id')
+                // ->join('tbl_cashier', 'tbl_shops.shop_id', '=', 'tbl_cashier.shop_id')
+                // ->join('tbl_barista', 'tbl_shops.shop_id', '=', 'tbl_barista.shop_id')
+                // ->join('tbl_kitchen_personnel', 'tbl_shops.shop_id', '=', 'tbl_kitchen_personnel.shop_id')
                 ->where('tbl_shop_branch.branch_name', urldecode($branchName))
                 ->where('tbl_shop_branch.shop_id', $shopId)
                 ->first();
