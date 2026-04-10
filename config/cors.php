@@ -11,7 +11,7 @@ return [
         'http://localhost:8081',
         'http://localhost:8082',
         'https://poofsa.com',
-        'https://register.poofsa.com',
+        'https://locinder.poofsa.com',
         'https://poofsa-vent.vercel.app',
         'https://poofsa-tend.vercel.app',
         'https://poofsa-bris.vercel.app',
