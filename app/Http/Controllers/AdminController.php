@@ -1131,8 +1131,8 @@ class AdminController extends Controller
     public function getProductCategories()
     {
         try {
-            // $data = CategoryModel::all();
-            $data = ProductBaseCategoryModel::all();
+            $data = ProductBaseCategoryModel::orderBy('product_base_category')
+            ->get();
             $transformedData = $data->map(function ($item) {
                 return [
                     'product_category_id' => $item->product_base_category_id,
