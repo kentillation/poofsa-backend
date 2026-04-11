@@ -351,7 +351,9 @@ class PublicController extends Controller
                 ->map(function ($product) {
                     return [
                         'branch_id' => $product->branch_id,
+                        'shop_id' => $product->shop->shop_id,
                         'shop_name' => $product->shop->shop_name,
+                        'shop_type' => $product->shop->shop_type,
                         'product_id' => $product->product_id,
                         'product_name' => $product->product_name,
                         'base_price' => $product->base_price,
