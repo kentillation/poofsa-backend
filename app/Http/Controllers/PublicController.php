@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\GetPublicProductsRequest;
 use App\Http\Requests\GetPublicNewProductsRequest;
@@ -23,9 +24,6 @@ use App\Http\Resources\GetPublicProductsByMealTypeResource;
 use App\Http\Resources\GetPublicCategoriesResource;
 use App\Http\Resources\GetPublicShopsResource;
 use App\Models\AdminModel;
-use App\Models\CashierModel;
-use App\Models\KitchenModel;
-use App\Models\BaristaModel;
 use App\Models\ShopModel;
 use App\Models\BranchModel;
 use App\Models\ProductsModel;
@@ -178,7 +176,7 @@ class PublicController extends Controller
             ]);
             $shopId = $shop->shop_id;
 
-            $branch = BranchModel::create([
+            BranchModel::create([
                 'shop_id' => $shopId,
                 'branch_name' => 'Main',
                 'branch_address' => $validated['shop_address'],
@@ -192,17 +190,35 @@ class PublicController extends Controller
                 'admin_password' => Hash::make($validated['admin_password']),
                 'shop_id' => $shopId,
             ]);
-            
-            $token = $shop->createToken('auth-token')->plainTextToken;
+
+            Auth::guard('admin')->login($admin);
+
+            $token = $admin->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
 
             DB::commit();
 
+            // Create cookie (similar to login response)
+            $cookie = cookie(
+                'XSRF-TOKEN',
+                $token,
+                config('session.lifetime'),
+                '/',
+                config('session.domain', null),
+                config('session.secure', true),
+                true,
+                false,
+                'Strict'
+            );
+
             return response()->json([
                 'message' => 'Registration successful',
-                'shop_id' => $shop->shop_id,
-                'shop_name' => $shop->shop_name,
                 'access_token' => $token,
-            ], 200);
+                'token_type' => 'Bearer',
+                'expires_in' => 60 * 24 * 30, // 30 days
+                'shop_id' => $admin->shop_id,
+                'shop_name' => $shop->shop_name,
+                'user_id' => $admin->admin_id,
+            ])->withCookie($cookie);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
