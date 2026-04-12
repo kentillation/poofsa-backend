@@ -4,64 +4,98 @@ namespace App\Repositories;
 
 use App\Models\ProductsModel;
 use App\Models\ProductsHistoryModel;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class ProductRepository
 {
-    public function getProducts($shopId, $branchId, $perPage, $search = null)
+    public function getProducts($shopId, $branchId, $perPage = 10, $search = null)
     {
-        return ProductsModel::with([
-            'temperature',
-            'size',
-            'category',
-            'stations',
-            'availability'
-        ])
-            ->where('shop_id', $shopId)
-            ->where('branch_id', $branchId)
-            ->when($search, callback: function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhereHas('temperature', function ($q2) use ($search) {
-                        $q2->where('temp_label', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('size', function ($q2) use ($search) {
-                        $q2->where('size_label', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('category', function ($q2) use ($search) {
-                        $q2->where('category_label', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('stations', function ($q2) use ($search) {
-                        $q2->where('station_name', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('availability', function ($q2) use ($search) {
-                        $q2->where('availability_label', 'like', "%{$search}%");
-                    });
-            })
-            ->orderByDesc('updated_at')
-            ->paginate($perPage ?? 10);
+        try {
+            return ProductsModel::with([
+                'temperature',
+                'size',
+                'category',
+                'stations',
+                'availability'
+            ])
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->when($search, function ($q) use ($search) {
+                    $q->where('product_name', 'like', "%{$search}%")
+                        ->orWhereHas('temperature', function ($q2) use ($search) {
+                            $q2->where('temp_label', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('size', function ($q2) use ($search) {
+                            $q2->where('size_label', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('category', function ($q2) use ($search) {
+                            $q2->where('category_label', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('stations', function ($q2) use ($search) {
+                            $q2->where('station_name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('availability', function ($q2) use ($search) {
+                            $q2->where('availability_label', 'like', "%{$search}%");
+                        });
+                })
+                ->orderByDesc('updated_at')
+                ->paginate($perPage);
+        } catch (Exception $e) {
+            Log::error('Products query error: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            throw $e;
+        }
     }
 
-    public function getProductsHistory($shopId, $branchId, $perPage, $search = null)
+    public function getProductsHistory($shopId, $branchId, $perPage = 10, $search = null)
     {
-        return ProductsHistoryModel::select(
-            'tbl_products.product_name',
-            'tbl_products_history.modified_type_id',
-            'tbl_modified_type.modified_type',
-            'tbl_products_history.description',
-            'tbl_admin.admin_name',
-            'tbl_products_history.updated_at',
-        )
-            ->join('tbl_modified_type', 'tbl_products_history.modified_type_id', '=', 'tbl_modified_type.modified_type_id')
-            ->join('tbl_products', 'tbl_products_history.product_id', '=', 'tbl_products.product_id')
-            ->join('tbl_admin', 'tbl_products_history.user_id', '=', 'tbl_admin.admin_id')
-            ->where('tbl_products_history.shop_id', $shopId)
-            ->where('tbl_products_history.branch_id', $branchId)
-            ->when($search, callback: function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('tbl_admin.admin_name', 'like', "%{$search}%")
-                    ->orWhere('tbl_products_history.description', 'like', "%{$search}%");
-            })
-            ->orderByDesc('updated_at')
-            ->paginate($perPage ?? 20);
+        try {
+            // Debug: Check raw count without any filters
+            $totalRecords = ProductsHistoryModel::count();
+            Log::info('Total records in tbl_products_history: ' . $totalRecords);
+
+            // Debug: Check records with shop_id and branch_id
+            $matchingRecords = ProductsHistoryModel::where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->count();
+            Log::info('Records matching shop_id=' . $shopId . ' and branch_id=' . $branchId . ': ' . $matchingRecords);
+
+            // Debug: Show actual values being passed
+            Log::info('Query parameters - shop_id: ' . $shopId . ', branch_id: ' . $branchId . ', perPage: ' . $perPage . ', search: ' . $search);
+
+            $query = ProductsHistoryModel::with([
+                'products',
+                'products.size',
+                'products.temperature',
+                'modify',
+                'users'
+            ])
+                ->where('shop_id', $shopId)
+                ->where('branch_id', $branchId);
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('products', function ($q2) use ($search) {
+                        $q2->where('product_name', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('users', function ($q2) use ($search) {
+                            $q2->where('admin_name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('modify', function ($q2) use ($search) {
+                            $q2->where('modified_type', 'like', "%{$search}%");
+                        })
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            return $query->orderByDesc('updated_at')
+                ->paginate($perPage);
+        } catch (Exception $e) {
+            Log::error('Products history query error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            throw $e;
+        }
     }
 }
 

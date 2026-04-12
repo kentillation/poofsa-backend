@@ -14,7 +14,17 @@ class ProductHistoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'product_name' => $this->products->product_name ?? null,
+            'size_label' => $this->products->size->size_label ?? null,
+            'temp_label' => $this->products->temperature->temp_label ?? null,
+            'modified_type' => $this->modify->modified_type ?? null,
+            'modified_type_id' => $this->modified_type_id,
+            'description' => $this->description,
+            'admin_name' => $this->users->admin_name ?? null,
+            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
+            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
+        ];
     }
 }
 

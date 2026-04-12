@@ -7,9 +7,9 @@ class GetProductsHistoryAction
 {
     public function __construct(private ProductRepository $repository) {}
 
-    public function execute($shopId, $branchId, $search, $perPage)
+    public function execute($shopId, $branchId, $perPage, $search)
     {
-        return $this->repository->getProductsHistory($shopId, $branchId, $search, $perPage);
+        return $this->repository->getProductsHistory($shopId, $branchId, $perPage, $search);
     }
 }
 

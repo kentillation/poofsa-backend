@@ -22,7 +22,7 @@ class GetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'shop_id'     => 'required|integer|exists:tbl_shop,shop_id',
+            'shop_id'     => 'nullable|integer|exists:tbl_shops,shop_id',
             'branch_id'     => 'required|integer|exists:tbl_shop_branch,branch_id',
             'search'        => 'nullable|string',
             'itemsPerPage'  => 'nullable|integer|min:1',

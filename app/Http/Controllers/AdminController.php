@@ -510,7 +510,7 @@ class AdminController extends Controller
         $result = $action->execute(
             shopId: $request->shop_id,
             branchId: $request->branch_id,
-            perPage: $request->itemsPerPage ?? 10,
+            perPage: $request->itemsPerPage,
             search: $request->search,
         );
 
@@ -521,10 +521,10 @@ class AdminController extends Controller
     public function getProductsHistory(GetRequest $request, GetProductsHistoryAction $action)
     {
         $result = $action->execute(
-            shopId: $this->getShopId(),
+            shopId: $request->shop_id,
             branchId: $request->branch_id,
-            search: $request->search,
-            perPage: $request->itemsPerPage ?? 10
+            perPage: $request->itemsPerPage,
+            search: $request->search
         );
 
         return ProductHistoryResource::collection($result);
