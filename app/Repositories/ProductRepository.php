@@ -51,19 +51,6 @@ class ProductRepository
     public function getProductsHistory($shopId, $branchId, $perPage = 10, $search = null)
     {
         try {
-            // Debug: Check raw count without any filters
-            $totalRecords = ProductsHistoryModel::count();
-            Log::info('Total records in tbl_products_history: ' . $totalRecords);
-
-            // Debug: Check records with shop_id and branch_id
-            $matchingRecords = ProductsHistoryModel::where('shop_id', $shopId)
-                ->where('branch_id', $branchId)
-                ->count();
-            Log::info('Records matching shop_id=' . $shopId . ' and branch_id=' . $branchId . ': ' . $matchingRecords);
-
-            // Debug: Show actual values being passed
-            Log::info('Query parameters - shop_id: ' . $shopId . ', branch_id: ' . $branchId . ', perPage: ' . $perPage . ', search: ' . $search);
-
             $query = ProductsHistoryModel::with([
                 'products',
                 'products.size',
