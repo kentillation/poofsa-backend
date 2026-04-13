@@ -228,6 +228,38 @@ class PublicController extends Controller
         }
     }
 
+    public function getShopsWithoutProducts(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 10); // Default to 10 items per page
+
+            // Query shops that have NO products
+            $shops = ShopModel::query()
+                ->whereDoesntHave('products')
+                ->paginate($perPage, ['shop_id', 'branch_id', 'shop_name', 'shop_type']);
+
+            return response()->json([
+                'success' => true,
+                'message' => $shops->isEmpty() ? 'No shops without products found!' : 'Shops fetched successfully!',
+                'data' => $shops->items(),
+                'pagination' => [
+                    'current_page' => $shops->currentPage(),
+                    'last_page' => $shops->lastPage(),
+                    'per_page' => $shops->perPage(),
+                    'total' => $shops->total(),
+                    'next_page_url' => $shops->nextPageUrl(),
+                    'prev_page_url' => $shops->previousPageUrl(),
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shops!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getShops(Request $request)
     {
         try {
@@ -260,6 +292,7 @@ class PublicController extends Controller
                 }
             });
 
+            // Add pagination here - paginate 10 items per page
             $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
                 $q->where('availability_id', 1);
 
@@ -274,9 +307,10 @@ class PublicController extends Controller
                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
                     });
                 }
-            }])->get();
+            }])->paginate(10); // Changed from get() to paginate(10)
 
-            $filteredShops = $shops->map(function ($shop) {
+            // Transform the paginated data
+            $filteredShops = collect($shops->items())->map(function ($shop) {
                 $lowestProduct = $shop->products->sortBy('base_price')->first();
                 $branchId = $shop->products->first()->branch_id ?? null;
 
@@ -299,7 +333,15 @@ class PublicController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
-                'data' => $filteredShops
+                'data' => $filteredShops,
+                'pagination' => [
+                    'current_page' => $shops->currentPage(),
+                    'last_page' => $shops->lastPage(),
+                    'per_page' => $shops->perPage(),
+                    'total' => $shops->total(),
+                    'next_page_url' => $shops->nextPageUrl(),
+                    'prev_page_url' => $shops->previousPageUrl(),
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -310,6 +352,89 @@ class PublicController extends Controller
         }
     }
 
+    // public function getShops(Request $request)
+    // {
+        // try {
+        //     $requestedCategory = $request->input('requested_category');
+        //     $requestedMealType = $request->input('requested_meal_type');
+        //     $requestedTimeBetween = $request->input('requested_time_between'); // between 'open_at' and 'close_at'
+
+        //     $query = ShopModel::query();
+
+        //     $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+        //         $q->where('availability_id', 1);
+
+        //         if ($requestedCategory) {
+        //             $q->whereHas('category', function ($cat) use ($requestedCategory) {
+        //                 $cat->where('category_label', $requestedCategory);
+        //             });
+        //         }
+
+        //         if ($requestedMealType) {
+        //             $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+        //                 $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+        //             });
+        //         }
+
+        //         if ($requestedTimeBetween) {
+        //             $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
+        //                 $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
+        //                     ->whereTime('close_at', '>=', $requestedTimeBetween);
+        //             });
+        //         }
+        //     });
+
+        //     $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+        //         $q->where('availability_id', 1);
+
+        //         if ($requestedCategory) {
+        //             $q->whereHas('category', function ($cat) use ($requestedCategory) {
+        //                 $cat->where('category_label', $requestedCategory);
+        //             });
+        //         }
+
+        //         if ($requestedMealType) {
+        //             $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+        //                 $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+        //             });
+        //         }
+        //     }])->get();
+
+        //     $filteredShops = $shops->map(function ($shop) {
+        //         $lowestProduct = $shop->products->sortBy('base_price')->first();
+        //         $branchId = $shop->products->first()->branch_id ?? null;
+
+        //         if ($lowestProduct) {
+        //             return [
+        //                 'shop_id' => $shop->shop_id,
+        //                 'branch_id' => $branchId,
+        //                 'shop_name' => $shop->shop_name,
+        //                 'shop_type' => $shop->shop_type,
+        //                 'lowest_price' => $lowestProduct->base_price,
+        //                 'product_name' => $lowestProduct->product_name,
+        //                 'product_id' => $lowestProduct->product_id,
+        //                 'category_label' => $lowestProduct->category->category_label ?? null,
+        //             ];
+        //         }
+
+        //         return null;
+        //     })->filter()->values();
+
+        //     return response()->json([
+        //         'success' => true,
+        //         'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
+        //         'data' => $filteredShops
+        //     ], 200);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Error fetching shops!',
+        //         'error' => $e->getMessage()
+        //     ], 500);
+        // }
+    // }
+
+    
     public function getProducts(Request $request)
     {
         try {
