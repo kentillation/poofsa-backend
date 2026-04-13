@@ -17,68 +17,191 @@ use Illuminate\Support\Facades\Log;
 
 class ProductService
 {
+
     public static function saveProductsService($request, $shopId, $userId)
     {
-        $request->validate([
-            '*.product_name' => 'required|string',
-            '*.base_price' => 'required|numeric',
-            '*.size_id' => 'required|integer',
-            '*.temp_id' => 'required|integer',
-            '*.category_id' => 'required|integer',
-            '*.station_id' => 'required|integer',
-            '*.branch_id' => 'required|integer',
-        ]);
+        DB::beginTransaction();
 
-        foreach ($request->all() as $item) {
-            // Check if the base category exists
-            $baseCategory = ProductBaseCategoryModel::find($item['category_id']);
+        try {
+            $validated = $request->validate([
+                '*.product_name' => 'required|string',
+                '*.base_price' => 'required|numeric',
+                '*.size_id' => 'required|integer',
+                '*.temp_id' => 'required|integer',
+                '*.category_id' => 'required|integer',
+                '*.station_id' => 'required|integer',
+                '*.branch_id' => 'required|integer',
+            ]);
 
-            if (!$baseCategory) {
-                throw new \Exception("Category with ID {$item['category_id']} not found");
+            $saved = [];
+            $skipped = [];
+
+            foreach ($validated as $index => $item) {
+
+                try {
+                    // 🔍 Check duplicate
+                    $exists = ProductsModel::where('product_name', $item['product_name'])
+                        ->where('size_id', $item['size_id'])
+                        ->where('temp_id', $item['temp_id'])
+                        ->where('shop_id', $shopId)
+                        ->exists();
+
+                    if ($exists) {
+                        $skipped[] = [
+                            'index' => $index,
+                            'product_name' => $item['product_name'],
+                            'reason' => 'Duplicate product (name + size + temp)'
+                        ];
+                        continue; // ⬅️ Skip, don't stop
+                    }
+
+                    // Check base category
+                    $baseCategory = ProductBaseCategoryModel::find($item['category_id']);
+
+                    if (!$baseCategory) {
+                        $skipped[] = [
+                            'index' => $index,
+                            'product_name' => $item['product_name'],
+                            'reason' => "Category ID {$item['category_id']} not found"
+                        ];
+                        continue;
+                    }
+
+                    // Create or find category
+                    $category = CategoryModel::firstOrCreate(
+                        [
+                            'product_base_category_id' => $baseCategory->product_base_category_id,
+                            'shop_id' => $shopId,
+                        ],
+                        [
+                            'category_label' => $baseCategory->product_base_category,
+                        ]
+                    );
+
+                    // Save product
+                    $product = ProductsModel::create([
+                        'product_name' => $item['product_name'],
+                        'base_price' => $item['base_price'],
+                        'cost_estimate' => 0,
+                        'size_id' => $item['size_id'],
+                        'temp_id' => $item['temp_id'],
+                        'category_id' => $category->product_category_id,
+                        'availability_id' => 1,
+                        'station_id' => $item['station_id'],
+                        'shop_id' => $shopId,
+                        'branch_id' => $item['branch_id'],
+                        'user_id' => $userId,
+                    ]);
+
+                    // Save history
+                    ProductsHistoryModel::create([
+                        'product_id' => $product->product_id,
+                        'modified_type_id' => 1,
+                        'description' => 'New Product Saved',
+                        'shop_id' => $shopId,
+                        'branch_id' => $product->branch_id,
+                        'user_id' => $userId,
+                    ]);
+
+                    $saved[] = $product;
+                } catch (\Throwable $e) {
+                    // 🔥 Catch per-item errors (DO NOT break loop)
+                    Log::error('Product Save Item Error', [
+                        'index' => $index,
+                        'item' => $item,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    $skipped[] = [
+                        'index' => $index,
+                        'product_name' => $item['product_name'] ?? null,
+                        'reason' => 'Unexpected error'
+                    ];
+                }
             }
 
-            // Create or find the shop-specific category
-            $category = CategoryModel::firstOrCreate(
-                [
-                    'product_base_category_id' => $baseCategory->product_base_category_id,
-                    'shop_id' => $shopId,
-                ],
-                [
-                    'category_label' => $baseCategory->product_base_category,
-                    'product_base_category_id' => $baseCategory->product_base_category_id,
-                    'shop_id' => $shopId,
-                ]
-            );
+            DB::commit();
 
-            // Create the product
-            $product = new ProductsModel();
-            $product->product_name = $item['product_name'];
-            $product->base_price = $item['base_price'];
-            $product->cost_estimate = 0;
-            $product->size_id = $item['size_id'];
-            $product->temp_id = $item['temp_id'];
-            $product->category_id = $category->product_category_id; // Use the saved category's ID
-            $product->availability_id = 1;
-            $product->station_id = $item['station_id'];
-            $product->shop_id = $shopId;
-            $product->branch_id = $item['branch_id'];
-            $product->user_id = $userId;
+            return [
+                'success' => true,
+                'message' => 'Products processed',
+                'saved_count' => count($saved),
+                'skipped_count' => count($skipped),
+                'saved' => $saved,
+                'skipped' => $skipped,
+            ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
 
-            $product->save();
-
-            // Create history record
-            ProductsHistoryModel::create([
-                'product_id' => $product->product_id,
-                'modified_type_id' => 1, // SAVE
-                'description' => 'New Product Saved',
-                'shop_id' => $shopId,
-                'branch_id' => $product->branch_id,
-                'user_id' => $userId,
+            Log::error('Save Products Fatal Error', [
+                'error' => $e->getMessage()
             ]);
-        }
 
-        return true; // or return something meaningful
+            return [
+                'success' => false,
+                'message' => 'Failed to process products',
+            ];
+        }
     }
+
+    // public static function saveProductsService($request, $shopId, $userId)
+    // {
+    //     $request->validate([
+    //         '*.product_name' => 'required|string',
+    //         '*.base_price' => 'required|numeric',
+    //         '*.size_id' => 'required|integer',
+    //         '*.temp_id' => 'required|integer',
+    //         '*.category_id' => 'required|integer',
+    //         '*.station_id' => 'required|integer',
+    //         '*.branch_id' => 'required|integer',
+    //     ]);
+
+    //     foreach ($request->all() as $item) {
+    //         $baseCategory = ProductBaseCategoryModel::find($item['category_id']);
+
+    //         if (!$baseCategory) {
+    //             throw new \Exception("Category with ID {$item['category_id']} not found");
+    //         }
+
+    //         $category = CategoryModel::firstOrCreate(
+    //             [
+    //                 'product_base_category_id' => $baseCategory->product_base_category_id,
+    //                 'shop_id' => $shopId,
+    //             ],
+    //             [
+    //                 'category_label' => $baseCategory->product_base_category,
+    //                 'product_base_category_id' => $baseCategory->product_base_category_id,
+    //                 'shop_id' => $shopId,
+    //             ]
+    //         );
+
+    //         $product = new ProductsModel();
+    //         $product->product_name = $item['product_name'];
+    //         $product->base_price = $item['base_price'];
+    //         $product->cost_estimate = 0;
+    //         $product->size_id = $item['size_id'];
+    //         $product->temp_id = $item['temp_id'];
+    //         $product->category_id = $category->product_category_id;
+    //         $product->availability_id = 1;
+    //         $product->station_id = $item['station_id'];
+    //         $product->shop_id = $shopId;
+    //         $product->branch_id = $item['branch_id'];
+    //         $product->user_id = $userId;
+
+    //         $product->save();
+
+    //         ProductsHistoryModel::create([
+    //             'product_id' => $product->product_id,
+    //             'modified_type_id' => 1, // SAVE
+    //             'description' => 'New Product Saved',
+    //             'shop_id' => $shopId,
+    //             'branch_id' => $product->branch_id,
+    //             'user_id' => $userId,
+    //         ]);
+    //     }
+
+    //     return true;
+    // }
 
     public static function updateProductService($request, $productId, $shopId, $userId)
     {
