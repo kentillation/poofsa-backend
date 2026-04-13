@@ -28,6 +28,7 @@ use App\Models\DevModel;
 // Public
 Route::post('v1/public/shop-registration', [PublicController::class, 'shopRegistration']);
 Route::get('v1/public/shops', [PublicController::class, 'getShops']);
+Route::get('v1/public/shops-without-products', [PublicController::class, 'getShopsWithoutProducts']);
 Route::get('v1/public/verify-email', [PublicController::class, 'verifyEmail']);
 Route::get('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
 Route::get('v1/public/products', [PublicController::class, 'getProducts']);
