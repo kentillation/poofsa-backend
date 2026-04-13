@@ -355,98 +355,102 @@ class PublicController extends Controller
         }
     }
 
-    // public function getShops(Request $request)
-    // {
-        // try {
-        //     $requestedCategory = $request->input('requested_category');
-        //     $requestedMealType = $request->input('requested_meal_type');
-        //     $requestedTimeBetween = $request->input('requested_time_between'); // between 'open_at' and 'close_at'
+    /* public function getShops(Request $request)
+    {
+        try {
+            $requestedCategory = $request->input('requested_category');
+            $requestedMealType = $request->input('requested_meal_type');
+            $requestedTimeBetween = $request->input('requested_time_between'); // between 'open_at' and 'close_at'
 
-        //     $query = ShopModel::query();
+            $query = ShopModel::query();
 
-        //     $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-        //         $q->where('availability_id', 1);
+            $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+                $q->where('availability_id', 1);
 
-        //         if ($requestedCategory) {
-        //             $q->whereHas('category', function ($cat) use ($requestedCategory) {
-        //                 $cat->where('category_label', $requestedCategory);
-        //             });
-        //         }
+                if ($requestedCategory) {
+                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
+                        $cat->where('category_label', $requestedCategory);
+                    });
+                }
 
-        //         if ($requestedMealType) {
-        //             $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-        //                 $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-        //             });
-        //         }
+                if ($requestedMealType) {
+                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+                    });
+                }
 
-        //         if ($requestedTimeBetween) {
-        //             $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
-        //                 $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
-        //                     ->whereTime('close_at', '>=', $requestedTimeBetween);
-        //             });
-        //         }
-        //     });
+                if ($requestedTimeBetween) {
+                    $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
+                        $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
+                            ->whereTime('close_at', '>=', $requestedTimeBetween);
+                    });
+                }
+            });
 
-        //     $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-        //         $q->where('availability_id', 1);
+            $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+                $q->where('availability_id', 1);
 
-        //         if ($requestedCategory) {
-        //             $q->whereHas('category', function ($cat) use ($requestedCategory) {
-        //                 $cat->where('category_label', $requestedCategory);
-        //             });
-        //         }
+                if ($requestedCategory) {
+                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
+                        $cat->where('category_label', $requestedCategory);
+                    });
+                }
 
-        //         if ($requestedMealType) {
-        //             $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-        //                 $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-        //             });
-        //         }
-        //     }])->get();
+                if ($requestedMealType) {
+                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+                    });
+                }
+            }])->get();
 
-        //     $filteredShops = $shops->map(function ($shop) {
-        //         $lowestProduct = $shop->products->sortBy('base_price')->first();
-        //         $branchId = $shop->products->first()->branch_id ?? null;
+            $filteredShops = $shops->map(function ($shop) {
+                $lowestProduct = $shop->products->sortBy('base_price')->first();
+                $branchId = $shop->products->first()->branch_id ?? null;
 
-        //         if ($lowestProduct) {
-        //             return [
-        //                 'shop_id' => $shop->shop_id,
-        //                 'branch_id' => $branchId,
-        //                 'shop_name' => $shop->shop_name,
-        //                 'shop_type' => $shop->shop_type,
-        //                 'lowest_price' => $lowestProduct->base_price,
-        //                 'product_name' => $lowestProduct->product_name,
-        //                 'product_id' => $lowestProduct->product_id,
-        //                 'category_label' => $lowestProduct->category->category_label ?? null,
-        //             ];
-        //         }
+                if ($lowestProduct) {
+                    return [
+                        'shop_id' => $shop->shop_id,
+                        'branch_id' => $branchId,
+                        'shop_name' => $shop->shop_name,
+                        'shop_type' => $shop->shop_type,
+                        'lowest_price' => $lowestProduct->base_price,
+                        'product_name' => $lowestProduct->product_name,
+                        'product_id' => $lowestProduct->product_id,
+                        'category_label' => $lowestProduct->category->category_label ?? null,
+                    ];
+                }
 
-        //         return null;
-        //     })->filter()->values();
+                return null;
+            })->filter()->values();
 
-        //     return response()->json([
-        //         'success' => true,
-        //         'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
-        //         'data' => $filteredShops
-        //     ], 200);
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Error fetching shops!',
-        //         'error' => $e->getMessage()
-        //     ], 500);
-        // }
-    // }
+            return response()->json([
+                'success' => true,
+                'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
+                'data' => $filteredShops
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shops!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }*/
 
 
-    public function getProducts(Request $request)
+    /* public function getProducts(Request $request)
     {
         try {
             $shopId = $request->shop_id;
+            $branchId = $request->branch_id;
 
             $data = ProductsModel::with(['size', 'temperature', 'category'])
                 ->where('availability_id', 1)
                 ->when($shopId, function ($query) use ($shopId) {
                     $query->where('shop_id', $shopId);
+                })
+                ->when($branchId, function ($query) use ($branchId) {
+                    $query->where('branch_id', $branchId);
                 })
                 ->orderBy('product_name')
                 ->get()
@@ -478,8 +482,65 @@ class PublicController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
+    } */
 
+    public function getProducts(Request $request)
+    {
+        try {
+            $shopId = $request->shop_id;
+            $branchId = $request->branch_id;
+            $itemsPerPage = $request->items_per_page ?? 20;
+
+            $products = ProductsModel::with(['size', 'temperature', 'category'])
+                ->where('availability_id', 1)
+                ->when($shopId, fn($q) => $q->where('shop_id', $shopId))
+                ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+                ->orderBy('product_name')
+                ->paginate($itemsPerPage);
+
+            // Transform only items
+            $products->getCollection()->transform(function ($product) {
+                return [
+                    'branch_id' => $product->branch_id,
+                    'shop_id' => $product->shop_id,
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'base_price' => $product->base_price,
+                    'availability_id' => $product->availability_id,
+                    'station_id' => $product->station_id,
+                    'temp_label' => $product->temperature->temp_label ?? null,
+                    'size_label' => $product->size->size_label ?? null,
+                    'category_label' => $product->category->category_label ?? null,
+                    'is_new' => $product->is_new,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => $products->isEmpty()
+                    ? 'No products found!'
+                    : 'Products fetched successfully!',
+                'data' => $products->items(),
+
+                // ⭐ IMPORTANT FOR INFINITE SCROLL
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'has_more' => $products->hasMorePages(),
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching products!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
     public function getNewProducts(Request $request)
     {
         try {
