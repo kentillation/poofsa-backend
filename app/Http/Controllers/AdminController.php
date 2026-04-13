@@ -1131,17 +1131,19 @@ class AdminController extends Controller
     public function getProductCategories()
     {
         try {
-            $data = ProductBaseCategoryModel::orderBy('product_base_category')
+            $shopId = $this->getShopId();
+            $data = CategoryModel::where('shop_id', $shopId)
             ->get();
-            $transformedData = $data->map(function ($item) {
-                return [
-                    'product_category_id' => $item->product_base_category_id,
-                    'category_label' => $item->product_base_category,
-                    'meal_type' => $item->meal_type,
-                ];
-            });
-            
-            return response()->json($transformedData);
+            // $data = ProductBaseCategoryModel::orderBy('product_base_category')->get();
+            // $transformedData = $data->map(function ($item) {
+            //     return [
+            //         'product_category_id' => $item->product_base_category_id,
+            //         'category_label' => $item->product_base_category,
+            //         'meal_type' => $item->meal_type,
+            //     ];
+            // });
+
+            return response()->json($data);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
