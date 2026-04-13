@@ -286,6 +286,9 @@ class PublicController extends Controller
                         'branch_id' => $branchId,
                         'shop_name' => $shop->shop_name,
                         'shop_type' => $shop->shop_type,
+                        'shop_address' => $shop->shop_address,
+                        'open_at' => $shop->open_at,
+                        'close_at' => $shop->close_at,
                         'lowest_price' => $lowestProduct->base_price,
                         'product_name' => $lowestProduct->product_name,
                         'product_id' => $lowestProduct->product_id,
@@ -370,6 +373,9 @@ class PublicController extends Controller
                         'shop_id' => $product->shop->shop_id,
                         'shop_name' => $product->shop->shop_name,
                         'shop_type' => $product->shop->shop_type,
+                        'shop_address' => $product->shop->shop_address,
+                        'open_at' => $product->shop->open_at,
+                        'close_at' => $product->shop->close_at,
                         'product_id' => $product->product_id,
                         'product_name' => $product->product_name,
                         'base_price' => $product->base_price,
@@ -433,6 +439,7 @@ class PublicController extends Controller
         }
     }
 
+    // Need pagination
     public function getProductsByMealType(Request $request)
     {
         try {
@@ -458,6 +465,9 @@ class PublicController extends Controller
                         'shop_id' => $product->shop_id,
                         'shop_name' => $product->shop->shop_name,
                         'shop_type' => $product->shop->shop_type,
+                        'shop_address' => $product->shop->shop_address,
+                        'open_at' => $product->shop->open_at,
+                        'close_at' => $product->shop->close_at,
                         'product_id' => $product->product_id,
                         'product_name' => $product->product_name,
                         'base_price' => $product->base_price,
