@@ -139,21 +139,41 @@ class PublicController extends Controller
 
     public function shopRegistration(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'shop_name' => 'required|string|max:255',
-            'shop_type' => 'required|string',
-            'shop_owner' => 'required|string',
-            'shop_address' => 'required|string',
-            'shop_email' => 'required|email',
-            'shop_contact_number' => 'required|string',
-            'open_at' => 'required',
-            'close_at' => 'required',
-            'admin_password' => 'required|min:6',
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'shop_name' => [
+                    'required',
+                    'string',
+                    'max:30',
+                    function ($attribute, $value, $fail) {
+                        $exists = ShopModel::whereRaw('LOWER(shop_name) = ?', [strtolower($value)])->orWhereRaw(
+                            'LOWER(shop_name) LIKE ?',
+                            [strtolower($value) . '%']
+                        )->exists();
+                        if ($exists) {
+                            $fail('Shop name already taken or is too similar.');
+                        }
+                    }
+                ],
+                'shop_type' => 'required|string',
+                'shop_owner' => 'required|string',
+                'shop_address' => 'required|string',
+                'shop_email' => 'required|email|unique:tbl_shops,shop_email',
+                'shop_contact_number' => 'required|string|unique:tbl_shops,shop_contact_number',
+                'open_at' => 'required',
+                'close_at' => 'required',
+                'admin_password' => 'required|min:6',
+            ],
+            [
+                'shop_email.unique' => 'Email address already taken.',
+                'shop_contact_number.unique' => 'Mobile number already taken.',
+            ]
+        );
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -164,6 +184,7 @@ class PublicController extends Controller
 
         try {
 
+            $isOvernight = $validated['close_at'] < $validated['open_at'] ? 1 : 0;
             $shop = ShopModel::create([
                 'shop_name' => $validated['shop_name'],
                 'shop_type' => $validated['shop_type'],
@@ -173,6 +194,7 @@ class PublicController extends Controller
                 'shop_contact_number' => $validated['shop_contact_number'],
                 'open_at' => $validated['open_at'],
                 'close_at' => $validated['close_at'],
+                'is_overnight' => $isOvernight,
             ]);
             $shopId = $shop->shop_id;
 
@@ -265,7 +287,7 @@ class PublicController extends Controller
         try {
             $requestedCategory = $request->input('requested_category');
             $requestedMealType = $request->input('requested_meal_type');
-            $requestedTimeBetween = $request->input('requested_time_between'); // between 'open_at' and 'close_at'
+            $requestedTimeBetween = $request->input('requested_time_between');
 
             $query = ShopModel::query();
 
@@ -286,8 +308,29 @@ class PublicController extends Controller
 
                 if ($requestedTimeBetween) {
                     $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
-                        $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
-                            ->whereTime('close_at', '>=', $requestedTimeBetween);
+                        $shopQuery->where(function ($query) use ($requestedTimeBetween) {
+
+                            // Case 1: 24 hours (open_at == close_at)
+                            $query->where(function ($q0) {
+                                $q0->whereColumn('open_at', '=', 'close_at');
+                            })
+
+                                // Case 2: Normal hours
+                                ->orWhere(function ($q1) use ($requestedTimeBetween) {
+                                    $q1->where('is_overnight', 0)
+                                        ->whereTime('open_at', '<=', $requestedTimeBetween)
+                                        ->whereTime('close_at', '>=', $requestedTimeBetween);
+                                })
+
+                                // Case 3: Overnight
+                                ->orWhere(function ($q2) use ($requestedTimeBetween) {
+                                    $q2->where('is_overnight', 1)
+                                        ->where(function ($q3) use ($requestedTimeBetween) {
+                                            $q3->whereTime('open_at', '<=', $requestedTimeBetween)
+                                                ->orWhereTime('close_at', '>=', $requestedTimeBetween);
+                                        });
+                                });
+                        });
                     });
                 }
             });
@@ -531,7 +574,6 @@ class PublicController extends Controller
                     'has_more' => $products->hasMorePages(),
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -540,7 +582,7 @@ class PublicController extends Controller
             ], 500);
         }
     }
-    
+
     public function getNewProducts(Request $request)
     {
         try {

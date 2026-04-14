@@ -28,7 +28,8 @@ class ShopModel extends Authenticatable
         'shop_contact_number',
         'is_active',
         'open_at',
-        'close_at'
+        'close_at',
+        'is_overnight'
     ];
 
     public function products()

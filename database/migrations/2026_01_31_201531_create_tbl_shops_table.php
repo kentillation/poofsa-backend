@@ -22,6 +22,7 @@ class CreateTblShopsTable extends Migration
             $table->string('shop_email', 191)->unique();
             $table->string('shop_contact_number', 13);
             $table->boolean('is_active')->default(true); // active/inactive status
+            $table->boolean('is_overnight')->default(false);
             $table->time('open_at');
             $table->time('close_at');
             $table->timestamps();
