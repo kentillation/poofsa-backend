@@ -287,6 +287,12 @@ class PublicController extends Controller
                 Mail::to($email)->send(new SendRecoveryCode($recoveryCode));
             } catch (\Exception $e) {
                 Log::error('Mail error: ' . $e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send email.',
+                    'error' => $e->getMessage() // THIS will reveal the real issue
+                ], 500);
             }
 
             return response()->json([
