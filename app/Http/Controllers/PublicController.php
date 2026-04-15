@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SendRecoveryCode;
+use App\Mail\SendSuccessMessage;
 use App\Http\Requests\GetPublicProductsRequest;
 use App\Http\Requests\GetPublicNewProductsRequest;
 use App\Http\Requests\GetPublicByMealTypeRequest;
@@ -245,6 +249,136 @@ class PublicController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => 'Account registration failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        try {
+            // Validate input
+            $validated = $request->validate([
+                'admin_email' => 'required|email'
+            ]);
+
+            $email = $validated['admin_email'];
+
+            // Check if email exists
+            $admin = AdminModel::where('admin_email', $email)->first();
+
+            if (!$admin) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email not found. Please try again!'
+                ], 404);
+            }
+
+            // Generate recovery code
+            $recoveryCode = rand(100000, 999999);
+
+            // Save recovery code (IMPORTANT)
+            $admin->recovery_code = $recoveryCode;
+            $admin->recovery_code_expires_at = now()->addMinutes(10); // optional
+            $admin->save();
+
+            // Send email
+            try {
+                Mail::to($email)->send(new SendRecoveryCode($recoveryCode));
+            } catch (\Exception $e) {
+                Log::error('Mail error: ' . $e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send recovery code.'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Recovery code sent successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verifyRecoveryCode(Request $request)
+    {
+        $request->validate([
+            'admin_email' => 'required|email',
+            'recovery_code' => 'required'
+        ]);
+
+        $admin = AdminModel::where('admin_email', $request->admin_email)
+            ->where('recovery_code', $request->recovery_code)
+            ->first();
+
+        if (!$admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid recovery code. Try again!'
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Recovery code has been verified.'
+        ]);
+    }
+
+
+    public function recoverAccount(Request $request)
+    {
+        try {
+            // Validate input
+            $validated = $request->validate([
+                'admin_email' => 'required|email',
+                'admin_new_password' => 'required|string'
+            ]);
+
+            $email = $validated['admin_email'];
+            $password = $validated['admin_new_password'];
+
+            // Check if email exists
+            $admin = AdminModel::where('admin_email', $email)->first();
+            if (!$admin) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email not found.'
+                ], 404);
+            }
+
+            // Save recovery code (IMPORTANT)
+            $admin->admin_email = $email;
+            $admin->admin_password = Hash::make($password);
+            $admin->recovery_code_expires_at = now()->addMinutes(10); // optional
+            $admin->update();
+
+            // Send email
+            try {
+                Mail::to($email)->send(new SendSuccessMessage());
+            } catch (\Exception $e) {
+                Log::error('Mail error: ' . $e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to submit credentials.'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password has ben reset successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error. Try again.',
                 'error' => $e->getMessage()
             ], 500);
         }
