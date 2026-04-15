@@ -287,11 +287,6 @@ class PublicController extends Controller
                 Mail::to($email)->send(new SendRecoveryCode($recoveryCode));
             } catch (\Exception $e) {
                 Log::error('Mail error: ' . $e->getMessage());
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send recovery code.'
-                ], 500);
             }
 
             return response()->json([
@@ -331,21 +326,19 @@ class PublicController extends Controller
         ]);
     }
 
-
     public function recoverAccount(Request $request)
     {
+        $validated = $request->validate([
+            'admin_email' => 'required|email',
+            'recovery_code' => 'required',
+            'new_password' => 'required|string|min:8',
+        ]);
+
+        DB::beginTransaction();
+
         try {
-            // Validate input
-            $validated = $request->validate([
-                'admin_email' => 'required|email',
-                'admin_new_password' => 'required|string'
-            ]);
+            $admin = AdminModel::where('admin_email', $validated['admin_email'])->first();
 
-            $email = $validated['admin_email'];
-            $password = $validated['admin_new_password'];
-
-            // Check if email exists
-            $admin = AdminModel::where('admin_email', $email)->first();
             if (!$admin) {
                 return response()->json([
                     'success' => false,
@@ -353,33 +346,111 @@ class PublicController extends Controller
                 ], 404);
             }
 
-            // Save recovery code (IMPORTANT)
-            $admin->admin_email = $email;
-            $admin->admin_password = Hash::make($password);
-            $admin->recovery_code_expires_at = now()->addMinutes(10); // optional
-            $admin->update();
+            // Validate recovery code
+            if (!$admin->recovery_code) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recovery code already used. Please request a new one.'
+                ], 400);
+            }
 
-            // Send email
-            try {
-                Mail::to($email)->send(new SendSuccessMessage());
-            } catch (\Exception $e) {
-                Log::error('Mail error: ' . $e->getMessage());
+            // Check expiration
+            if (!$admin->recovery_code_expires_at || now()->gt($admin->recovery_code_expires_at)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recovery code expired.'
+                ], 400);
+            }
+
+            // Max attempts
+            $MAX_ATTEMPTS = 3;
+
+            // Already used
+            // if ($admin->recovery_code_used_at) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Recovery code already used. Please try again.'
+            //     ], 400);
+            // }
+
+            // Too many attempts
+            if ($admin->recovery_attempts >= $MAX_ATTEMPTS) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many attempts. Please request a new recovery code.'
+                ], 429);
+            }
+
+            // Invalid code
+            if ($admin->recovery_code !== $validated['recovery_code']) {
+
+                // Increment attempts
+                $admin->increment('recovery_attempts');
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to submit credentials.'
-                ], 500);
+                    'message' => 'Invalid recovery code.'
+                ], 400);
             }
 
+            // Expired
+            if (!$admin->recovery_code_expires_at || now()->gt($admin->recovery_code_expires_at)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recovery code expired.'
+                ], 400);
+            }
+
+            // Update password
+            $admin->admin_password = Hash::make($validated['new_password']);
+            $admin->recovery_code = null;
+            $admin->recovery_code_expires_at = null;
+            $admin->recovery_code_used_at = now();
+            $admin->recovery_attempts = 0;
+            $admin->save();
+
+            $shop = ShopModel::where('shop_id', $admin->shop_id)->first();
+
+            // Send email (non-blocking)
+            try {
+                Mail::to($admin->admin_email)->send(new SendSuccessMessage());
+            } catch (\Exception $e) {
+                Log::error('Mail error: ' . $e->getMessage());
+            }
+
+            Auth::guard('admin')->login($admin);
+
+            $token = $admin->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+
+            DB::commit();
+
+            $cookie = cookie(
+                'XSRF-TOKEN',
+                $token,
+                config('session.lifetime'),
+                '/',
+                config('session.domain', null),
+                config('session.secure', true),
+                true,
+                false,
+                'Strict'
+            );
+
             return response()->json([
-                'success' => true,
-                'message' => 'Password has ben reset successfully.'
-            ]);
+                'message' => "You've successfully reset your password",
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'expires_in' => 60 * 24 * 30, // 30 days
+                'shop_id' => $admin->shop_id,
+                'shop_name' => $shop->shop_name,
+                'user_id' => $admin->admin_id,
+            ])->withCookie($cookie);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Server error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Server error. Try again.',
-                'error' => $e->getMessage()
+                'message' => 'Server error. Try again.'
             ], 500);
         }
     }

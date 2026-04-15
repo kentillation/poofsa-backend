@@ -25,6 +25,10 @@ class AdminModel extends Authenticatable
         'shop_id',
         'role',
         'status',
+        'recovery_code',
+        'recovery_attempts',
+        'recovery_code_used_at',
+        'recovery_code_expires_at'
     ];
 
     protected $hidden = [

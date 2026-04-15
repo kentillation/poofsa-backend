@@ -45,7 +45,7 @@ class SendRecoveryCode extends Mailable
                                         </div>
 
                                         <p style="color: #d3bb8e ; margin-top: 20px;"><strong>Recovery Code</strong></p>
-                                        <h3 style="color: #ffe9c1; margin: 5px 0;">' . htmlspecialchars($this->recovery_code) . '</h3>
+                                        <h3 style="color: #ffe9c1; margin: 3px 0;">' . htmlspecialchars($this->recovery_code) . '</h3>
 
                                         <p style="color: #ffe9c1; font-size: 12px; font-style: italic; margin-top: 30px;">
                                             Note: This is a system-generated email. Please do not reply!

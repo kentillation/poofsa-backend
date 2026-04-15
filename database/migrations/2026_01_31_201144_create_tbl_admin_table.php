@@ -23,6 +23,8 @@ class CreateTblAdminTable extends Migration
             $table->enum('role', ['admin', 'superadmin', 'manager'])->default('admin'); // role: admin, superadmin, etc.
             $table->boolean('status')->default(true); // active/inactive status
             $table->string('recovery_code')->nullable();
+            $table->integer('recovery_attempts')->default(0);
+            $table->timestamp('recovery_code_used_at')->nullable();
             $table->dateTime('recovery_code_expires_at ')->nullable();
             $table->timestamps(); // created_at and updated_at
             $table->softDeletes(); // optional: deleted_at for soft deletes

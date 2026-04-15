@@ -43,8 +43,8 @@ class SendSuccessMessage extends Mailable
                                             <p style="color: #d3bb8e; margin: 5px 0 0 0;">Your Local Food Finder Buddy</p>
                                         </div>
 
-                                        <p style="color: #d3bb8e ; margin-top: 20px;"><strong>Password reset</strong></p>
-                                        <h3 style="color: #ffe9c1; margin: 5px 0;">Success! You have reset your password successfully.</h3>
+                                        <p style="color: #d3bb8e ; margin-top: 20px;"><strong>Password Reset</strong></p>
+                                        <h3 style="color: #ffe9c1; margin: 3px 0;">You have reset your password successfully.</h3>
 
                                         <p style="color: #ffe9c1; font-size: 12px; font-style: italic; margin-top: 30px;">
                                             Note: This is a system-generated email. Please do not reply!
