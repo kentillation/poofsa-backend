@@ -15,6 +15,7 @@ return [
         'https://localhost',
         'http://localhost',
         'capacitor://localhost:8080',
+        'https://locinder.vercel.app',
         'https://locinder.poofsa.com',
         'https://locinder-admin.poofsa.com',
         'https://poofsa-vent.vercel.app',
