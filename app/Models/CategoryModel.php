@@ -16,8 +16,8 @@ class CategoryModel extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'product_category_id', 
-        'category_label', 
+        'product_category_id',
+        'category_label',
         'product_base_category_id',
         'shop_id'
     ];

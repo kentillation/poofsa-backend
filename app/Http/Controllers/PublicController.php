@@ -743,12 +743,18 @@ class PublicController extends Controller
         try {
             $shopId = $request->shop_id;
             $branchId = $request->branch_id;
+            $categoryLabel = $request->category_label;
             $itemsPerPage = $request->items_per_page ?? 20;
 
             $products = ProductsModel::with(['size', 'temperature', 'category'])
                 ->where('availability_id', 1)
                 ->when($shopId, fn($q) => $q->where('shop_id', $shopId))
                 ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+                ->when($categoryLabel, function ($q) use ($categoryLabel) {
+                    $q->whereHas('category', function ($query) use ($categoryLabel) {
+                        $query->where('category_label', $categoryLabel);
+                    });
+                })
                 ->orderBy('product_name')
                 ->paginate($itemsPerPage);
 
@@ -776,7 +782,7 @@ class PublicController extends Controller
                     : 'Products fetched successfully!',
                 'data' => $products->items(),
 
-                // ⭐ IMPORTANT FOR INFINITE SCROLL
+                // IMPORTANT FOR INFINITE SCROLL
                 'pagination' => [
                     'current_page' => $products->currentPage(),
                     'last_page' => $products->lastPage(),
