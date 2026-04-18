@@ -469,7 +469,7 @@ class PublicController extends Controller
             // Query shops that have NO products
             $shops = ShopModel::query()
                 ->whereDoesntHave('products')
-                ->paginate($perPage, ['shop_id', 'branch_id', 'shop_name', 'shop_type']);
+                ->paginate($perPage, ['shop_id', 'shop_name', 'shop_type']);
 
             return response()->json([
                 'success' => true,
@@ -804,36 +804,52 @@ class PublicController extends Controller
     {
         try {
             $isNew = $request->is_new;
+            $itemsPerPage = $request->items_per_page ?? 20;
 
-            $data = ProductsModel::with(['shop', 'size', 'temperature', 'category'])
+            $products = ProductsModel::with(['shop', 'size', 'temperature', 'category'])
                 ->where('availability_id', 1)
                 ->when($isNew, function ($query) use ($isNew) {
                     $query->where('is_new', $isNew);
                 })
                 ->orderBy('product_name')
-                ->get()
-                ->map(function ($product) {
-                    return [
-                        'branch_id' => $product->branch_id,
-                        'shop_id' => $product->shop->shop_id,
-                        'shop_name' => $product->shop->shop_name,
-                        'shop_type' => $product->shop->shop_type,
-                        'shop_address' => $product->shop->shop_address,
-                        'open_at' => $product->shop->open_at,
-                        'close_at' => $product->shop->close_at,
-                        'product_id' => $product->product_id,
-                        'product_name' => $product->product_name,
-                        'base_price' => $product->base_price,
-                        'temp_label' => $product->temperature->temp_label ?? null,
-                        'size_label' => $product->size->size_label ?? null,
-                        'category_label' => $product->category->category_label ?? null,
-                    ];
-                });
+                ->paginate($itemsPerPage);
+
+                // Transform only items
+            $products->getCollection()->transform(function ($product) {
+                return [
+                    'branch_id' => $product->branch_id,
+                    'shop_id' => $product->shop->shop_id,
+                    'shop_name' => $product->shop->shop_name,
+                    'shop_type' => $product->shop->shop_type,
+                    'shop_address' => $product->shop->shop_address,
+                    'open_at' => $product->shop->open_at,
+                    'close_at' => $product->shop->close_at,
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'base_price' => $product->base_price,
+                    'availability_id' => $product->availability_id,
+                    'station_id' => $product->station_id,
+                    'temp_label' => $product->temperature->temp_label ?? null,
+                    'size_label' => $product->size->size_label ?? null,
+                    'category_label' => $product->category->category_label ?? null,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => $data->isEmpty() ? 'No products found!' : 'Products fetched successfully!',
-                'data' => $data
+                'message' => $products->isEmpty()
+                    ? 'No products found!'
+                    : 'Products fetched successfully!',
+                'data' => $products->items(),
+
+                // IMPORTANT FOR INFINITE SCROLL
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'has_more' => $products->hasMorePages(),
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
