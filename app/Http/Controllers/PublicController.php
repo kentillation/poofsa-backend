@@ -884,11 +884,11 @@ class PublicController extends Controller
         }
     }
 
-    // Need pagination
     public function getProductsByMealType(Request $request)
     {
         try {
             $mealType = $request->meal_type;
+            $itemsPerPage = $request->items_per_page ?? 20;
 
             if (!$mealType) {
                 return response()->json([
@@ -897,37 +897,49 @@ class PublicController extends Controller
                 ], 400);
             }
 
-            $data = ProductsModel::with(['shop', 'size', 'temperature', 'category', 'category.baseCategory'])
+            $products = ProductsModel::with(['shop', 'size', 'temperature', 'category', 'category.baseCategory'])
                 ->where('availability_id', 1)
                 ->whereHas('category.baseCategory', function ($query) use ($mealType) {
-                    $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
+                    $query->whereJsonContains('meal_type', $mealType);
                 })
                 ->orderBy('product_name')
-                ->get()
-                ->map(function ($product) {
-                    return [
-                        'branch_id' => $product->branch_id,
-                        'shop_id' => $product->shop_id,
-                        'shop_name' => $product->shop->shop_name,
-                        'shop_type' => $product->shop->shop_type,
-                        'shop_address' => $product->shop->shop_address,
-                        'open_at' => $product->shop->open_at,
-                        'close_at' => $product->shop->close_at,
-                        'product_id' => $product->product_id,
-                        'product_name' => $product->product_name,
-                        'base_price' => $product->base_price,
-                        'availability_id' => $product->availability_id,
-                        'station_id' => $product->station_id,
-                        'temp_label' => $product->temperature->temp_label ?? null,
-                        'size_label' => $product->size->size_label ?? null,
-                        'category_label' => $product->category->category_label ?? null,
-                    ];
-                });
+                ->paginate($itemsPerPage);
+
+            // Transform only items
+            $products->getCollection()->transform(function ($product) {
+                return [
+                    'shop_name' => $product->shop->shop_name,
+                    'shop_type' => $product->shop->shop_type,
+                    'shop_address' => $product->shop->shop_address,
+                    'open_at' => $product->shop->open_at,
+                    'close_at' => $product->shop->close_at,
+                    'branch_id' => $product->branch_id,
+                    'shop_id' => $product->shop_id,
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'base_price' => $product->base_price,
+                    'availability_id' => $product->availability_id,
+                    'station_id' => $product->station_id,
+                    'temp_label' => $product->temperature->temp_label ?? null,
+                    'size_label' => $product->size->size_label ?? null,
+                    'category_label' => $product->category->category_label ?? null,
+                    'is_new' => $product->is_new,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => $data->isEmpty() ? 'No products found!' : 'Products fetched successfully!',
-                'data' => $data
+                'message' => $products->isEmpty()
+                    ? 'No products found!'
+                    : 'Products fetched successfully!',
+                'data' => $products->items(),
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'has_more' => $products->hasMorePages(),
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -985,7 +997,7 @@ class PublicController extends Controller
 
             $data = CategoryModel::with('baseCategory')
                 ->whereHas('baseCategory', function ($query) use ($mealType) {
-                    $query->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($mealType)]);
+                    $query->whereJsonContains('meal_type', $mealType);
                 })
                 ->orderBy('category_label', 'asc')
                 ->get()
