@@ -609,6 +609,38 @@ class PublicController extends Controller
         }
     }
 
+    public function getShopLocation(Request $request)
+    {
+        try {
+            $shopId = $request->shop_id;
+            $branchId = $request->branch_id;
+
+            $data = BranchModel::where('shop_id', $shopId)
+                ->where('branch_id', $branchId)
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'branch_name' => $product->branch_name,
+                        'branch_address' => $product->branch_address,
+                        'branch_latitude' => $product->branch_latitude,
+                        'branch_longitude' => $product->branch_longitude,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No location found!' : 'Location fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching location!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /* public function getShops(Request $request)
     {
         try {

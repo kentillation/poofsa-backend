@@ -32,6 +32,7 @@ Route::post('v1/public/verify-recovery-code', [PublicController::class, 'verifyR
 Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
 Route::get('v1/public/shops', [PublicController::class, 'getShops']);
 Route::post('v1/public/shops-without-products', [PublicController::class, 'getShopsWithoutProducts']);
+Route::get('v1/public/shops-location', [PublicController::class, 'getShopLocation']);
 Route::get('v1/public/products', [PublicController::class, 'getProducts']);
 Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
 Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
