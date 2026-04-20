@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\CashierAuthController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\KitchenAuthController;
@@ -16,22 +18,33 @@ use App\Http\Controllers\OpenController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\DevController;
 use App\Http\Controllers\PaymentController;
-use App\Models\ShopModel;
-use App\Models\BranchModel;
-use App\Models\AdminModel;
-use App\Models\CashierModel;
-use App\Models\KitchenPersonnelModel;
-use App\Models\BaristaModel;
 use App\Models\DevModel;
 
+// Customer management
+Route::post('v1/customer/login', [CustomerAuthController::class, 'customerLogin']);
+Route::post('v1/customer/registration', [CustomerController::class, 'customerRegistration']);
+Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
+
+Route::group(['middleware' => 'auth:customer_api'], function () {
+    Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
+    Route::get('v1/customer/shops', [PublicController::class, 'getShops']);
+    Route::get('v1/customer/shops-location', [PublicController::class, 'getShopLocation']);
+    Route::get('v1/customer/products', [PublicController::class, 'getProducts']);
+    Route::get('v1/customer/new-products', [PublicController::class, 'getNewProducts']);
+    Route::get('v1/customer/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
+    Route::get('v1/customer/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
+    Route::get('v1/customer/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
+    Route::get('v1/customer/product-category', [PublicController::class, 'getProductCategories']);
+    Route::get('v1/customer/product-base-category', [PublicController::class, 'getProductBaseCategories']);
+});
 
 // Public
 Route::post('v1/public/shop-registration', [PublicController::class, 'shopRegistration']);
 Route::post('v1/public/verify-email', [PublicController::class, 'verifyEmail']);
 Route::post('v1/public/verify-recovery-code', [PublicController::class, 'verifyRecoveryCode']);
 Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
+Route::get('v1/public/shops-without-products', [PublicController::class, 'getShopsWithoutProducts']);
 Route::get('v1/public/shops', [PublicController::class, 'getShops']);
-Route::post('v1/public/shops-without-products', [PublicController::class, 'getShopsWithoutProducts']);
 Route::get('v1/public/shops-location', [PublicController::class, 'getShopLocation']);
 Route::get('v1/public/products', [PublicController::class, 'getProducts']);
 Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
@@ -39,6 +52,7 @@ Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProd
 Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
 Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
 Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
+Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
 
 //Route::get('v1/public/all-shops', [PublicController::class, 'getAllPublicShops']); // new structure
 //Route::get('v1/public/all-products', [PublicController::class, 'getAllPublicProductsFromShop']); // new structure
@@ -47,7 +61,6 @@ Route::get('v1/public/product-category', [PublicController::class, 'getProductCa
 //Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getAllCategoriesByNewProducts']); // new structure
 //Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getAllCategoriesByMealType']); // new structure
 //Route::get('v1/public/product-category', [PublicController::class, 'getAllProductCategories']);
-Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
 
 // Login and others
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
@@ -195,108 +208,4 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/dev/save-shop', [DevController::class, 'saveShop']);
     Route::get('/dev/shops', [DevController::class, 'getShops']);
     Route::get('/dev/shop-branches/{shop_id}', [DevController::class, 'getShopBranches']);
-});
-
-// Shop Register Account
-Route::post('/registerAccount', function (Request $request) {
-    $validated = $request->validate([
-        'shop_name' => 'required|string|max:50',
-        'shop_owner' => 'required|string|max:50',
-        'shop_address' => 'required|string',
-        'shop_email' => 'required|string|email|max:50|unique:tbl_shops,shop_email',
-        'shop_contact_number' => 'required|string|max:13',
-        'branch_name' => 'required|string|max:50',
-        'branch_address' => 'required|string',
-        'branch_manager_name' => 'required|string|max:50',
-        'branch_contact_number' => 'required|string|max:13',
-        'admin_name' => 'required|string|max:255',
-        'admin_email' => 'required|string|email|max:255|unique:tbl_admin,admin_email',
-        'admin_password' => 'required|string|min:8',
-        'admin_mpin' => 'required|numeric',
-        'cashier_name' => 'required|string|max:255',
-        'cashier_email' => 'required|string|email|max:255|unique:tbl_cashier,cashier_email',
-        'cashier_password' => 'required|string|min:8',
-        'cashier_mpin' => 'required|numeric',
-        'kitchen_personnel_name' => 'required|string|max:255',
-        'kitchen_personnel_email' => 'required|string|email|max:255|unique:tbl_kitchen_personnel,kitchen_personnel_email',
-        'kitchen_personnel_password' => 'required|string|min:8',
-        'kitchen_personnel_mpin' => 'required|numeric',
-        'barista_name' => 'required|string|max:255',
-        'barista_email' => 'required|string|email|max:255|unique:tbl_barista,barista_email',
-        'barista_password' => 'required|string|min:8',
-        'barista_mpin' => 'required|numeric',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        $shop = ShopModel::create([
-            'shop_name' => $validated['shop_name'],
-            'shop_owner' => $validated['shop_owner'],
-            'shop_address' => $validated['shop_address'],
-            'shop_email' => $validated['shop_email'],
-            'shop_contact_number' => $validated['shop_contact_number'],
-        ]);
-
-        $branch = BranchModel::create([
-            'branch_name' => $validated['branch_name'],
-            'branch_address' => $validated['branch_address'],
-            'branch_manager_name' => $validated['branch_manager_name'],
-            'branch_contact_number' => $validated['branch_contact_number'],
-            'shop_id' => $shop->shop_id,
-        ]);
-
-        $admin = AdminModel::create([
-            'admin_name' => $validated['admin_name'],
-            'admin_email' => $validated['admin_email'],
-            'admin_password' => Hash::make($validated['admin_password']),
-            'admin_mpin' => Hash::make($validated['admin_mpin']),
-            'shop_id' => $shop->shop_id,
-        ]);
-        $cashier = CashierModel::create([
-            'cashier_name' => $validated['cashier_name'],
-            'cashier_email' => $validated['cashier_email'],
-            'cashier_password' => Hash::make($validated['cashier_password']),
-            'cashier_mpin' => Hash::make($validated['cashier_mpin']),
-            'shop_id' => $shop->shop_id,
-            'branch_id' => $branch->branch_id,
-
-        ]);
-        $kitchen = KitchenPersonnelModel::create([
-            'kitchen_personnel_name' => $validated['kitchen_personnel_name'],
-            'kitchen_personnel_email' => $validated['kitchen_personnel_email'],
-            'kitchen_personnel_password' => Hash::make($validated['kitchen_personnel_password']),
-            'kitchen_personnel_mpin' => Hash::make($validated['kitchen_personnel_mpin']),
-            'shop_id' => $shop->shop_id,
-            'branch_id' => $branch->branch_id,
-        ]);
-        $barista = BaristaModel::create([
-            'barista_name' => $validated['barista_name'],
-            'barista_email' => $validated['barista_email'],
-            'barista_password' => Hash::make($validated['barista_password']),
-            'barista_mpin' => Hash::make($validated['barista_mpin']),
-            'shop_id' => $shop->shop_id,
-            'branch_id' => $branch->branch_id,
-        ]);
-        $token = $admin->createToken('auth-token')->plainTextToken;
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Registration successful',
-            'shop' => $shop,
-            'branch' => $branch,
-            'admin' => $admin->makeHidden(['admin_password', 'admin_mpin']),
-            'cashier' => $cashier->makeHidden(['cashier_password', 'cashier_mpin']),
-            'kitchen' => $kitchen->makeHidden(['kitchen_personnel_password', 'kitchen_personnel_mpin']),
-            'barista' => $barista->makeHidden(['barista_password', 'barista_mpin']),
-            'token' => $token,
-        ], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'Registration failed',
-            'error' => $e->getMessage()
-        ], 500);
-    }
 });

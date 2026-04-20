@@ -20,6 +20,14 @@ return [
             'driver' => 'session',
             'provider' => 'devOnly',
         ],
+        'customer' => [
+            'driver' => 'session',
+            'provider' => 'customers',
+        ],
+        'customer_api' => [  // Add this for API token auth
+            'driver' => 'sanctum',
+            'provider' => 'customers',
+        ],
         'admin' => [
             'driver' => 'session',
             'provider' => 'admins',
@@ -43,6 +51,10 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\DevModel::class,
         ],
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\CustomerModel::class,
+        ],
         'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\AdminModel::class,
@@ -62,6 +74,12 @@ return [
     ],
 
     'passwords' => [
+        'customers' => [
+            'provider' => 'customers',
+            'table' => 'password_resets',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
         'admins' => [
             'provider' => 'admins',
             'table' => 'password_resets',
