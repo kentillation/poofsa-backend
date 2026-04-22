@@ -39,6 +39,10 @@ class ProductRepository
                             $q2->where('availability_label', 'like', "%{$search}%");
                         });
                 })
+                ->select([
+                    'tbl_products.*', // Select all product fields including image columns
+                    // Explicitly include image columns (already included in tbl_products.*)
+                ])
                 ->orderByDesc('updated_at')
                 ->paginate($perPage);
         } catch (Exception $e) {

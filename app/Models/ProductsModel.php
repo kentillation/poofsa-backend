@@ -87,7 +87,9 @@ class ProductsModel extends Model
         if (!$this->thumbnail_path) {
             return null;
         }
-        return asset('storage/' . $this->thumbnail_path);
+        return Storage::disk('public')->exists($this->thumbnail_path)
+            ? asset('storage/' . $this->thumbnail_path)
+            : null;
     }
 
     public function getStandardImageUrlAttribute()
@@ -95,7 +97,16 @@ class ProductsModel extends Model
         if (!$this->standard_image_path) {
             return null;
         }
-        return asset('storage/' . $this->standard_image_path);
+        return Storage::disk('public')->exists($this->standard_image_path)
+            ? asset('storage/' . $this->standard_image_path)
+            : null;
+    }
+
+    // Accessor to check if product has image
+    public function getHasImageAttribute()
+    {
+        return !is_null($this->thumbnail_path) &&
+            Storage::disk('public')->exists($this->thumbnail_path);
     }
 
     // public function updateAvailabilityBasedOnIngredients()

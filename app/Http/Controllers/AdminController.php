@@ -524,7 +524,17 @@ class AdminController extends Controller
             search: $request->search,
         );
 
-        return ProductResource::collection($result);
+        // return ProductResource::collection($result);
+        return response()->json([
+            'status' => true,
+            'data' => ProductResource::collection($result),
+            'meta' => [
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+            ]
+        ]);
     }
 
     // NEW

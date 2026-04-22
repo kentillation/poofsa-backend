@@ -33,6 +33,12 @@ class ProductResource extends JsonResource
             'station_name' => $this->stations->station_name ?? null,
             'availability_label' => $this->availability->availability_label ?? null,
             'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+
+            // Add image fields
+            'thumbnail_url' => $this->thumbnail_url,
+            'standard_image_url' => $this->standard_image_url,
+            'image_size_kb' => $this->image_size_kb,
+            'has_image' => $this->has_image,
         ];
     }
 }
