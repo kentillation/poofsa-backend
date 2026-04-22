@@ -39,7 +39,7 @@ class ProductService
             foreach ($validated as $index => $item) {
 
                 try {
-                    // 🔍 Check duplicate
+                    // Check duplicate
                     $exists = ProductsModel::where('product_name', $item['product_name'])
                         ->where('size_id', $item['size_id'])
                         ->where('temp_id', $item['temp_id'])
@@ -52,7 +52,7 @@ class ProductService
                             'product_name' => $item['product_name'],
                             'reason' => 'Duplicate product (name + size + temp)'
                         ];
-                        continue; // ⬅️ Skip, don't stop
+                        continue; // Skip, don't stop
                     }
 
                     // Check base category
@@ -105,7 +105,7 @@ class ProductService
 
                     $saved[] = $product;
                 } catch (\Throwable $e) {
-                    // 🔥 Catch per-item errors (DO NOT break loop)
+                    // Catch per-item errors (DO NOT break loop)
                     Log::error('Product Save Item Error', [
                         'index' => $index,
                         'item' => $item,
