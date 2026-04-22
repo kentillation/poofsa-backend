@@ -44,16 +44,19 @@ Route::post('v1/public/verify-email', [PublicController::class, 'verifyEmail']);
 Route::post('v1/public/verify-recovery-code', [PublicController::class, 'verifyRecoveryCode']);
 Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
 Route::get('v1/public/shops-without-products', [PublicController::class, 'getShopsWithoutProducts']);
-Route::get('v1/public/shops', [PublicController::class, 'getShops']);
-Route::get('v1/public/shops-location', [PublicController::class, 'getShopLocation']);
-Route::get('v1/public/products', [PublicController::class, 'getProducts']);
-Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
-Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
-Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
-Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
-Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
+
+// Unused
+// Route::get('v1/public/shops', [PublicController::class, 'getShops']);
+// Route::get('v1/public/shops-location', [PublicController::class, 'getShopLocation']);
+// Route::get('v1/public/products', [PublicController::class, 'getProducts']);
+// Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
+// Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
+// Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
+// Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
+// Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
 Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
 
+// To be use
 //Route::get('v1/public/all-shops', [PublicController::class, 'getAllPublicShops']); // new structure
 //Route::get('v1/public/all-products', [PublicController::class, 'getAllPublicProductsFromShop']); // new structure
 //Route::get('v1/public/new-products', [PublicController::class, 'getAllNewPublicProducts']); // new structure

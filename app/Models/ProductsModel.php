@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class ProductsModel extends Model
 {
@@ -32,6 +33,9 @@ class ProductsModel extends Model
         'shop_id',
         'branch_id',
         'user_id',
+        'thumbnail_path',
+        'standard_image_path',
+        'image_size_kb'
     ];
 
     protected $casts = [
@@ -75,6 +79,23 @@ class ProductsModel extends Model
     public function stations()
     {
         return $this->belongsTo(StationModel::class, 'station_id');
+    }
+
+    // Add accessors for URLs
+    public function getThumbnailUrlAttribute()
+    {
+        if (!$this->thumbnail_path) {
+            return null;
+        }
+        return asset('storage/' . $this->thumbnail_path);
+    }
+
+    public function getStandardImageUrlAttribute()
+    {
+        if (!$this->standard_image_path) {
+            return null;
+        }
+        return asset('storage/' . $this->standard_image_path);
     }
 
     // public function updateAvailabilityBasedOnIngredients()

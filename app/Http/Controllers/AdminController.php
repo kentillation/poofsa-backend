@@ -461,12 +461,22 @@ class AdminController extends Controller
             $shopId = $this->getShopId();
             $userId = $this->getUserId();
 
-            ProductService::saveProductsService($request, $shopId, $userId);
+            $result = ProductService::saveProductsService($request, $shopId, $userId);
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Product saved successfully',
-            ]);
+            if ($result['success']) {
+                return response()->json([
+                    'status' => true,
+                    'message' => $result['message'],
+                    'saved_count' => $result['saved_count'],
+                    'skipped_count' => $result['skipped_count'],
+                    'skipped' => $result['skipped']
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => $result['message']
+                ], 500);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -1133,7 +1143,7 @@ class AdminController extends Controller
         try {
             $shopId = $this->getShopId();
             $data = CategoryModel::where('shop_id', $shopId)
-            ->get();
+                ->get();
             // $data = ProductBaseCategoryModel::orderBy('product_base_category')->get();
             // $transformedData = $data->map(function ($item) {
             //     return [

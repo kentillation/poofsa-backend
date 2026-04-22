@@ -23,22 +23,28 @@ class ProductService
         DB::beginTransaction();
 
         try {
-            $validated = $request->validate([
-                '*.product_name' => 'required|string',
-                '*.base_price' => 'required|numeric',
-                '*.size_id' => 'required|integer',
-                '*.temp_id' => 'required|integer',
-                '*.category_id' => 'required|integer',
-                '*.station_id' => 'required|integer',
-                '*.branch_id' => 'required|integer',
-            ]);
+            // Handle FormData input (products array with optional images)
+            $productsInput = $request->input('products');
+
+            if (!$productsInput || !is_array($productsInput)) {
+                throw new \Exception('Invalid products data');
+            }
 
             $saved = [];
             $skipped = [];
 
-            foreach ($validated as $index => $item) {
-
+            foreach ($productsInput as $index => $item) {
                 try {
+                    // Validate required fields
+                    if (empty($item['product_name']) || empty($item['base_price'])) {
+                        $skipped[] = [
+                            'index' => $index,
+                            'product_name' => $item['product_name'] ?? 'Unknown',
+                            'reason' => 'Missing required fields'
+                        ];
+                        continue;
+                    }
+
                     // Check duplicate
                     $exists = ProductsModel::where('product_name', $item['product_name'])
                         ->where('size_id', $item['size_id'])
@@ -52,7 +58,7 @@ class ProductService
                             'product_name' => $item['product_name'],
                             'reason' => 'Duplicate product (name + size + temp)'
                         ];
-                        continue; // Skip, don't stop
+                        continue;
                     }
 
                     // Check base category
@@ -78,6 +84,36 @@ class ProductService
                         ]
                     );
 
+                    // Handle image upload if present
+                    $thumbnailPath = null;
+                    $standardPath = null;
+                    $imageSizeKb = null;
+
+                    $thumbnailPath = null;
+                    $standardPath = null;
+                    $imageSizeKb = null;
+
+                    if ($request->hasFile("products.{$index}.image")) {
+                        try {
+                            $imageFile = $request->file("products.{$index}.image");
+
+                            // Initialize image optimizer and process image
+                            $imageOptimizer = new ImageOptimizerService();
+                            $imageData = $imageOptimizer->optimizeAndSave($imageFile, uniqid());
+
+                            $thumbnailPath = $imageData['thumbnail_path'];
+                            $standardPath = $imageData['standard_path'];
+                            $imageSizeKb = $imageData['size_kb'];
+                        } catch (\Exception $e) {
+                            // Log error but continue saving the product without image
+                            Log::warning('Image processing failed for product, continuing without image', [
+                                'product_name' => $item['product_name'],
+                                'error' => $e->getMessage()
+                            ]);
+                            // Don't throw - just continue without image
+                        }
+                    }
+
                     // Save product
                     $product = ProductsModel::create([
                         'product_name' => $item['product_name'],
@@ -91,13 +127,16 @@ class ProductService
                         'shop_id' => $shopId,
                         'branch_id' => $item['branch_id'],
                         'user_id' => $userId,
+                        'thumbnail_path' => $thumbnailPath,
+                        'standard_image_path' => $standardPath,
+                        'image_size_kb' => $imageSizeKb,
                     ]);
 
                     // Save history
                     ProductsHistoryModel::create([
                         'product_id' => $product->product_id,
                         'modified_type_id' => 1,
-                        'description' => 'New Product Saved',
+                        'description' => 'New Product Saved' . ($thumbnailPath ? ' with image' : ''),
                         'shop_id' => $shopId,
                         'branch_id' => $product->branch_id,
                         'user_id' => $userId,
@@ -105,7 +144,6 @@ class ProductService
 
                     $saved[] = $product;
                 } catch (\Throwable $e) {
-                    // Catch per-item errors (DO NOT break loop)
                     Log::error('Product Save Item Error', [
                         'index' => $index,
                         'item' => $item,
@@ -115,7 +153,7 @@ class ProductService
                     $skipped[] = [
                         'index' => $index,
                         'product_name' => $item['product_name'] ?? null,
-                        'reason' => 'Unexpected error'
+                        'reason' => 'Unexpected error: ' . $e->getMessage()
                     ];
                 }
             }
@@ -124,7 +162,7 @@ class ProductService
 
             return [
                 'success' => true,
-                'message' => 'Products processed',
+                'message' => count($saved) . ' ' . (count($saved) > 1 ? 'products' : 'product') . ' saved successfully' . (count($skipped) > 0 ? ', ' . count($skipped) . ' skipped' : ''),
                 'saved_count' => count($saved),
                 'skipped_count' => count($skipped),
                 'saved' => $saved,
@@ -134,12 +172,13 @@ class ProductService
             DB::rollBack();
 
             Log::error('Save Products Fatal Error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to process products',
+                'message' => 'Failed to process products: ' . $e->getMessage(),
             ];
         }
     }
