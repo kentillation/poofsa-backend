@@ -103,7 +103,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/admin/products-history', [AdminController::class, 'getProductsHistory']);
     Route::get('/admin/product-items/{product_id}', [AdminController::class, 'getProductItems']);
     Route::get('/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
-    Route::put('/admin/update-product/{product_id}', [AdminController::class, 'updateProduct']);
+    Route::post('/admin/update-product/{product_id}', [AdminController::class, 'updateProduct']);
     Route::put('/admin/update-product-items/{ingredient_id}', [AdminController::class, 'updateProductItems']);
 
     // Stocks

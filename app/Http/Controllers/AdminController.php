@@ -494,12 +494,19 @@ class AdminController extends Controller
             $shopId = $this->getShopId();
 
             $result = ProductService::updateProductService($request, $productId, $shopId, $userId);
-            return response()->json([
-                'success' => true,
-                'message' => 'Product updated successfully',
-                'data' => $result['product'],
-                'changes' => $result['changes'],
-            ], 200);
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => $result['data'],
+                    'changes' => $result['changes'] ?? []
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message']
+                ], 500);
+            }
         } catch (\Throwable $e) {
             Log::error('Product update failed', [
                 'error' => $e->getMessage(),

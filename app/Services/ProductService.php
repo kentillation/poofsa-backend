@@ -6,14 +6,11 @@ use App\Models\ProductsModel;
 use App\Models\ProductItemsModel;
 use App\Models\ProductsHistoryModel;
 use App\Models\IngredientsModel;
-use App\Models\TemperatureModel;
-use App\Models\SizeModel;
 use App\Models\CategoryModel;
 use App\Models\ProductBaseCategoryModel;
-use App\Models\StationModel;
-use App\Models\AvailabilityModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ProductService
 {
@@ -242,129 +239,140 @@ class ProductService
     //     return true;
     // }
 
+    // ProductService.php
+
     public static function updateProductService($request, $productId, $shopId, $userId)
     {
-        $validatedData = $request->validate([
-            'product_id' => 'required|integer',
-            'product_name' => 'required|string',
-            'base_price' => 'required|numeric',
-            'cost_estimate' => 'required|numeric',
-            'temp_id' => 'required|integer',
-            'size_id' => 'required|integer',
-            'category_id' => 'required|integer',
-            'station_id' => 'required|integer',
-            'availability_id' => 'required|integer',
-            'shop_id' => 'required|integer',
-            'branch_id' => 'required|integer',
-        ]);
-        $branchId = $validatedData['branch_id'];
+        DB::beginTransaction();
 
-        $result = DB::transaction(function () use ($validatedData, $productId, $shopId, $branchId, $userId) {
-
-            $product = ProductsModel::findOrFail($productId);
-            $originalValues = $product->getOriginal();
-
-            if ($validatedData['availability_id'] == 1 && $originalValues['availability_id'] != 1) {
-                $ingredientStockIds = ProductItemsModel::where('product_id', $productId)
-                    ->where('shop_id', $shopId)
-                    ->where('branch_id', $branchId)
-                    ->pluck('ingredient_id')
-                    ->toArray();
-                if (!empty($ingredientStockIds)) {
-                    $unavailableStocks = IngredientsModel::whereIn('ingredient_id', $ingredientStockIds)
-                        ->where('availability_id', '!=', 1)
-                        ->where('branch_id', $branchId)
-                        ->exists();
-                    if ($unavailableStocks) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Cannot set product to available because some required ingredients are not available in stock',
-                        ], 400);
-                    }
-                }
-            }
-
-            $product->fill($validatedData);
-            $dirtyFields = $product->getDirty();
-            $changes = [];
-
-            foreach ($dirtyFields as $field => $newValue) {
-                if ($field === 'updated_at') continue;
-                $changes[$field] = [
-                    'from' => $originalValues[$field] ?? null,
-                    'to' => $newValue
+        try {
+            // Handle both JSON and FormData requests
+            if ($request->hasFile('image')) {
+                // FormData with image
+                $productData = [
+                    'product_name' => $request->input('product_name'),
+                    'base_price' => $request->input('base_price'),
+                    'cost_estimate' => $request->input('cost_estimate', 0),
+                    'temp_id' => $request->input('temp_id'),
+                    'size_id' => $request->input('size_id'),
+                    'category_id' => $request->input('category_id'),
+                    'station_id' => $request->input('station_id'),
+                    'availability_id' => $request->input('availability_id'),
                 ];
+                $hasImage = true;
+                $removeImage = $request->input('remove_image') === 'true';
+            } else {
+                // Regular JSON request
+                $productData = $request->json()->all();
+                $hasImage = false;
+                $removeImage = false;
             }
 
-            $product->save();
-            $product = $product->fresh([
-                'temperature',
-                'category',
-                'availability',
-                'stations'
-            ]);
+            // Find product
+            $product = ProductsModel::where('product_id', $productId)
+                ->where('shop_id', $shopId)
+                ->first();
 
-            $description = '';
-            foreach ($changes as $field => $change) {
-                $temps = TemperatureModel::pluck('temp_label', 'product_temp_id');
-                $sizes = SizeModel::pluck('size_label', 'product_size_id');
-                $categories = CategoryModel::pluck('category_label', 'product_category_id');
-                $stations = StationModel::pluck('station_name', 'shop_station_id');
-                $availabilities = AvailabilityModel::pluck('availability_label', 'availability_id');
+            if (!$product) {
+                throw new \Exception('Product not found');
+            }
 
-                if ($field === 'product_name') {
-                    $description .= "Product name: From [{$change['from']}] To [{$change['to']}]. ";
-                } elseif ($field === 'base_price') {
-                    $description .= "Base price: From [₱{$change['from']}] To [₱{$change['to']}]. ";
-                } elseif ($field === 'cost_estimate') {
-                    $description .= "Estimated cost: From [₱{$change['from']}] To [₱{$change['to']}]. ";
-                } elseif ($field === 'temp_id') {
-                    $fromLabel = $temps[$change['from']] ?? $change['from'];
-                    $toLabel = $temps[$change['to']] ?? $change['to'];
-                    $description .= "Temperature: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'size_id') {
-                    $fromLabel = $sizes[$change['from']] ?? $change['from'];
-                    $toLabel = $sizes[$change['to']] ?? $change['to'];
-                    $description .= "Size: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'category_id') {
-                    $fromLabel = $categories[$change['from']] ?? $change['from'];
-                    $toLabel = $categories[$change['to']] ?? $change['to'];
-                    $description .= "Category: From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'station_id') {
-                    $fromLabel = $stations[$change['from']] ?? $change['from'];
-                    $toLabel = $stations[$change['to']] ?? $change['to'];
-                    $description .= "Station    : From [{$fromLabel}] To [{$toLabel}]. ";
-                } elseif ($field === 'availability_id') {
-                    $fromLabel = $availabilities[$change['from']] ?? $change['from'];
-                    $toLabel = $availabilities[$change['to']] ?? $change['to'];
-                    $description .= "Availability: From [{$fromLabel}] To [{$toLabel}]. ";
-                } else {
-                    $description .= ucfirst(str_replace('_', ' ', $field)) . ": From [{$change['from']}] To [{$change['to']}]. ";
+            // Check for duplicates (excluding current product)
+            $exists = ProductsModel::where('product_name', $productData['product_name'])
+                ->where('size_id', $productData['size_id'])
+                ->where('temp_id', $productData['temp_id'])
+                ->where('shop_id', $shopId)
+                ->where('product_id', '!=', $productId)
+                ->exists();
+
+            if ($exists) {
+                throw new \Exception('Duplicate product exists with same name, size, and temperature');
+            }
+
+            // Handle image upload
+            $thumbnailPath = $product->thumbnail_path;
+            $standardPath = $product->standard_image_path;
+            $imageSizeKb = $product->image_size_kb;
+
+            if ($removeImage) {
+                // Delete existing images
+                if ($product->thumbnail_path) {
+                    Storage::disk('public')->delete($product->thumbnail_path);
                 }
+                if ($product->standard_image_path) {
+                    Storage::disk('public')->delete($product->standard_image_path);
+                }
+                $thumbnailPath = null;
+                $standardPath = null;
+                $imageSizeKb = null;
+            } elseif ($hasImage && $request->hasFile('image')) {
+                // Delete old images
+                if ($product->thumbnail_path) {
+                    Storage::disk('public')->delete($product->thumbnail_path);
+                }
+                if ($product->standard_image_path) {
+                    Storage::disk('public')->delete($product->standard_image_path);
+                }
+
+                // Upload new images
+                $imageFile = $request->file('image');
+                $imageOptimizer = new ImageOptimizerService();
+                $imageData = $imageOptimizer->optimizeAndSave($imageFile, uniqid());
+
+                $thumbnailPath = $imageData['thumbnail_path'];
+                $standardPath = $imageData['standard_path'];
+                $imageSizeKb = $imageData['size_kb'];
             }
 
-            if (empty($description)) {
-                $description = 'No fields were updated';
-            }
-
-            $referenceProductId = $product->product_id;
-
-            ProductsHistoryModel::create([
-                'product_id' => $referenceProductId,
-                'modified_type_id' => 2, // UPDATE
-                'shop_id' => $shopId,
-                'branch_id' => $branchId,
-                'user_id' => $userId,
-                'description' => trim($description),
+            // Update product
+            $product->update([
+                'product_name' => $productData['product_name'],
+                'base_price' => $productData['base_price'],
+                'cost_estimate' => $productData['cost_estimate'] ?? 0,
+                'temp_id' => $productData['temp_id'],
+                'size_id' => $productData['size_id'],
+                'category_id' => $productData['category_id'],
+                'station_id' => $productData['station_id'],
+                'availability_id' => $productData['availability_id'],
+                'thumbnail_path' => $thumbnailPath,
+                'standard_image_path' => $standardPath,
+                'image_size_kb' => $imageSizeKb,
             ]);
+
+            // Save history
+            ProductsHistoryModel::create([
+                'product_id' => $product->product_id,
+                'modified_type_id' => 2, // 2 for update
+                'description' => $hasImage ? 'Product updated with new image' : 'Product updated',
+                'shop_id' => $shopId,
+                'branch_id' => $product->branch_id,
+                'user_id' => $userId,
+            ]);
+
+            DB::commit();
+
+            // Load relationships for response
+            $product->load(['temperature', 'size', 'category', 'stations', 'availability']);
 
             return [
-                'product' => $product,
-                'changes' => $changes
+                'success' => true,
+                'message' => 'Product updated successfully',
+                'data' => $product,
+                'changes' => [
+                    'has_image_change' => $hasImage || $removeImage,
+                    'image_updated' => $hasImage,
+                    'image_removed' => $removeImage
+                ]
             ];
-        });
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Update Product Error: ' . $e->getMessage());
 
-        return $result;
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
     }
 
     public static function getTotalProductsCountService($shopId, $branchId)
