@@ -804,6 +804,10 @@ class PublicController extends Controller
                     'size_label' => $product->size->size_label ?? null,
                     'category_label' => $product->category->category_label ?? null,
                     'is_new' => $product->is_new,
+                    'thumbnail_url' => $product->thumbnail_url,
+                    'standard_image_url' => $product->standard_image_url,
+                    'image_size_kb' => $product->image_size_kb,
+                    'has_image' => $product->has_image,
                 ];
             });
 
