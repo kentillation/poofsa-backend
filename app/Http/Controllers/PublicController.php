@@ -499,97 +499,108 @@ class PublicController extends Controller
             $requestedCategory = $request->input('requested_category');
             $requestedMealType = $request->input('requested_meal_type');
             $requestedTimeBetween = $request->input('requested_time_between');
+            $perPage = $request->input('per_page', 10);
 
             $query = ShopModel::query();
 
-            $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-                $q->where('availability_id', 1);
+            if ($requestedCategory || $requestedMealType || $requestedTimeBetween) {
+                $query->whereHas('branches.products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+                    $q->where('availability_id', 1);
 
-                if ($requestedCategory) {
-                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
-                        $cat->where('category_label', $requestedCategory);
-                    });
-                }
-
-                if ($requestedMealType) {
-                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-                    });
-                }
-
-                if ($requestedTimeBetween) {
-                    $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
-                        $shopQuery->where(function ($query) use ($requestedTimeBetween) {
-
-                            // Case 1: 24 hours (open_at == close_at)
-                            $query->where(function ($q0) {
-                                $q0->whereColumn('open_at', '=', 'close_at');
-                            })
-
-                                // Case 2: Normal hours
-                                ->orWhere(function ($q1) use ($requestedTimeBetween) {
-                                    $q1->where('is_overnight', 0)
-                                        ->whereTime('open_at', '<=', $requestedTimeBetween)
-                                        ->whereTime('close_at', '>=', $requestedTimeBetween);
-                                })
-
-                                // Case 3: Overnight
-                                ->orWhere(function ($q2) use ($requestedTimeBetween) {
-                                    $q2->where('is_overnight', 1)
-                                        ->where(function ($q3) use ($requestedTimeBetween) {
-                                            $q3->whereTime('open_at', '<=', $requestedTimeBetween)
-                                                ->orWhereTime('close_at', '>=', $requestedTimeBetween);
-                                        });
-                                });
+                    if ($requestedCategory) {
+                        $q->whereHas('category', function ($cat) use ($requestedCategory) {
+                            $cat->where('category_label', $requestedCategory);
                         });
-                    });
-                }
-            });
+                    }
 
-            // Add pagination here - paginate 10 items per page
-            $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-                $q->where('availability_id', 1);
+                    if ($requestedMealType) {
+                        $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+                            $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+                        });
+                    }
 
-                if ($requestedCategory) {
-                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
-                        $cat->where('category_label', $requestedCategory);
-                    });
-                }
+                    if ($requestedTimeBetween) {
+                        $q->whereHas('branch', function ($branchQuery) use ($requestedTimeBetween) {
+                            $branchQuery->where(function ($query) use ($requestedTimeBetween) {
+                                $query->where(function ($q0) {
+                                    $q0->whereColumn('open_at', '=', 'close_at');
+                                })
+                                    ->orWhere(function ($q1) use ($requestedTimeBetween) {
+                                        $q1->where('is_overnight', 0)
+                                            ->whereTime('open_at', '<=', $requestedTimeBetween)
+                                            ->whereTime('close_at', '>=', $requestedTimeBetween);
+                                    })
+                                    ->orWhere(function ($q2) use ($requestedTimeBetween) {
+                                        $q2->where('is_overnight', 1)
+                                            ->where(function ($q3) use ($requestedTimeBetween) {
+                                                $q3->whereTime('open_at', '<=', $requestedTimeBetween)
+                                                    ->orWhereTime('close_at', '>=', $requestedTimeBetween);
+                                            });
+                                    });
+                            });
+                        });
+                    }
+                });
+            }
 
-                if ($requestedMealType) {
-                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-                    });
-                }
-            }])->paginate(10); // Changed from get() to paginate(10)
+            $query->with(['branches' => function ($branchQuery) use ($requestedCategory, $requestedMealType) {
+                $branchQuery->with(['products' => function ($productQuery) use ($requestedCategory, $requestedMealType) {
+                    $productQuery->where('availability_id', 1)
+                        ->select('product_id', 'branch_id', 'base_price', 'product_name', 'category_id');
 
-            // Transform the paginated data
+                    if ($requestedCategory) {
+                        $productQuery->whereHas('category', function ($cat) use ($requestedCategory) {
+                            $cat->where('category_label', $requestedCategory);
+                        });
+                    }
+
+                    if ($requestedMealType) {
+                        $productQuery->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+                            $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+                        });
+                    }
+                }]);
+            }]);
+
+            $shops = $query->paginate($perPage);
+
+            // Transform data
             $filteredShops = collect($shops->items())->map(function ($shop) {
-                $lowestProduct = $shop->products->sortBy('base_price')->first();
-                $branchId = $shop->products->first()->branch_id ?? null;
+                $allProducts = $shop->branches->flatMap(function ($branch) {
+                    return $branch->products;
+                });
 
+                $lowestProduct = $allProducts->sortBy('base_price')->first();
+
+                // Determine branch_id based on whether shop has products
+                $branchId = null;
                 if ($lowestProduct) {
-                    return [
-                        'shop_id' => $shop->shop_id,
-                        'branch_id' => $branchId,
-                        'shop_name' => $shop->shop_name,
-                        'shop_type' => $shop->shop_type,
-                        'shop_address' => $shop->shop_address,
-                        'open_at' => $shop->open_at,
-                        'close_at' => $shop->close_at,
-                        'lowest_price' => $lowestProduct->base_price,
-                        'product_name' => $lowestProduct->product_name,
-                        'product_id' => $lowestProduct->product_id,
-                        'category_label' => $lowestProduct->category->category_label ?? null,
-                    ];
+                    // Has products - use branch_id from the lowest price product
+                    $branchId = $lowestProduct->branch_id;
+                } elseif ($shop->branches->isNotEmpty()) {
+                    // No products but has branches - use the first branch's ID
+                    $branchId = $shop->branches->first()->branch_id;
                 }
 
-                return null;
-            })->filter()->values();
+                return [
+                    'shop_id' => $shop->shop_id,
+                    'branch_id' => $branchId,
+                    'shop_name' => $shop->shop_name,
+                    'shop_type' => $shop->shop_type,
+                    'shop_address' => $shop->shop_address,
+                    'open_at' => $shop->open_at,
+                    'close_at' => $shop->close_at,
+                    'has_products' => $allProducts->isNotEmpty(),
+                    'has_branches' => $shop->branches->isNotEmpty(),
+                    'lowest_price' => $lowestProduct->base_price ?? null,
+                    'product_name' => $lowestProduct->product_name ?? null,
+                    'product_id' => $lowestProduct->product_id ?? null,
+                ];
+            })->values();
 
             return response()->json([
                 'success' => true,
-                'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
+                'message' => $filteredShops->isEmpty() ? 'No shops found!' : 'Shops fetched successfully!',
                 'data' => $filteredShops,
                 'pagination' => [
                     'current_page' => $shops->currentPage(),
@@ -850,7 +861,7 @@ class PublicController extends Controller
                 ->orderBy('product_name')
                 ->paginate($itemsPerPage);
 
-                // Transform only items
+            // Transform only items
             $products->getCollection()->transform(function ($product) {
                 return [
                     'branch_id' => $product->branch_id,

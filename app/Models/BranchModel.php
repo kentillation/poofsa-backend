@@ -28,6 +28,11 @@ class BranchModel extends Model
 
     public function shop()
     {
-        return $this->belongsTo(ShopModel::class, 'shop_id');
+        return $this->belongsTo(ShopModel::class, 'shop_id', 'shop_id');
     }
+
+	public function products()
+	{
+	    return $this->hasMany(ProductsModel::class, 'branch_id', 'branch_id');
+	}
 }

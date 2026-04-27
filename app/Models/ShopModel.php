@@ -32,6 +32,11 @@ class ShopModel extends Authenticatable
         'is_overnight'
     ];
 
+    public function branches()
+	{
+	    return $this->hasMany(BranchModel::class, 'shop_id', 'shop_id');
+	}
+
     public function products()
     {
         return $this->hasMany(ProductsModel::class, 'shop_id');
