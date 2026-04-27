@@ -499,7 +499,7 @@ class PublicController extends Controller
             $requestedCategory = $request->input('requested_category');
             $requestedMealType = $request->input('requested_meal_type');
             $requestedTimeBetween = $request->input('requested_time_between');
-            $perPage = $request->input('per_page', 10);
+            $perPage = $request->input('per_page', 20);
 
             $query = ShopModel::query();
 
