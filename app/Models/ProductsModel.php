@@ -51,6 +51,11 @@ class ProductsModel extends Model
         return $this->belongsTo(ShopModel::class, 'shop_id', 'shop_id');
     }
 
+    public function branch()
+    {
+        return $this->belongsTo(BranchModel::class, 'branch_id', 'branch_id');
+    }
+
     public function productItems()
     {
         return $this->hasMany(ProductItemsModel::class, 'product_id');
