@@ -595,6 +595,7 @@ class PublicController extends Controller
                     'lowest_price' => $lowestProduct->base_price ?? null,
                     'product_name' => $lowestProduct->product_name ?? null,
                     'product_id' => $lowestProduct->product_id ?? null,
+                    'category_label' => $lowestProduct->category->category_label ?? null,
                 ];
             })->values();
 
