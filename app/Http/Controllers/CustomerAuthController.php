@@ -19,10 +19,7 @@ class CustomerAuthController extends Controller
 
     public function customerLogin(Request $request)
     {
-        // Check rate limiting first
-        $this->checkLoginAttempts($request);
-
-        // Validate input
+        // Validate input first (doesn't consume rate limiter)
         $validated = $request->validate([
             'customer_email' => ['required', 'email'],
             'customer_password' => ['required', 'string'],
@@ -39,21 +36,37 @@ class CustomerAuthController extends Controller
             // Find user
             $user = CustomerModel::where('customer_email', $validated['customer_email'])->first();
 
-            // Single authentication check
-            if (!$user) {
-                $this->recordFailedAttempt($request);
-
-                throw ValidationException::withMessages([
-                    'customer_email' => ['The provided credentials are incorrect.'],
+            // Check if user is banned FIRST - before any rate limiting or password checking
+            if ($user && $user->banned_until && Carbon::parse($user->banned_until)->isFuture()) {
+                Log::warning('Blocked login attempt for banned account', [
+                    'email' => $validated['customer_email'],
+                    'ip' => $request->ip(),
+                    'banned_until' => $user->banned_until,
                 ]);
-            }
 
-            if ($user->banned_until && Carbon::parse($user->banned_until)->isFuture()) {
                 throw ValidationException::withMessages([
                     'customer_email' => [
                         "Your account is suspended until " .
                             Carbon::parse($user->banned_until)->format('Y-m-d H:i:s')
                     ],
+                ])->status(403);
+            }
+
+            // Check rate limiting ONLY for non-banned users
+            $this->checkLoginAttempts($request);
+
+            // Authenticate user
+            if (!$user || !Hash::check($validated['customer_password'], $user->password)) {
+                $this->recordFailedAttempt($request);
+
+                Log::warning('Failed login attempt - invalid credentials', [
+                    'email' => $validated['customer_email'],
+                    'ip' => $request->ip(),
+                    'exists' => !is_null($user),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'customer_email' => ['The provided credentials are incorrect.'],
                 ]);
             }
 
@@ -81,8 +94,8 @@ class CustomerAuthController extends Controller
                 'first_name' => $user->first_name,
                 'email' => $user->customer_email,
             ], 200);
+
         } catch (ValidationException $e) {
-            // Re-throw validation exceptions as they already have proper formatting
             throw $e;
         } catch (\Exception $e) {
             Log::error('Login exception', [
@@ -134,6 +147,12 @@ class CustomerAuthController extends Controller
             event(new Lockout($request));
             $seconds = RateLimiter::availableIn($this->throttleKey($request));
 
+            Log::warning('Account locked due to too many attempts', [
+                'email' => $request->input('customer_email'),
+                'ip' => $request->ip(),
+                'seconds_remaining' => $seconds,
+            ]);
+
             throw ValidationException::withMessages([
                 'customer_email' => ["Too many login attempts. Please try again in {$seconds} seconds."],
             ])->status(429);
@@ -144,12 +163,22 @@ class CustomerAuthController extends Controller
     {
         RateLimiter::hit($this->throttleKey($request), $this->decayMinutes * 60);
 
-        $remainingAttempts = $this->maxAttempts - RateLimiter::attempts($this->throttleKey($request));
+        $attempts = RateLimiter::attempts($this->throttleKey($request));
+        $remainingAttempts = $this->maxAttempts - $attempts;
+
+        Log::warning('Failed login attempt recorded', [
+            'email' => $request->input('customer_email'),
+            'ip' => $request->ip(),
+            'attempts' => $attempts,
+            'max_attempts' => $this->maxAttempts,
+            'remaining_attempts' => $remainingAttempts,
+        ]);
 
         if ($remainingAttempts <= 0) {
             Log::warning('Account lockout threshold reached', [
                 'email' => $request->input('customer_email'),
                 'ip' => $request->ip(),
+                'total_attempts' => $attempts,
             ]);
         }
     }
