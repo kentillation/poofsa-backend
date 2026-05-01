@@ -27,7 +27,6 @@ class CustomerAuthController extends Controller
 
         $remember = $request->boolean('remember');
 
-        // Use session guard for login attempt
         if (!Auth::guard('customer')->attempt([
             'customer_email' => $validated['customer_email'],
             'password' => $validated['customer_password'],
@@ -41,7 +40,6 @@ class CustomerAuthController extends Controller
         /** @var \App\Models\CustomerModel $user */
         $user = Auth::guard('customer')->user();
 
-        // Check banned status
         if ($user->banned_until && Carbon::parse($user->banned_until)->isFuture()) {
             Auth::guard('customer')->logout();
             abort(403, 'Your account is suspended until ' . $user->banned_until);
@@ -55,7 +53,6 @@ class CustomerAuthController extends Controller
             $user->tokens()->delete();
         }
 
-        // Create Sanctum token for API access
         $token = $user->createToken('auth_token', ['*'], $this->getTokenExpiration($remember))->plainTextToken;
 
         RateLimiter::clear($this->throttleKey($request));
@@ -71,10 +68,8 @@ class CustomerAuthController extends Controller
 
     public function logout(Request $request)
     {
-        // The auth:customer_api middleware ensures we have a token
         $request->user()->currentAccessToken()?->delete();
 
-        // Also logout from session guard
         Auth::guard('customer')->logout();
 
         return response()->json(['message' => 'Logged out successfully.']);
