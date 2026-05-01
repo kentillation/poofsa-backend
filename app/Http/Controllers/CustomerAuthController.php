@@ -45,7 +45,7 @@ class CustomerAuthController extends Controller
                 ]);
 
                 throw ValidationException::withMessages([
-                    'customer_email' => [
+                    'user_error' => [
                         "Your account is suspended until " .
                             Carbon::parse($user->banned_until)->format('Y-m-d H:i:s')
                     ],
@@ -66,7 +66,7 @@ class CustomerAuthController extends Controller
                 ]);
 
                 throw ValidationException::withMessages([
-                    'customer_email' => ['The provided credentials are incorrect.'],
+                    'user_error' => ['The provided credentials are incorrect.'],
                 ]);
             }
 
@@ -97,6 +97,7 @@ class CustomerAuthController extends Controller
 
         } catch (ValidationException $e) {
             throw $e;
+
         } catch (\Exception $e) {
             Log::error('Login exception', [
                 'error' => $e->getMessage(),
@@ -146,15 +147,23 @@ class CustomerAuthController extends Controller
         if (RateLimiter::tooManyAttempts($this->throttleKey($request), $this->maxAttempts)) {
             event(new Lockout($request));
             $seconds = RateLimiter::availableIn($this->throttleKey($request));
+            $formattedTime = $this->formatLockoutTime($seconds);
+
+            // Calculate total lockout period
+            $totalLockoutMinutes = $this->decayMinutes;
 
             Log::warning('Account locked due to too many attempts', [
                 'email' => $request->input('customer_email'),
                 'ip' => $request->ip(),
                 'seconds_remaining' => $seconds,
+                'total_lockout_minutes' => $totalLockoutMinutes,
             ]);
 
             throw ValidationException::withMessages([
-                'customer_email' => ["Too many login attempts. Please try again in {$seconds} seconds."],
+                'user_error' => [
+                    "Too many login attempts. Your account is temporarily locked for {$totalLockoutMinutes} minutes. " .
+                    "Please try again in {$formattedTime}."
+                ],
             ])->status(429);
         }
     }
@@ -174,6 +183,16 @@ class CustomerAuthController extends Controller
             'remaining_attempts' => $remainingAttempts,
         ]);
 
+        // Show warning when only 1-2 attempts remain
+        if ($remainingAttempts > 0 && $remainingAttempts <= 2) {
+            throw ValidationException::withMessages([
+                'user_error' => [
+                    "Invalid credentials. You have {$remainingAttempts} more attempt" .
+                    ($remainingAttempts > 1 ? "s" : "") . " before temporary lockout."
+                ],
+            ]);
+        }
+
         if ($remainingAttempts <= 0) {
             Log::warning('Account lockout threshold reached', [
                 'email' => $request->input('customer_email'),
@@ -181,6 +200,29 @@ class CustomerAuthController extends Controller
                 'total_attempts' => $attempts,
             ]);
         }
+    }
+
+    /**
+     * Format lockout time from seconds to human-readable minutes and seconds
+     *
+     * @param int $seconds
+     * @return string
+     */
+    protected function formatLockoutTime($seconds)
+    {
+        $minutes = floor($seconds / 60);
+        $remainingSeconds = $seconds % 60;
+
+        if ($minutes > 0 && $remainingSeconds > 0) {
+            return "{$minutes} minute" . ($minutes > 1 ? "s" : "") .
+                " and {$remainingSeconds} second" . ($remainingSeconds > 1 ? "s" : "");
+        } elseif ($minutes > 0) {
+            return "{$minutes} minute" . ($minutes > 1 ? "s" : "");
+        } elseif ($remainingSeconds > 0) {
+            return "{$remainingSeconds} second" . ($remainingSeconds > 1 ? "s" : "");
+        }
+
+        return "a few moments";
     }
 
     protected function throttleKey(Request $request)
