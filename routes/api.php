@@ -25,7 +25,7 @@ Route::post('v1/customer/login', [CustomerAuthController::class, 'customerLogin'
 Route::post('v1/customer/registration', [CustomerController::class, 'customerRegistration']);
 Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
 
-Route::group(['middleware' => 'auth:customer_api'], function () {
+Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
     Route::get('v1/customer/shops', [PublicController::class, 'getShops']);
     Route::get('v1/customer/shops-location', [PublicController::class, 'getShopLocation']);

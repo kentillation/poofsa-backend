@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\DB;
 
 class Kernel extends ConsoleKernel
 {
@@ -16,14 +17,17 @@ class Kernel extends ConsoleKernel
         // Your commands
     ];
 
+
     /**
      * Define the application's command schedule.
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('stocks:low-alerts-push')
-            ->everyTenMinutes()
-            ->sendOutputTo(storage_path('logs/low_stock_push.log'));
+        $schedule->call(function () {
+                DB::table('personal_access_tokens')
+                    ->where('created_at', '<', now()->subDays(30))
+                    ->delete();
+            })->daily();
     }
 
     /**
