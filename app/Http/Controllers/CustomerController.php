@@ -9,10 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\SendRecoveryCode;
-
 use App\Models\CustomerModel;
-
-
 
 class CustomerController extends Controller
 {
