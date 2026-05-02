@@ -167,6 +167,7 @@ class AdminController extends Controller
                 'tbl_shop_branch.branch_address',
                 'tbl_shop_branch.branch_manager_name',
                 'tbl_shop_branch.branch_contact_number',
+                'tbl_shop_branch.updated_at',
                 'tbl_admin.admin_name',
                 // 'tbl_cashier.cashier_name',
                 // 'tbl_cashier.cashier_email',
@@ -199,6 +200,106 @@ class AdminController extends Controller
                 'success' => false,
                 'message' => 'Error fetching branch details!',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateBranchDetails(Request $request)
+    {
+        $shopId = $this->getShopId();
+        $userId = $this->getUserId();
+
+        $validator = Validator::make($request->all(), [
+            'branch_id' => 'required|integer|min:1',
+            'branch_name' => 'required|string|max:255',
+            'branch_address' => 'required|string|max:500',
+            'branch_manager_name' => 'required|string|max:255',
+            'branch_contact_number' => 'required|string|max:20',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $branchId = $validator->validated()['branch_id'];
+
+        try {
+
+            // Find the branch
+            $branch = BranchModel::where('branch_id', $branchId)
+                ->where('shop_id', $shopId)
+                ->first();
+
+            if (!$branch) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Branch not found or you do not have permission to update this branch'
+                ], 404);
+            }
+
+            // Track changes for logging
+            $oldData = $branch->only([
+                'branch_name',
+                'branch_address',
+                'branch_manager_name',
+                'branch_contact_number'
+            ]);
+
+            // Update branch
+            $branch->branch_name = $request->input('branch_name');
+            $branch->branch_address = $request->input('branch_address');
+            $branch->branch_manager_name = $request->input('branch_manager_name');
+            $branch->branch_contact_number = $request->input('branch_contact_number');
+            $branch->updated_at = now();
+            $branch->save();
+
+            $newData = $branch->only([
+                'branch_name',
+                'branch_address',
+                'branch_manager_name',
+                'branch_contact_number'
+            ]);
+
+            // Log the changes (optional - if you have a branch history table)
+            $changes = [];
+            foreach ($oldData as $key => $value) {
+                if ($oldData[$key] != $newData[$key]) {
+                    $changes[$key] = [
+                        'old' => $oldData[$key],
+                        'new' => $newData[$key]
+                    ];
+                }
+            }
+
+            Log::info('Branch updated', [
+                'branch_id' => $branchId,
+                'shop_id' => $shopId,
+                'user_id' => $userId,
+                'changes' => $changes
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Branch updated successfully',
+                // 'data' => $branch,
+                'changes' => $changes
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Branch update failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'branch_id' => $branchId,
+                'user_id' => $this->getUserId() ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update branch. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -489,9 +590,10 @@ class AdminController extends Controller
     // DONE
     public function updateProduct(Request $request, $productId)
     {
+        $userId = $this->getUserId();
+        $shopId = $this->getShopId();
+
         try {
-            $userId = $this->getUserId();
-            $shopId = $this->getShopId();
 
             $result = ProductService::updateProductService($request, $productId, $shopId, $userId);
             if ($result['success']) {
@@ -514,6 +616,7 @@ class AdminController extends Controller
                 'product_name' => $result->product_name ?? null,
                 'user_id' => $userId,
             ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update product. Please try again.'

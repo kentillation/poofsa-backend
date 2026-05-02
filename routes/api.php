@@ -82,6 +82,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/admin/save-branch', [AdminController::class, 'saveBranch']);
     Route::get('/admin/shop-branches', [AdminController::class, 'getShopBranches']);
     Route::get('/admin/branch-details/{branchName}', [AdminController::class, 'getBranchDetails']);
+    Route::put('v1/admin/update-branch', [AdminController::class, 'updateBranchDetails']);
 
     // Orders
     Route::get('/admin/orders', [AdminController::class, 'getOrders']);
