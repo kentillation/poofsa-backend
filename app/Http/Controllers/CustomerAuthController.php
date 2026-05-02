@@ -56,7 +56,7 @@ class CustomerAuthController extends Controller
             $this->checkLoginAttempts($request);
 
             // Authenticate user
-            if (!$user || !Hash::check($validated['customer_password'], $user->password)) {
+            if (!$user || !Hash::check($validated['customer_password'], $user->customer_password)) {
                 $this->recordFailedAttempt($request);
 
                 Log::warning('Failed login attempt - invalid credentials', [
