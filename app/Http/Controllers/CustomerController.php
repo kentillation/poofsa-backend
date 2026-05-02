@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +16,11 @@ use App\Models\CustomerModel;
 
 class CustomerController extends Controller
 {
+    protected function getTokenExpiration($remember = false)
+    {
+        return $remember ? now()->addDays(30) : now()->addDays(7);
+    }
+
     public function customerRegistration(Request $request)
     {
         $validator = Validator::make(
@@ -59,35 +63,24 @@ class CustomerController extends Controller
                 'customer_password' => Hash::make($validated['customer_password']),
             ]);
 
-            Auth::guard('customer')->login($customer);
-
-            $token = $customer->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+            $remember = $request->boolean('remember');
+            $token = $customer->createToken('auth_token', ['customer:access'], $this->getTokenExpiration($remember))->plainTextToken;
 
             DB::commit();
 
-            // Create cookie (similar to login response)
-            $cookie = cookie(
-                'XSRF-TOKEN',
-                $token,
-                config('session.lifetime'),
-                '/',
-                config('session.domain', null),
-                config('session.secure', true),
-                true,
-                false,
-                'Strict'
-            );
-
             return response()->json([
-                'message' => 'Registration successful',
+                'success' => true,
+                'message' => "You’ve successfully registered",
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'expires_in' => 60 * 24 * 30, // 30 days
+                'expires_in' => 60 * 24 * 30,
                 'user_id' => $customer->customer_id,
-            ])->withCookie($cookie);
+                'first_name' => $customer->first_name,
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
+                'success' => false,
                 'message' => 'Account registration failed',
                 'error' => $e->getMessage()
             ], 500);
