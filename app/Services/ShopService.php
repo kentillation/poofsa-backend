@@ -40,12 +40,12 @@ class ShopService
                 ]);
 
                 $shopData = [
+                    'shop_owner' => $request->input('shop_owner'),
                     'shop_name' => $request->input('shop_name'),
                     'shop_type' => $request->input('shop_type'),
-                    'shop_owner' => $request->input('shop_owner'),
-                    'shop_address' => $request->input('shop_address'),
                     'shop_email' => $request->input('shop_email'),
                     'shop_contact_number' => $request->input('shop_contact_number'),
+                    'shop_address' => $request->input('shop_address'),
                     'is_active' => $request->input('is_active', $shop->is_active),
                     'open_at' => $request->input('open_at'),
                     'close_at' => $request->input('close_at'),
