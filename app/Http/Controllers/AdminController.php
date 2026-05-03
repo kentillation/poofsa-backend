@@ -78,16 +78,18 @@ class AdminController extends Controller
                 'success' => true,
                 'data' => [
                     'shop_id' => $shop->shop_id,
+                    'shop_owner' => $shop->shop_owner,
                     'shop_name' => $shop->shop_name,
                     'shop_type' => $shop->shop_type,
-                    'shop_owner' => $shop->shop_owner,
-                    'shop_address' => $shop->shop_address,
                     'shop_email' => $shop->shop_email,
                     'shop_contact_number' => $shop->shop_contact_number,
-                    'is_active' => $shop->is_active,
-                    'open_at' => $shop->open_at ? date('H:i', strtotime($shop->open_at)) : null,
-                    'close_at' => $shop->close_at ? date('H:i', strtotime($shop->close_at)) : null,
-                    'is_overnight' => $shop->is_overnight,
+
+                    // 'shop_address' => $shop->shop_address,
+                    // 'is_active' => $shop->is_active,
+                    // 'open_at' => $shop->open_at ? date('H:i', strtotime($shop->open_at)) : null,
+                    // 'close_at' => $shop->close_at ? date('H:i', strtotime($shop->close_at)) : null,
+                    // 'is_overnight' => $shop->is_overnight,
+
                     'created_at' => $shop->created_at ? $shop->created_at->format('Y-m-d H:i:s') : null,
                     'updated_at' => $shop->updated_at ? $shop->updated_at->format('Y-m-d H:i:s') : null,
 
@@ -117,16 +119,16 @@ class AdminController extends Controller
             // Validate request
             $rules = [
                 'admin_id' => 'required|integer|min:1',
+                'shop_owner' => 'required|string|max:50',
                 'shop_name' => 'required|string|max:30',
                 'shop_type' => 'required|string|max:50',
-                'shop_owner' => 'required|string|max:50',
-                'shop_address' => 'required|string',
                 'shop_email' => 'required|email|max:191',
                 'shop_contact_number' => 'required|string|max:13',
-                'is_active' => 'boolean',
-                'open_at' => 'required|date_format:H:i',
-                'close_at' => 'required|date_format:H:i',
-                'is_overnight' => 'boolean',
+                // 'shop_address' => 'required|string',
+                // 'is_active' => 'boolean',
+                // 'open_at' => 'required|date_format:H:i',
+                // 'close_at' => 'required|date_format:H:i',
+                // 'is_overnight' => 'boolean',
             ];
 
             // Add image validation if present
@@ -151,16 +153,16 @@ class AdminController extends Controller
                     'message' => $result['message'],
                     'data' => [
                         'shop_id' => $result['data']->shop_id,
+                        'shop_owner' => $result['data']->shop_owner,
                         'shop_name' => $result['data']->shop_name,
                         'shop_type' => $result['data']->shop_type,
-                        'shop_owner' => $result['data']->shop_owner,
-                        'shop_address' => $result['data']->shop_address,
                         'shop_email' => $result['data']->shop_email,
                         'shop_contact_number' => $result['data']->shop_contact_number,
-                        'is_active' => $result['data']->is_active,
-                        'open_at' => $result['data']->open_at ? date('H:i', strtotime($result['data']->open_at)) : null,
-                        'close_at' => $result['data']->close_at ? date('H:i', strtotime($result['data']->close_at)) : null,
-                        'is_overnight' => $result['data']->is_overnight,
+                        // 'shop_address' => $result['data']->shop_address,
+                        // 'is_active' => $result['data']->is_active,
+                        // 'open_at' => $result['data']->open_at ? date('H:i', strtotime($result['data']->open_at)) : null,
+                        // 'close_at' => $result['data']->close_at ? date('H:i', strtotime($result['data']->close_at)) : null,
+                        // 'is_overnight' => $result['data']->is_overnight,
                         'created_at' => $result['data']->created_at ? $result['data']->created_at->format('Y-m-d H:i:s') : null,
                         'updated_at' => $result['data']->updated_at ? $result['data']->updated_at->format('Y-m-d H:i:s') : null,
 
