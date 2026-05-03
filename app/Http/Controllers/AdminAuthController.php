@@ -78,7 +78,8 @@ class AdminAuthController extends Controller
             'expires_in' => 60 * 24 * ($remember ? 30 : 7),
             'shop_id' => $user->shop_id,
             'shop_name' => $shopName,
-            'user_id' => $user->admin_id,
+            'admin_id' => $user->admin_id,
+            'admin_name' => $user->admin_name,
         ])->withCookie($cookie);
     }
 

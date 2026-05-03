@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\GetRequest;
+use App\Http\Resources\ShopResource;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\OrderCountResource;
 use App\Http\Resources\OrderReportResource;
@@ -23,6 +24,7 @@ use App\Actions\Products\GetProductsAction;
 use App\Actions\Products\GetProductsHistoryAction;
 use App\Actions\Stocks\GetStocksAction;
 use App\Actions\Stocks\GetStocksHistoryAction;
+use App\Models\ShopModel;
 use App\Models\BranchModel;
 use App\Models\ProductItemsModel;
 use App\Models\ProductsModel;
@@ -30,20 +32,18 @@ use App\Models\StocksHistoryModel;
 use App\Models\TemperatureModel;
 use App\Models\SizeModel;
 use App\Models\CategoryModel;
-use App\Models\ProductBaseCategoryModel;
 use App\Models\AvailabilityModel;
 use App\Models\UnitModel;
 use App\Models\StationModel;
-use App\Models\OrdersModel;
 use App\Models\OrderItemsModel;
 use App\Models\VoidOrdersModel;
 use App\Models\VoidStatusModel;
 use App\Models\SalesModel;
 use App\Models\IngredientsModel;
 use App\Models\StockBatchesModel;
+use App\Services\ShopService;
 use App\Services\ProductService;
 use App\Services\StockService;
-
 
 class AdminController extends Controller
 {
@@ -60,8 +60,151 @@ class AdminController extends Controller
         return $user->admin_id;
     }
 
-    /**** Branch ****/
+    /**** Shop ****/
+    public function getShopDetails($shopId)
+    {
+        try {
+            $shop = ShopModel::find($shopId);
 
+            if (!$shop) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Shop not found'
+                ], 404);
+            }
+
+            // Return as object {} not array []
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'shop_id' => $shop->shop_id,
+                    'shop_name' => $shop->shop_name,
+                    'shop_type' => $shop->shop_type,
+                    'shop_owner' => $shop->shop_owner,
+                    'shop_address' => $shop->shop_address,
+                    'shop_email' => $shop->shop_email,
+                    'shop_contact_number' => $shop->shop_contact_number,
+                    'is_active' => $shop->is_active,
+                    'open_at' => $shop->open_at ? date('H:i', strtotime($shop->open_at)) : null,
+                    'close_at' => $shop->close_at ? date('H:i', strtotime($shop->close_at)) : null,
+                    'is_overnight' => $shop->is_overnight,
+                    'created_at' => $shop->created_at ? $shop->created_at->format('Y-m-d H:i:s') : null,
+                    'updated_at' => $shop->updated_at ? $shop->updated_at->format('Y-m-d H:i:s') : null,
+
+                    // Image fields
+                    'thumbnail_url' => $shop->thumbnail_url,
+                    'standard_image_url' => $shop->standard_image_url,
+                    'image_size_kb' => $shop->image_size_kb,
+                    'has_image' => $shop->has_image,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Fetch shop details failed', [
+                'error' => $e->getMessage(),
+                'shop_id' => $shopId
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch shop details'
+            ], 500);
+        }
+    }
+
+    public function updateShop(Request $request, $shopId)
+    {
+        try {
+            // Validate request
+            $rules = [
+                'admin_id' => 'required|integer|min:1',
+                'shop_name' => 'required|string|max:30',
+                'shop_type' => 'required|string|max:50',
+                'shop_owner' => 'required|string|max:50',
+                'shop_address' => 'required|string',
+                'shop_email' => 'required|email|max:191',
+                'shop_contact_number' => 'required|string|max:13',
+                'is_active' => 'boolean',
+                'open_at' => 'required|date_format:H:i',
+                'close_at' => 'required|date_format:H:i',
+                'is_overnight' => 'boolean',
+            ];
+
+            // Add image validation if present
+            if ($request->hasFile('image')) {
+                $rules['image'] = 'image|mimes:jpeg,png,jpg,webp|max:2048';
+                Log::info('Image detected in request', [
+                    'shop_id' => $shopId,
+                    'file_name' => $request->file('image')->getClientOriginalName(),
+                    'file_size' => $request->file('image')->getSize()
+                ]);
+            }
+
+            $validated = $request->validate($rules);
+            $adminId = $validated['admin_id'];
+
+            $result = ShopService::updateShopService($request, $shopId, $adminId);
+
+            if ($result['success']) {
+                // Return as object {} not array []
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => [
+                        'shop_id' => $result['data']->shop_id,
+                        'shop_name' => $result['data']->shop_name,
+                        'shop_type' => $result['data']->shop_type,
+                        'shop_owner' => $result['data']->shop_owner,
+                        'shop_address' => $result['data']->shop_address,
+                        'shop_email' => $result['data']->shop_email,
+                        'shop_contact_number' => $result['data']->shop_contact_number,
+                        'is_active' => $result['data']->is_active,
+                        'open_at' => $result['data']->open_at ? date('H:i', strtotime($result['data']->open_at)) : null,
+                        'close_at' => $result['data']->close_at ? date('H:i', strtotime($result['data']->close_at)) : null,
+                        'is_overnight' => $result['data']->is_overnight,
+                        'created_at' => $result['data']->created_at ? $result['data']->created_at->format('Y-m-d H:i:s') : null,
+                        'updated_at' => $result['data']->updated_at ? $result['data']->updated_at->format('Y-m-d H:i:s') : null,
+
+                        // Image fields
+                        'thumbnail_url' => $result['data']->thumbnail_url,
+                        'standard_image_url' => $result['data']->standard_image_url,
+                        'image_size_kb' => $result['data']->image_size_kb,
+                        'has_image' => $result['data']->has_image,
+                    ],
+                    'changes' => $result['changes'] ?? []
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message']
+                ], 500);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Shop update failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'shop_id' => $shopId,
+                'admin_id' => $adminId ?? null,
+                'has_file' => $request->hasFile('image'),
+                'file_info' => $request->hasFile('image') ? [
+                    'name' => $request->file('image')->getClientOriginalName(),
+                    'size' => $request->file('image')->getSize()
+                ] : null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update shop: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**** Branch ****/
     public function saveBranch(Request $request)
     {
         $validator = Validator::make($request->all(), [

@@ -78,6 +78,10 @@ Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQR
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
 
+    // Shop
+    Route::get('/admin/shop-details/{shopId}', [AdminController::class, 'getShopDetails']);
+    Route::post('/admin/update-shop/{shopId}', [AdminController::class, 'updateShop']);
+
     // Branch
     Route::post('/admin/save-branch', [AdminController::class, 'saveBranch']);
     Route::get('/admin/shop-branches', [AdminController::class, 'getShopBranches']);

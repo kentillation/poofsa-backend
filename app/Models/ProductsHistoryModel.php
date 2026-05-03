@@ -81,7 +81,7 @@ class ProductsHistoryModel extends Model
     {
         return $this->products->product_name ?? null;
     }
-    
+
     public function getSizeLabelAttribute()
     {
         return $this->products->size->size_label ?? null;

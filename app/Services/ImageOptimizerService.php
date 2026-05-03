@@ -24,15 +24,16 @@ class ImageOptimizerService
         $this->manager = new ImageManager(new Driver());
     }
 
-    public function optimizeAndSave(UploadedFile $file, string $productId)
+    // for Shops
+    public function optimizeAndSaveShopImage(UploadedFile $file, string $shopId)
     {
         $filename = Str::random(40);
 
         // Create thumbnail (smaller, lower quality)
-        $thumbnail = $this->createVersion($file, $filename, self::THUMBNAIL_SIZE, 'thumb', self::THUMBNAIL_QUALITY);
+        $thumbnail = $this->createVersion($file, $filename, self::THUMBNAIL_SIZE, 'shop-images', 'thumb', self::THUMBNAIL_QUALITY);
 
         // Create standard version (larger, better quality)
-        $standard = $this->createVersion($file, $filename, self::STANDARD_SIZE, 'standard', self::STANDARD_QUALITY);
+        $standard = $this->createVersion($file, $filename, self::STANDARD_SIZE, 'shop-images', 'standard', self::STANDARD_QUALITY);
 
         return [
             'thumbnail_path' => $thumbnail['path'],
@@ -41,7 +42,25 @@ class ImageOptimizerService
         ];
     }
 
-    private function createVersion(UploadedFile $file, string $filename, int $maxWidth, string $type, int $quality)
+    // for Products
+    public function optimizeAndSave(UploadedFile $file, string $productId)
+    {
+        $filename = Str::random(40);
+
+        // Create thumbnail (smaller, lower quality)
+        $thumbnail = $this->createVersion($file, $filename, self::THUMBNAIL_SIZE, 'product-images', 'thumb', self::THUMBNAIL_QUALITY);
+
+        // Create standard version (larger, better quality)
+        $standard = $this->createVersion($file, $filename, self::STANDARD_SIZE, 'product-images', 'standard', self::STANDARD_QUALITY);
+
+        return [
+            'thumbnail_path' => $thumbnail['path'],
+            'standard_path' => $standard['path'],
+            'size_kb' => $standard['size']
+        ];
+    }
+
+    private function createVersion(UploadedFile $file, string $filename, int $maxWidth, string $directory, string $type, int $quality)
     {
         try {
             // Read image using the manager
@@ -58,7 +77,7 @@ class ImageOptimizerService
             $sizeKB = round(strlen($imageData) / 1024);
 
             // Ensure directory exists
-            $directory = "product-images/{$type}";
+            $directory = "{$directory}/{$type}";
             if (!Storage::disk('public')->exists($directory)) {
                 Storage::disk('public')->makeDirectory($directory);
             }
