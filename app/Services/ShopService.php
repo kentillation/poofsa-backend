@@ -45,11 +45,11 @@ class ShopService
                     'shop_type' => $request->input('shop_type'),
                     'shop_email' => $request->input('shop_email'),
                     'shop_contact_number' => $request->input('shop_contact_number'),
-                    'shop_address' => $request->input('shop_address'),
-                    'is_active' => $request->input('is_active', $shop->is_active),
-                    'open_at' => $request->input('open_at'),
-                    'close_at' => $request->input('close_at'),
-                    'is_overnight' => $request->input('is_overnight', false),
+                    // 'shop_address' => $request->input('shop_address'),
+                    // 'is_active' => $request->input('is_active', $shop->is_active),
+                    // 'open_at' => $request->input('open_at'),
+                    // 'close_at' => $request->input('close_at'),
+                    // 'is_overnight' => $request->input('is_overnight', false),
                 ];
                 $hasImage = true;
                 $removeImage = $request->input('remove_image') === 'true';
@@ -65,17 +65,17 @@ class ShopService
                 unset($shopData['admin_id']);
             }
 
-            if (isset($shopData['open_at']) && $shopData['open_at']) {
-                if (preg_match('/^\d{2}:\d{2}$/', $shopData['open_at'])) {
-                    $shopData['open_at'] = $shopData['open_at'] . ':00';
-                }
-            }
+            // if (isset($shopData['open_at']) && $shopData['open_at']) {
+            //     if (preg_match('/^\d{2}:\d{2}$/', $shopData['open_at'])) {
+            //         $shopData['open_at'] = $shopData['open_at'] . ':00';
+            //     }
+            // }
 
-            if (isset($shopData['close_at']) && $shopData['close_at']) {
-                if (preg_match('/^\d{2}:\d{2}$/', $shopData['close_at'])) {
-                    $shopData['close_at'] = $shopData['close_at'] . ':00';
-                }
-            }
+            // if (isset($shopData['close_at']) && $shopData['close_at']) {
+            //     if (preg_match('/^\d{2}:\d{2}$/', $shopData['close_at'])) {
+            //         $shopData['close_at'] = $shopData['close_at'] . ':00';
+            //     }
+            // }
 
             if ($shopData['shop_email'] !== $shop->shop_email) {
                 $exists = ShopModel::where('shop_email', $shopData['shop_email'])
@@ -133,16 +133,16 @@ class ShopService
             $dirtyFields = [];
 
             $validFields = [
+                'shop_owner',
                 'shop_name',
                 'shop_type',
-                'shop_owner',
-                'shop_address',
                 'shop_email',
                 'shop_contact_number',
-                'is_active',
-                'open_at',
-                'close_at',
-                'is_overnight'
+                // 'shop_address',
+                // 'is_active',
+                // 'open_at',
+                // 'close_at',
+                // 'is_overnight'
             ];
 
             foreach ($shopData as $field => $newValue) {
@@ -152,16 +152,17 @@ class ShopService
 
                 $originalValue = $originalValues[$field] ?? null;
 
-                if (in_array($field, ['open_at', 'close_at']) && $originalValue && $newValue) {
-                    $originalTime = date('H:i', strtotime($originalValue));
-                    $newTime = date('H:i', strtotime($newValue));
-                    if ($originalTime != $newTime) {
-                        $dirtyFields[$field] = [
-                            'from' => $originalTime,
-                            'to' => $newTime
-                        ];
-                    }
-                } elseif ($originalValue != $newValue) {
+                // if (in_array($field, ['open_at', 'close_at']) && $originalValue && $newValue) {
+                //     $originalTime = date('H:i', strtotime($originalValue));
+                //     $newTime = date('H:i', strtotime($newValue));
+                //     if ($originalTime != $newTime) {
+                //         $dirtyFields[$field] = [
+                //             'from' => $originalTime,
+                //             'to' => $newTime
+                //         ];
+                //     }
+                // } else
+                if ($originalValue != $newValue) {
                     $dirtyFields[$field] = [
                         'from' => $originalValue,
                         'to' => $newValue
@@ -184,16 +185,16 @@ class ShopService
 
             // Prepare update data (only shop fields)
             $updateData = [
-                'close_at' => $shopData['close_at'],
-                'is_active' => (int)$shopData['is_active'],
-                'is_overnight' => (int)$shopData['is_overnight'],
-                'open_at' => $shopData['open_at'],
-                'shop_address' => $shopData['shop_address'],
-                'shop_contact_number' => $shopData['shop_contact_number'],
-                'shop_email' => $shopData['shop_email'],
-                'shop_name' => $shopData['shop_name'],
+                // 'close_at' => $shopData['close_at'],
+                // 'is_active' => (int)$shopData['is_active'],
+                // 'is_overnight' => (int)$shopData['is_overnight'],
+                // 'open_at' => $shopData['open_at'],
+                // 'shop_address' => $shopData['shop_address'],
                 'shop_owner' => $shopData['shop_owner'],
+                'shop_name' => $shopData['shop_name'],
                 'shop_type' => $shopData['shop_type'],
+                'shop_email' => $shopData['shop_email'],
+                'shop_contact_number' => $shopData['shop_contact_number'],
                 'thumbnail_path' => $thumbnailPath,
                 'standard_image_path' => $standardPath,
                 'image_size_kb' => $imageSizeKb,
@@ -221,12 +222,12 @@ class ShopService
             $shop = $shop->fresh();
 
             // Format time fields for response (H:i format)
-            if ($shop->open_at) {
-                $shop->open_at = date('H:i', strtotime($shop->open_at));
-            }
-            if ($shop->close_at) {
-                $shop->close_at = date('H:i', strtotime($shop->close_at));
-            }
+            // if ($shop->open_at) {
+            //     $shop->open_at = date('H:i', strtotime($shop->open_at));
+            // }
+            // if ($shop->close_at) {
+            //     $shop->close_at = date('H:i', strtotime($shop->close_at));
+            // }
 
             return [
                 'success' => true,
@@ -260,16 +261,16 @@ class ShopService
         $description = '';
 
         $fieldLabels = [
+            'shop_owner' => 'Shop owner',
             'shop_name' => 'Shop name',
             'shop_type' => 'Shop type',
-            'shop_owner' => 'Shop owner',
-            'shop_address' => 'Shop address',
             'shop_email' => 'Shop email',
             'shop_contact_number' => 'Contact number',
-            'is_active' => 'Status',
-            'open_at' => 'Opening time',
-            'close_at' => 'Closing time',
-            'is_overnight' => 'Overnight operation',
+            'shop_address' => 'Shop address',
+            // 'is_active' => 'Status',
+            // 'open_at' => 'Opening time',
+            // 'close_at' => 'Closing time',
+            // 'is_overnight' => 'Overnight operation',
             'image' => 'Shop image',
         ];
 
@@ -280,18 +281,19 @@ class ShopService
             $fromValue = $change['from'];
             $toValue = $change['to'];
 
-            if ($field === 'is_active') {
-                $fromValue = $fromValue ? 'Active' : 'Inactive';
-                $toValue = $toValue ? 'Active' : 'Inactive';
-            } elseif ($field === 'is_overnight') {
-                $fromValue = $fromValue ? 'Yes' : 'No';
-                $toValue = $toValue ? 'Yes' : 'No';
-            } elseif ($field === 'shop_contact_number') {
+            // if ($field === 'is_active') {
+            //     $fromValue = $fromValue ? 'Active' : 'Inactive';
+            //     $toValue = $toValue ? 'Active' : 'Inactive';
+            // } elseif ($field === 'is_overnight') {
+            //     $fromValue = $fromValue ? 'Yes' : 'No';
+            //     $toValue = $toValue ? 'Yes' : 'No';
+            // } elseif (in_array($field, ['open_at', 'close_at'])) {
+            //     $fromValue = $fromValue ? date('h:i A', strtotime($fromValue)) : 'Not set';
+            //     $toValue = $toValue ? date('h:i A', strtotime($toValue)) : 'Not set';
+            // } else
+            if ($field === 'shop_contact_number') {
                 $fromValue = $fromValue ?: 'Not set';
                 $toValue = $toValue ?: 'Not set';
-            } elseif (in_array($field, ['open_at', 'close_at'])) {
-                $fromValue = $fromValue ? date('h:i A', strtotime($fromValue)) : 'Not set';
-                $toValue = $toValue ? date('h:i A', strtotime($toValue)) : 'Not set';
             } elseif ($field === 'image') {
                 // Already formatted
             } else {
