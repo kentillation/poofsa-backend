@@ -329,9 +329,9 @@ class AdminController extends Controller
                 ->where('tbl_shop_branch.branch_name', urldecode($branchName))
                 ->where('tbl_shop_branch.shop_id', $shopId)
                 ->first();
-            if ($branchData && $branchData->branch_address) {
-                $branchData->branch_address = str_replace(',', '', $branchData->branch_address);
-            }
+            // if ($branchData && $branchData->branch_address) {
+            //     $branchData->branch_address = str_replace(',', '', $branchData->branch_address);
+            // }
             if (!$branchData) {
                 return response()->json(['error' => 'Branch not found'], 404);
             }
@@ -429,7 +429,7 @@ class AdminController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Branch updated successfully',
+                'message' => 'Branch info updated successfully',
                 // 'data' => $branch,
                 'changes' => $changes
             ], 200);
