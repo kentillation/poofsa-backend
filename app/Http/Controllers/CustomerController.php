@@ -170,7 +170,7 @@ class CustomerController extends Controller
                     }
 
                     if ($requestedTimeBetween) {
-                        $q->whereHas('branches', function ($branchQuery) use ($requestedTimeBetween) {
+                        $q->whereHas('branch', function ($branchQuery) use ($requestedTimeBetween) {
                             $branchQuery->where(function ($query) use ($requestedTimeBetween) {
                                 $query->where(function ($q0) {
                                     $q0->whereColumn('open_at', '=', 'close_at');
@@ -193,17 +193,35 @@ class CustomerController extends Controller
                 });
             }
 
-            $query->with(['branches' => function ($branchQuery) use ($requestedCategory, $requestedMealType) {
+            $query->with(['branches' => function ($branchQuery) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+                if ($requestedTimeBetween) {
+                    $branchQuery->where(function ($query) use ($requestedTimeBetween) {
+                        $query->where(function ($q0) {
+                            $q0->whereColumn('open_at', '=', 'close_at');
+                        })
+                        ->orWhere(function ($q1) use ($requestedTimeBetween) {
+                            $q1->where('is_overnight', 0)
+                            ->whereTime('open_at', '<=', $requestedTimeBetween)
+                            ->whereTime('close_at', '>=', $requestedTimeBetween);
+                        })
+                        ->orWhere(function ($q2) use ($requestedTimeBetween) {
+                            $q2->where('is_overnight', 1)
+                            ->where(function ($q3) use ($requestedTimeBetween) {
+                                $q3->whereTime('open_at', '<=', $requestedTimeBetween)
+                                    ->orWhereTime('close_at', '>=', $requestedTimeBetween);
+                            });
+                        });
+                    });
+                }
+
                 $branchQuery->with(['products' => function ($productQuery) use ($requestedCategory, $requestedMealType) {
                     $productQuery->where('availability_id', 1)
                         ->select('product_id', 'branch_id', 'base_price', 'product_name', 'category_id');
-
                     if ($requestedCategory) {
                         $productQuery->whereHas('category', function ($cat) use ($requestedCategory) {
                             $cat->where('category_label', $requestedCategory);
                         });
                     }
-
                     if ($requestedMealType) {
                         $productQuery->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
                             $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
