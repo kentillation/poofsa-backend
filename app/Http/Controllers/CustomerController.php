@@ -170,7 +170,7 @@ class CustomerController extends Controller
                     }
 
                     if ($requestedTimeBetween) {
-                        $q->whereHas('branch', function ($branchQuery) use ($requestedTimeBetween) {
+                        $q->whereHas('branches', function ($branchQuery) use ($requestedTimeBetween) {
                             $branchQuery->where(function ($query) use ($requestedTimeBetween) {
                                 $query->where(function ($q0) {
                                     $q0->whereColumn('open_at', '=', 'close_at');
@@ -232,14 +232,16 @@ class CustomerController extends Controller
                     $branchId = $shop->branches->first()->branch_id;
                 }
 
+                $selectedBranch = $shop->branches->firstWhere('branch_id', $branchId);
+
                 return [
                     'shop_id' => $shop->shop_id,
                     'branch_id' => $branchId,
                     'shop_name' => $shop->shop_name,
                     'shop_type' => $shop->shop_type,
-                    'shop_address' => $shop->branches->branch_address,
-                    'open_at' => $shop->branches->open_at,
-                    'close_at' => $shop->branches->close_at,
+                    'shop_address' => optional($selectedBranch)->branch_address,
+                    'open_at' => optional($selectedBranch)->open_at,
+                    'close_at' => optional($selectedBranch)->close_at,
                     'has_products' => $allProducts->isNotEmpty(),
                     'has_branches' => $shop->branches->isNotEmpty(),
                     'lowest_price' => $lowestProduct->base_price ?? null,

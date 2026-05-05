@@ -56,6 +56,8 @@ class PublicController extends Controller
                 'shop_type' => 'required|string',
                 'shop_owner' => 'required|string',
                 'shop_address' => 'required|string',
+                'branch_latitude' => 'required|numeric',
+                'branch_longitude' => 'required|numeric',
                 'shop_email' => 'required|email|unique:tbl_shops,shop_email',
                 'shop_contact_number' => 'required|string|unique:tbl_shops,shop_contact_number',
                 'open_at' => 'required',
@@ -131,7 +133,8 @@ class PublicController extends Controller
             );
 
             return response()->json([
-                'message' => 'Registration successful',
+                'success' => true,
+                'message' => "You’ve successfully registered!",
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'expires_in' => 60 * 24 * 30, // 30 days
@@ -142,6 +145,7 @@ class PublicController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
+                'success' => false,
                 'message' => 'Account registration failed',
                 'error' => $e->getMessage()
             ], 500);
