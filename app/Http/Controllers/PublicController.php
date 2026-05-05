@@ -30,8 +30,6 @@ use App\Http\Resources\GetPublicShopsResource;
 use App\Models\AdminModel;
 use App\Models\ShopModel;
 use App\Models\BranchModel;
-use App\Models\ProductsModel;
-use App\Models\CategoryModel;
 use App\Models\ProductBaseCategoryModel;
 
 class PublicController extends Controller
