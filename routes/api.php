@@ -27,15 +27,15 @@ Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail
 
 Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
-    Route::get('v1/customer/shops', [PublicController::class, 'getShops']);
-    Route::get('v1/customer/shops-location', [PublicController::class, 'getShopLocation']);
-    Route::get('v1/customer/products', [PublicController::class, 'getProducts']);
-    Route::get('v1/customer/new-products', [PublicController::class, 'getNewProducts']);
-    Route::get('v1/customer/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
-    Route::get('v1/customer/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
-    Route::get('v1/customer/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
-    Route::get('v1/customer/product-category', [PublicController::class, 'getProductCategories']);
-    Route::get('v1/customer/product-base-category', [PublicController::class, 'getProductBaseCategories']);
+    Route::get('v1/customer/shops', [CustomerController::class, 'getShops']);
+    Route::get('v1/customer/shops-location', [CustomerController::class, 'getShopLocation']);
+    Route::get('v1/customer/products', [CustomerController::class, 'getProducts']);
+    Route::get('v1/customer/new-products', [CustomerController::class, 'getNewProducts']);
+    Route::get('v1/customer/categories-by-new-products', [CustomerController::class, 'getCategoriesByNewProducts']);
+    Route::get('v1/customer/products-by-meal-type', [CustomerController::class, 'getProductsByMealType']);
+    Route::get('v1/customer/categories-by-meal-type', [CustomerController::class, 'getCategoriesByMealType']);
+    Route::get('v1/customer/product-category', [CustomerController::class, 'getProductCategories']);
+    Route::get('v1/customer/product-base-category', [CustomerController::class, 'getProductBaseCategories']);
 });
 
 // Public
@@ -43,17 +43,8 @@ Route::post('v1/public/shop-registration', [PublicController::class, 'shopRegist
 Route::post('v1/public/verify-email', [PublicController::class, 'verifyEmail']);
 Route::post('v1/public/verify-recovery-code', [PublicController::class, 'verifyRecoveryCode']);
 Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
-Route::get('v1/public/shops-without-products', [PublicController::class, 'getShopsWithoutProducts']);
 
 // Unused
-// Route::get('v1/public/shops', [PublicController::class, 'getShops']);
-// Route::get('v1/public/shops-location', [PublicController::class, 'getShopLocation']);
-// Route::get('v1/public/products', [PublicController::class, 'getProducts']);
-// Route::get('v1/public/new-products', [PublicController::class, 'getNewProducts']);
-// Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getProductsByMealType']);
-// Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getCategoriesByNewProducts']);
-// Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getCategoriesByMealType']);
-// Route::get('v1/public/product-category', [PublicController::class, 'getProductCategories']);
 Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
 
 // To be use

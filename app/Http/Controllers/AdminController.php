@@ -124,11 +124,6 @@ class AdminController extends Controller
                 'shop_type' => 'required|string|max:50',
                 'shop_email' => 'required|email|max:191',
                 'shop_contact_number' => 'required|string|max:13',
-                // 'shop_address' => 'required|string',
-                // 'is_active' => 'boolean',
-                // 'open_at' => 'required|date_format:H:i',
-                // 'close_at' => 'required|date_format:H:i',
-                // 'is_overnight' => 'boolean',
             ];
 
             // Add image validation if present
@@ -158,15 +153,8 @@ class AdminController extends Controller
                         'shop_type' => $result['data']->shop_type,
                         'shop_email' => $result['data']->shop_email,
                         'shop_contact_number' => $result['data']->shop_contact_number,
-                        // 'shop_address' => $result['data']->shop_address,
-                        // 'is_active' => $result['data']->is_active,
-                        // 'open_at' => $result['data']->open_at ? date('H:i', strtotime($result['data']->open_at)) : null,
-                        // 'close_at' => $result['data']->close_at ? date('H:i', strtotime($result['data']->close_at)) : null,
-                        // 'is_overnight' => $result['data']->is_overnight,
                         'created_at' => $result['data']->created_at ? $result['data']->created_at->format('Y-m-d H:i:s') : null,
                         'updated_at' => $result['data']->updated_at ? $result['data']->updated_at->format('Y-m-d H:i:s') : null,
-
-                        // Image fields
                         'thumbnail_url' => $result['data']->thumbnail_url,
                         'standard_image_url' => $result['data']->standard_image_url,
                         'image_size_kb' => $result['data']->image_size_kb,
@@ -205,6 +193,100 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    // Previous code
+    // public function updateShop(Request $request, $shopId)
+    // {
+    //     try {
+    //         // Validate request
+    //         $rules = [
+    //             'admin_id' => 'required|integer|min:1',
+    //             'shop_owner' => 'required|string|max:50',
+    //             'shop_name' => 'required|string|max:30',
+    //             'shop_type' => 'required|string|max:50',
+    //             'shop_email' => 'required|email|max:191',
+    //             'shop_contact_number' => 'required|string|max:13',
+    //             // 'shop_address' => 'required|string',
+    //             // 'is_active' => 'boolean',
+    //             // 'open_at' => 'required|date_format:H:i',
+    //             // 'close_at' => 'required|date_format:H:i',
+    //             // 'is_overnight' => 'boolean',
+    //         ];
+
+    //         // Add image validation if present
+    //         if ($request->hasFile('image')) {
+    //             $rules['image'] = 'image|mimes:jpeg,png,jpg,webp|max:2048';
+    //             Log::info('Image detected in request', [
+    //                 'shop_id' => $shopId,
+    //                 'file_name' => $request->file('image')->getClientOriginalName(),
+    //                 'file_size' => $request->file('image')->getSize()
+    //             ]);
+    //         }
+
+    //         $validated = $request->validate($rules);
+    //         $adminId = $validated['admin_id'];
+
+    //         $result = ShopService::updateShopService($request, $shopId, $adminId);
+
+    //         if ($result['success']) {
+    //             // Return as object {} not array []
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => $result['message'],
+    //                 'data' => [
+    //                     'shop_id' => $result['data']->shop_id,
+    //                     'shop_owner' => $result['data']->shop_owner,
+    //                     'shop_name' => $result['data']->shop_name,
+    //                     'shop_type' => $result['data']->shop_type,
+    //                     'shop_email' => $result['data']->shop_email,
+    //                     'shop_contact_number' => $result['data']->shop_contact_number,
+    //                     // 'shop_address' => $result['data']->shop_address,
+    //                     // 'is_active' => $result['data']->is_active,
+    //                     // 'open_at' => $result['data']->open_at ? date('H:i', strtotime($result['data']->open_at)) : null,
+    //                     // 'close_at' => $result['data']->close_at ? date('H:i', strtotime($result['data']->close_at)) : null,
+    //                     // 'is_overnight' => $result['data']->is_overnight,
+    //                     'created_at' => $result['data']->created_at ? $result['data']->created_at->format('Y-m-d H:i:s') : null,
+    //                     'updated_at' => $result['data']->updated_at ? $result['data']->updated_at->format('Y-m-d H:i:s') : null,
+
+    //                     // Image fields
+    //                     'thumbnail_url' => $result['data']->thumbnail_url,
+    //                     'standard_image_url' => $result['data']->standard_image_url,
+    //                     'image_size_kb' => $result['data']->image_size_kb,
+    //                     'has_image' => $result['data']->has_image,
+    //                 ],
+    //                 'changes' => $result['changes'] ?? []
+    //             ]);
+    //         } else {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => $result['message']
+    //             ], 500);
+    //         }
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validation failed',
+    //             'errors' => $e->errors()
+    //         ], 422);
+    //     } catch (\Throwable $e) {
+    //         Log::error('Shop update failed', [
+    //             'error' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString(),
+    //             'shop_id' => $shopId,
+    //             'admin_id' => $adminId ?? null,
+    //             'has_file' => $request->hasFile('image'),
+    //             'file_info' => $request->hasFile('image') ? [
+    //                 'name' => $request->file('image')->getClientOriginalName(),
+    //                 'size' => $request->file('image')->getSize()
+    //             ] : null
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to update shop: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     /**** Branch ****/
     public function saveBranch(Request $request)

@@ -22,6 +22,9 @@ class CreateTblShopBranchTable extends Migration
             $table->string('branch_contact_number', 13)->nullable();
             $table->decimal('branch_latitude', 10,7)->nullable();
             $table->decimal('branch_longitude', 11,7)->nullable();
+            $table->time('open_at')->nullable();
+            $table->time('close_at')->nullable();
+            $table->boolean('is_overnight')->default(true);
             $table->boolean('is_active')->default(true); // active/inactive status
             $table->timestamps();
         });

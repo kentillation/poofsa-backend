@@ -23,6 +23,11 @@ class BranchModel extends Model
         'branch_address',
         'branch_manager_name',
         'branch_contact_number',
+        'branch_latitude',
+        'branch_longitude',
+        'open_at',
+        'close_at',
+        'is_overnight',
         'is_active',
     ];
 
