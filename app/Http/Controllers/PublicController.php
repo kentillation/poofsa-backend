@@ -34,111 +34,6 @@ use App\Models\ProductBaseCategoryModel;
 
 class PublicController extends Controller
 {
-
-    // NEW STRUCTURED CODE
-    public function getAllPublicShops(GetPublicShopsRequest $request, GetPublicShopsAction $action)
-    {
-        // execute if from GetPublicShopsAction
-        $result = $action->execute(
-            categoryLabel: $request->requested_category,
-            mealType: $request->requested_meal_type,
-            timeBetween: $request->requested_time_between,
-            perPage: $request->items_per_page,
-            search: $request->search,
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicShopsResource::collection($result)
-        ]);
-    }
-
-    public function getAllPublicProductsFromShop(GetPublicProductsRequest $request, GetPublicProductsAction $action)
-    {
-        $result = $action->execute(
-            shopId: $request->shop_id,
-            branchId: $request->branch_id,
-            perPage: $request->items_per_page,
-            search: $request->search,
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicProductsResource::collection($result)
-        ]);
-    }
-
-    public function getAllNewPublicProducts(GetPublicNewProductsRequest $request, GetPublicNewProductsAction $action)
-    {
-        $result = $action->execute(
-            isNew: $request->is_new,
-            perPage: $request->items_per_page,
-            search: $request->search,
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicNewProductsResource::collection($result)
-        ]);
-    }
-
-    public function getAllPublicProductsByMealType(GetPublicByMealTypeRequest $request, GetPublicProductsByMealTypeAction $action)
-    {
-        $result = $action->execute(
-            mealType: $request->meal_type,
-            perPage: $request->items_per_page,
-            search: $request->search
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicProductsByMealTypeResource::collection($result)
-        ]);
-    }
-
-    public function getAllCategoriesByNewProducts(GetPublicNewProductsRequest $request, GetPublicCategoriesByNewProductsAction $action)
-    {
-        $result = $action->execute(
-            isNew: $request->is_new,
-            perPage: $request->items_per_page,
-            search: $request->search,
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicCategoriesResource::collection($result)
-        ]);
-    }
-
-    public function getAllCategoriesByMealType(GetPublicByMealTypeRequest $request, GetPublicCategoriesByMealTypeAction $action)
-    {
-        $result = $action->execute(
-            mealType: $request->meal_type,
-            perPage: $request->items_per_page,
-            search: $request->search,
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicCategoriesResource::collection($result)
-        ]);
-    }
-
-    public function getAllProductCategories(GetPublicProductsRequest $request, GetPublicProductCategoriesAction $action)
-    {
-        $result = $action->execute(
-            shopId: $request->shop_id,
-            perPage: $request->items_per_page,
-            search: $request->search,
-        );
-
-        return response()->json([
-            'success' => true,
-            'data' => GetPublicCategoriesResource::collection($result)
-        ]);
-    }
-    // END OF NEW STRUCTURED CODE
-
     public function shopRegistration(Request $request)
     {
         $validator = Validator::make(
@@ -191,21 +86,22 @@ class PublicController extends Controller
                 'shop_name' => $validated['shop_name'],
                 'shop_type' => $validated['shop_type'],
                 'shop_owner' => $validated['shop_owner'],
-                'shop_address' => $validated['shop_address'],
                 'shop_email' => $validated['shop_email'],
                 'shop_contact_number' => $validated['shop_contact_number'],
-                'open_at' => $validated['open_at'],
-                'close_at' => $validated['close_at'],
-                'is_overnight' => $isOvernight,
             ]);
             $shopId = $shop->shop_id;
 
             BranchModel::create([
                 'shop_id' => $shopId,
                 'branch_name' => 'Main',
-                'branch_address' => $validated['shop_address'],
                 'branch_manager_name' => $validated['shop_owner'],
                 'branch_contact_number' => $validated['shop_contact_number'],
+                'branch_address' => $validated['shop_address'],
+                'branch_latitude' => $validated['branch_latitude'],
+                'branch_longitude' => $validated['branch_longitude'],
+                'open_at' => $validated['open_at'],
+                'close_at' => $validated['close_at'],
+                'is_overnight' => $isOvernight,
             ]);
 
             $admin = AdminModel::create([
@@ -476,4 +372,108 @@ class PublicController extends Controller
             ], 500);
         }
     }
+
+    // NEW STRUCTURED CODE
+    public function getAllPublicShops(GetPublicShopsRequest $request, GetPublicShopsAction $action)
+    {
+        // execute if from GetPublicShopsAction
+        $result = $action->execute(
+            categoryLabel: $request->requested_category,
+            mealType: $request->requested_meal_type,
+            timeBetween: $request->requested_time_between,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicShopsResource::collection($result)
+        ]);
+    }
+
+    public function getAllPublicProductsFromShop(GetPublicProductsRequest $request, GetPublicProductsAction $action)
+    {
+        $result = $action->execute(
+            shopId: $request->shop_id,
+            branchId: $request->branch_id,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicProductsResource::collection($result)
+        ]);
+    }
+
+    public function getAllNewPublicProducts(GetPublicNewProductsRequest $request, GetPublicNewProductsAction $action)
+    {
+        $result = $action->execute(
+            isNew: $request->is_new,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicNewProductsResource::collection($result)
+        ]);
+    }
+
+    public function getAllPublicProductsByMealType(GetPublicByMealTypeRequest $request, GetPublicProductsByMealTypeAction $action)
+    {
+        $result = $action->execute(
+            mealType: $request->meal_type,
+            perPage: $request->items_per_page,
+            search: $request->search
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicProductsByMealTypeResource::collection($result)
+        ]);
+    }
+
+    public function getAllCategoriesByNewProducts(GetPublicNewProductsRequest $request, GetPublicCategoriesByNewProductsAction $action)
+    {
+        $result = $action->execute(
+            isNew: $request->is_new,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicCategoriesResource::collection($result)
+        ]);
+    }
+
+    public function getAllCategoriesByMealType(GetPublicByMealTypeRequest $request, GetPublicCategoriesByMealTypeAction $action)
+    {
+        $result = $action->execute(
+            mealType: $request->meal_type,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicCategoriesResource::collection($result)
+        ]);
+    }
+
+    public function getAllProductCategories(GetPublicProductsRequest $request, GetPublicProductCategoriesAction $action)
+    {
+        $result = $action->execute(
+            shopId: $request->shop_id,
+            perPage: $request->items_per_page,
+            search: $request->search,
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => GetPublicCategoriesResource::collection($result)
+        ]);
+    }
+    // END OF NEW STRUCTURED CODE
 }

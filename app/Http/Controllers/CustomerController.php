@@ -237,9 +237,9 @@ class CustomerController extends Controller
                     'branch_id' => $branchId,
                     'shop_name' => $shop->shop_name,
                     'shop_type' => $shop->shop_type,
-                    'shop_address' => $shop->shop_address,
-                    'open_at' => $shop->open_at,
-                    'close_at' => $shop->close_at,
+                    'shop_address' => $shop->branches->branch_address,
+                    'open_at' => $shop->branches->open_at,
+                    'close_at' => $shop->branches->close_at,
                     'has_products' => $allProducts->isNotEmpty(),
                     'has_branches' => $shop->branches->isNotEmpty(),
                     'lowest_price' => $lowestProduct->base_price ?? null,
@@ -296,7 +296,7 @@ class CustomerController extends Controller
                 }
 
                 if ($requestedTimeBetween) {
-                    $q->whereHas('shop', function ($shopQuery) use ($requestedTimeBetween) {
+                    $q->whereHas('branches', function ($shopQuery) use ($requestedTimeBetween) {
                         $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
                             ->whereTime('close_at', '>=', $requestedTimeBetween);
                     });
@@ -503,7 +503,7 @@ class CustomerController extends Controller
             $isNew = $request->is_new;
             $itemsPerPage = $request->items_per_page ?? 20;
 
-            $products = ProductsModel::with(['shop', 'size', 'temperature', 'category'])
+            $products = ProductsModel::with(['shop', 'branch', 'size', 'temperature', 'category'])
                 ->where('availability_id', 1)
                 ->when($isNew, function ($query) use ($isNew) {
                     $query->where('is_new', $isNew);
@@ -518,9 +518,9 @@ class CustomerController extends Controller
                     'shop_id' => $product->shop->shop_id,
                     'shop_name' => $product->shop->shop_name,
                     'shop_type' => $product->shop->shop_type,
-                    'shop_address' => $product->shop->shop_address,
-                    'open_at' => $product->shop->open_at,
-                    'close_at' => $product->shop->close_at,
+                    'shop_address' => $product->branch->branch_address,
+                    'open_at' => $product->branch->open_at,
+                    'close_at' => $product->branch->close_at,
                     'product_id' => $product->product_id,
                     'product_name' => $product->product_name,
                     'base_price' => $product->base_price,
@@ -610,7 +610,7 @@ class CustomerController extends Controller
                 ], 400);
             }
 
-            $products = ProductsModel::with(['shop', 'size', 'temperature', 'category', 'category.baseCategory'])
+            $products = ProductsModel::with(['shop', 'branch', 'size', 'temperature', 'category', 'category.baseCategory'])
                 ->where('availability_id', 1)
                 ->whereHas('category.baseCategory', function ($query) use ($mealType) {
                     $query->whereJsonContains('meal_type', $mealType);
@@ -623,9 +623,9 @@ class CustomerController extends Controller
                 return [
                     'shop_name' => $product->shop->shop_name,
                     'shop_type' => $product->shop->shop_type,
-                    'shop_address' => $product->shop->shop_address,
-                    'open_at' => $product->shop->open_at,
-                    'close_at' => $product->shop->close_at,
+                    'shop_address' => $product->branch->branch_address,
+                    'open_at' => $product->branch->open_at,
+                    'close_at' => $product->branch->close_at,
                     'branch_id' => $product->branch_id,
                     'shop_id' => $product->shop_id,
                     'product_id' => $product->product_id,
