@@ -140,7 +140,7 @@ class PublicController extends Controller
                 'expires_in' => 60 * 24 * 30, // 30 days
                 'shop_id' => $admin->shop_id,
                 'shop_name' => $shop->shop_name,
-                'user_id' => $admin->admin_id,
+                'admin_id' => $admin->admin_id,
             ])->withCookie($cookie);
         } catch (\Exception $e) {
             DB::rollBack();

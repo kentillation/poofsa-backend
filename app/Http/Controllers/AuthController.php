@@ -46,6 +46,7 @@ class AuthController extends Controller
         }
         $token = $user->createToken('auth_token', ['*'], $this->getTokenExpiration($remember))->plainTextToken;
         $shop = ShopModel::find($user->shop_id);
+        $shopImage = $shop ? $shop->thumbnail_url : null;
         $shopName = $shop ? $shop->shop_name : null;
         $branch = BranchModel::find($user->branch_id);
         $branchName = $branch ? $branch->branch_name : null;
@@ -67,6 +68,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expires_in' => 60 * 24 * ($remember ? 30 : 7),
+            'shop_image' => $shopImage,
             'shop_id' => $user->shop_id,
             'shop_name' => $shopName,
             'branch_name' => $branchName,
