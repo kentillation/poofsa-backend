@@ -119,6 +119,7 @@ class PublicController extends Controller
             ]);
 
             $shopName = $shop ? $shop->shop_name : null;
+            $shopImage = $shop ? $shop->thumbnail_url : null;
 
             $remember = $request->boolean('remember');
             $token = $admin->createToken('auth_token', ['admin:access'], $this->getTokenExpiration($remember))->plainTextToken;
@@ -134,6 +135,7 @@ class PublicController extends Controller
                 'admin_name' => $admin->admin_name,
                 'shop_id' => $admin->shop_id,
                 'shop_name' => $shopName,
+                'shop_image' => $shopImage,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();

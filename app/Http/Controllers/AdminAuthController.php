@@ -86,6 +86,7 @@ class AdminAuthController extends Controller
 
             $shop = ShopModel::find($user->shop_id);
             $shopName = $shop ? $shop->shop_name : null;
+            $shopImage = $shop ? $shop->thumbnail_url : null;
 
             Log::info('admin login successful', [
                 'user_id' => $user->admin_id,
@@ -100,6 +101,7 @@ class AdminAuthController extends Controller
                 'admin_name' => $user->admin_name,
                 'shop_id' => $user->shop_id,
                 'shop_name' => $shopName,
+                'shop_image' => $shopImage,
             ], 200);
 
         } catch (ValidationException $e) {
