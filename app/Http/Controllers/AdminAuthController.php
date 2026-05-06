@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
-
 use App\Models\ShopModel;
 use App\Models\AdminModel;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Auth\Events\Lockout;
@@ -170,7 +168,7 @@ class AdminAuthController extends Controller
 
             throw ValidationException::withMessages([
                 'user_error' => [
-                    "Too many login attempts. Your account is temporarily locked for {$totalLockoutMinutes} minutes. " .
+                    "Too many login attempts. Your account is temporarily locked for {$totalLockoutMinutes} minutes since first try. " .
                     "Please try again in {$formattedTime}."
                 ],
             ])->status(429);

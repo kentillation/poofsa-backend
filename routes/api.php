@@ -27,6 +27,7 @@ Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail
 
 Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
+    Route::get('v1/customer/verify', [CustomerController::class, 'verifyAdmin']);
     Route::get('v1/customer/shops', [CustomerController::class, 'getShops']);
     Route::get('v1/customer/shops-location', [CustomerController::class, 'getShopLocation']);
     Route::get('v1/customer/products', [CustomerController::class, 'getProducts']);
@@ -67,8 +68,9 @@ Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQR
 
 // Admin management
 Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], function () {
-// Route::group(['middleware' => 'auth:sanctum'], function () {
+    // Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
+    Route::get('v1/admin/verify-token', [AdminController::class, 'verifyAdmin']);
 
     // Shop
     Route::get('/admin/shop-details/{shopId}', [AdminController::class, 'getShopDetails']);
