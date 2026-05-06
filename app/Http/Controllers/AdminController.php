@@ -451,8 +451,8 @@ class AdminController extends Controller
             'branch_id' => 'required|integer|min:1',
             'branch_name' => 'required|string|max:255',
             'branch_address' => 'required|string|max:500',
-            'branch_latitude' => 'required|nullable',
-            'branch_longitude' => 'required|nullable',
+            'branch_latitude' => 'latitude|numeric',
+            'branch_longitude' => 'latitude|numeric',
             'branch_manager_name' => 'required|string|max:255',
             'branch_contact_number' => 'required|string|max:20',
         ]);
