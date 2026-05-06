@@ -451,6 +451,8 @@ class AdminController extends Controller
             'branch_id' => 'required|integer|min:1',
             'branch_name' => 'required|string|max:255',
             'branch_address' => 'required|string|max:500',
+            'branch_latitude' => 'required|nullable',
+            'branch_longitude' => 'required|nullable',
             'branch_manager_name' => 'required|string|max:255',
             'branch_contact_number' => 'required|string|max:20',
         ]);
@@ -483,6 +485,8 @@ class AdminController extends Controller
             $oldData = $branch->only([
                 'branch_name',
                 'branch_address',
+                'branch_latitude',
+                'branch_longitude',
                 'branch_manager_name',
                 'branch_contact_number'
             ]);
@@ -490,6 +494,8 @@ class AdminController extends Controller
             // Update branch
             $branch->branch_name = $request->input('branch_name');
             $branch->branch_address = $request->input('branch_address');
+            $branch->branch_latitude = $request->input('branch_latitude');
+            $branch->branch_longitude = $request->input('branch_longitude');
             $branch->branch_manager_name = $request->input('branch_manager_name');
             $branch->branch_contact_number = $request->input('branch_contact_number');
             $branch->updated_at = now();
@@ -498,6 +504,8 @@ class AdminController extends Controller
             $newData = $branch->only([
                 'branch_name',
                 'branch_address',
+                'branch_latitude',
+                'branch_longitude',
                 'branch_manager_name',
                 'branch_contact_number'
             ]);
@@ -515,6 +523,8 @@ class AdminController extends Controller
 
             Log::info('Branch updated', [
                 'branch_id' => $branchId,
+                'branch_latitude' => $branch->branch_latitude,
+                'branch_longitude' => $branch->branch_longitude,
                 'shop_id' => $shopId,
                 'user_id' => $userId,
                 'changes' => $changes
