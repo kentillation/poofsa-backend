@@ -57,7 +57,7 @@ Route::get('v1/public/product-base-category', [PublicController::class, 'getProd
 //Route::get('v1/public/product-category', [PublicController::class, 'getAllProductCategories']);
 
 // Login and others
-Route::post('/admin/login', [AdminAuthController::class, 'login']);
+Route::post('/admin/login', [AdminAuthController::class, 'adminLogin']);
 Route::post('/cashier/login', [CashierAuthController::class, 'login']);
 Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
 Route::post('/barista/login', [BaristaAuthController::class, 'login']);
@@ -66,7 +66,8 @@ Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class,
 Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
 
 // Admin management
-Route::group(['middleware' => 'auth:sanctum'], function () {
+Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], function () {
+// Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
 
     // Shop

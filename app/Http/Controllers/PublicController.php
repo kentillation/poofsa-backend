@@ -34,6 +34,11 @@ use App\Models\ProductBaseCategoryModel;
 
 class PublicController extends Controller
 {
+    protected function getTokenExpiration($remember = false)
+    {
+        return $remember ? now()->addDays(30) : now()->addDays(7);
+    }
+
     public function shopRegistration(Request $request)
     {
         $validator = Validator::make(
@@ -113,35 +118,23 @@ class PublicController extends Controller
                 'shop_id' => $shopId,
             ]);
 
-            Auth::guard('admin')->login($admin);
+            $shopName = $shop ? $shop->shop_name : null;
 
-            $token = $admin->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+            $remember = $request->boolean('remember');
+            $token = $admin->createToken('auth_token', ['admin:access'], $this->getTokenExpiration($remember))->plainTextToken;
 
             DB::commit();
-
-            // Create cookie (similar to login response)
-            $cookie = cookie(
-                'XSRF-TOKEN',
-                $token,
-                config('session.lifetime'),
-                '/',
-                config('session.domain', null),
-                config('session.secure', true),
-                true,
-                false,
-                'Strict'
-            );
 
             return response()->json([
                 'success' => true,
                 'message' => "You’ve successfully registered!",
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'expires_in' => 60 * 24 * 30, // 30 days
-                'shop_id' => $admin->shop_id,
-                'shop_name' => $shop->shop_name,
                 'admin_id' => $admin->admin_id,
-            ])->withCookie($cookie);
+                'admin_name' => $admin->admin_name,
+                'shop_id' => $admin->shop_id,
+                'shop_name' => $shopName,
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

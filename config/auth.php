@@ -24,12 +24,16 @@ return [
             'driver' => 'session',
             'provider' => 'customers',
         ],
-        'customer_api' => [  // Add this for API token auth
+        'customer_api' => [  // Add this for customer API token auth
             'driver' => 'sanctum',
             'provider' => 'customers',
         ],
         'admin' => [
             'driver' => 'session',
+            'provider' => 'admins',
+        ],
+        'admin_api' => [  // Add this for admin API token auth
+            'driver' => 'sanctum',
             'provider' => 'admins',
         ],
         'cashier' => [

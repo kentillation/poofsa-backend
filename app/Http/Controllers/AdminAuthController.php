@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+
 use App\Models\ShopModel;
+use App\Models\AdminModel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -17,83 +20,132 @@ class AdminAuthController extends Controller
     protected $maxAttempts = 5;
     protected $decayMinutes = 15;
 
-    public function login(Request $request)
+    public function adminLogin(Request $request)
     {
-        $this->checkLoginAttempts($request);
-
+        // Validate input first (doesn't consume rate limiter)
         $validated = $request->validate([
-            'admin_email' => ['required', 'string'],
+            'admin_email' => ['required', 'email'],
             'admin_password' => ['required', 'string'],
         ]);
 
-        $remember = $request->boolean('remember');
-
-        if (!Auth::guard('admin')->attempt([
-            'admin_email' => $validated['admin_email'],
-            'password' => $validated['admin_password'],
-            ], $request->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey($request));
-            throw ValidationException::withMessages([
-                'admin_email' => [trans('auth.failed')],
+        try {
+            Log::info('Admin login attempt', [
+                'email' => $validated['admin_email'],
+                'ip' => $request->ip(),
             ]);
+
+            $remember = $request->boolean('remember');
+
+            // Find user
+            $user = AdminModel::where('admin_email', $validated['admin_email'])->first();
+
+            // Check if user is banned FIRST - before any rate limiting or password checking
+            if ($user && $user->banned_until && Carbon::parse($user->banned_until)->isFuture()) {
+                Log::warning('Blocked login attempt for banned account', [
+                    'email' => $validated['admin_email'],
+                    'ip' => $request->ip(),
+                    'banned_until' => $user->banned_until,
+                ]);
+
+                throw ValidationException::withMessages([
+                    'user_error' => [
+                        "Your account is suspended until " .
+                            Carbon::parse($user->banned_until)->format('Y-m-d H:i:s')
+                    ],
+                ])->status(403);
+            }
+
+            // Check rate limiting ONLY for non-banned users
+            $this->checkLoginAttempts($request);
+
+            // Authenticate user
+            if (!$user || !Hash::check($validated['admin_password'], $user->admin_password)) {
+                $this->recordFailedAttempt($request);
+
+                Log::warning('Failed login attempt - invalid credentials', [
+                    'email' => $validated['admin_email'],
+                    'ip' => $request->ip(),
+                    'exists' => !is_null($user),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'user_error' => ['The provided credentials are incorrect.'],
+                ]);
+            }
+
+            // Clear successful login attempts
+            RateLimiter::clear($this->throttleKey($request));
+
+            // Handle other devices logout if requested
+            if ($request->boolean('logout_other_devices')) {
+                $user->tokens()->delete();
+            }
+
+            // Generate token
+            $token = $user->createToken('auth_token', ['admin:access'], $this->getTokenExpiration($remember))->plainTextToken;
+
+            $shop = ShopModel::find($user->shop_id);
+            $shopName = $shop ? $shop->shop_name : null;
+
+            Log::info('admin login successful', [
+                'user_id' => $user->admin_id,
+                'email' => $user->admin_email,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'admin_id' => $user->admin_id,
+                'admin_name' => $user->admin_name,
+                'shop_id' => $user->shop_id,
+                'shop_name' => $shopName,
+            ], 200);
+
+        } catch (ValidationException $e) {
+            throw $e;
+
+        } catch (\Exception $e) {
+            Log::error('Login exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => $request->ip(),
+                'email' => $validated['admin_email'] ?? 'unknown',
+            ]);
+
+            return response()->json([
+                'message' => 'An unexpected server error occurred. Please try again later.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
-
-        /** @var \App\Models\AdminModel $user */
-        $user = Auth::guard('admin')->user();
-
-        if ($user->banned_until && Carbon::parse($user->banned_until)->isFuture()) {
-            abort(403, 'Your account is suspended until ' . $user->banned_until);
-        }
-
-        if ($user->banned_until && Carbon::parse($user->banned_until)->isPast()) {
-            $user->update(['banned_until' => null]);
-        }
-
-        if ($request->boolean('logout_other_devices')) {
-            $user->tokens()->delete();
-        }
-
-        $token = $user->createToken($validated['device_name'] ?? 'auth_token', ['*'], $this->getTokenExpiration($remember))->plainTextToken;
-
-        $shop = ShopModel::find($user->shop_id);
-        $shopName = $shop ? $shop->shop_name : null;
-
-        RateLimiter::clear($this->throttleKey($request));
-
-        $cookie = cookie(
-            'XSRF-TOKEN',
-            $token,
-            config('session.lifetime'),
-            '/',
-            config('session.domain', null),
-            config('session.secure', true),
-            true,
-            false,
-            'Strict'
-        );
-
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'expires_in' => 60 * 24 * ($remember ? 30 : 7),
-            'shop_id' => $user->shop_id,
-            'shop_name' => $shopName,
-            'admin_id' => $user->admin_id,
-            'admin_name' => $user->admin_name,
-        ])->withCookie($cookie);
     }
 
     public function logout(Request $request)
     {
         try {
-            $request->user()->currentAccessToken()?->delete();
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return response()->json(['message' => 'Logged out successfully.']);
+            $user = $request->user();
+
+            if ($user && $user->currentAccessToken()) {
+                $user->currentAccessToken()->delete();
+
+                Log::info('Admin logged out', [
+                    'user_id' => $user->admin_id,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Logged out successfully.'
+            ]);
         } catch (\Exception $e) {
-            Log::error('Logout error: ' . $e->getMessage());
-            return response()->json(['message' => 'Logged out successfully.']);
+            Log::error('Logout error', [
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error during logout. Please try again.'
+            ], 500);
         }
     }
 
@@ -102,24 +154,93 @@ class AdminAuthController extends Controller
         if (RateLimiter::tooManyAttempts($this->throttleKey($request), $this->maxAttempts)) {
             event(new Lockout($request));
             $seconds = RateLimiter::availableIn($this->throttleKey($request));
+            $formattedTime = $this->formatLockoutTime($seconds);
+
+            // Calculate total lockout period
+            $totalLockoutMinutes = $this->decayMinutes;
+
+            Log::warning('Account locked due to too many attempts', [
+                'email' => $request->input('admin_email'),
+                'ip' => $request->ip(),
+                'seconds_remaining' => $seconds,
+                'total_lockout_minutes' => $totalLockoutMinutes,
+            ]);
+
             throw ValidationException::withMessages([
-                'admin_email' => [trans('auth.throttle', [
-                    'seconds' => $seconds,
-                    'minutes' => ceil($seconds / 60),
-                ])],
+                'user_error' => [
+                    "Too many login attempts. Your account is temporarily locked for {$totalLockoutMinutes} minutes. " .
+                    "Please try again in {$formattedTime}."
+                ],
             ])->status(429);
         }
     }
 
+    protected function recordFailedAttempt(Request $request)
+    {
+        RateLimiter::hit($this->throttleKey($request), $this->decayMinutes * 60);
+
+        $attempts = RateLimiter::attempts($this->throttleKey($request));
+        $remainingAttempts = $this->maxAttempts - $attempts;
+
+        Log::warning('Failed login attempt recorded', [
+            'email' => $request->input('admin_email'),
+            'ip' => $request->ip(),
+            'attempts' => $attempts,
+            'max_attempts' => $this->maxAttempts,
+            'remaining_attempts' => $remainingAttempts,
+        ]);
+
+        // Show warning when only 1-2 attempts remain
+        if ($remainingAttempts > 0 && $remainingAttempts <= 2) {
+            throw ValidationException::withMessages([
+                'user_error' => [
+                    "Invalid credentials. You have {$remainingAttempts} more attempt" .
+                    ($remainingAttempts > 1 ? "s" : "") . " before temporary lockout."
+                ],
+            ]);
+        }
+
+        if ($remainingAttempts <= 0) {
+            Log::warning('Account lockout threshold reached', [
+                'email' => $request->input('admin_email'),
+                'ip' => $request->ip(),
+                'total_attempts' => $attempts,
+            ]);
+        }
+    }
+
+    /**
+     * Format lockout time from seconds to human-readable minutes and seconds
+     *
+     * @param int $seconds
+     * @return string
+     */
+    protected function formatLockoutTime($seconds)
+    {
+        $minutes = floor($seconds / 60);
+        $remainingSeconds = $seconds % 60;
+
+        if ($minutes > 0 && $remainingSeconds > 0) {
+            return "{$minutes} minute" . ($minutes > 1 ? "s" : "") .
+                " and {$remainingSeconds} second" . ($remainingSeconds > 1 ? "s" : "");
+        } elseif ($minutes > 0) {
+            return "{$minutes} minute" . ($minutes > 1 ? "s" : "");
+        } elseif ($remainingSeconds > 0) {
+            return "{$remainingSeconds} second" . ($remainingSeconds > 1 ? "s" : "");
+        }
+
+        return "a few moments";
+    }
+
     protected function throttleKey(Request $request)
     {
-        return Str::transliterate(Str::lower($request->input('admin_email')) . '|' . $request->ip());
+        return Str::transliterate(
+            Str::lower($request->input('admin_email')) . '|' . $request->ip()
+        );
     }
 
     protected function getTokenExpiration($remember = false)
     {
-        return $remember
-            ? now()->addDays(30)
-            : now()->addDays(7);
+        return $remember ? now()->addDays(30) : now()->addDays(7);
     }
 }

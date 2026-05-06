@@ -37,22 +37,23 @@ class AdminModel extends Authenticatable
         'shop_id',
     ];
 
-    protected $passwordField = 'admin_password';
-
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['admin_password'] = $value;
-    }
-
+    // Overriding 'password'
     public function getAuthPassword()
     {
         return $this->admin_password;
     }
 
-    public function getAuthIdentifierName()
-    {
-        return 'admin_email';
-    }
+    // protected $passwordField = 'admin_password';
+
+    // public function setPasswordAttribute($value)
+    // {
+    //     $this->attributes['admin_password'] = $value;
+    // }
+
+    // public function getAuthIdentifierName()
+    // {
+    //     return 'admin_email';
+    // }
 
     public function shop()
     {
