@@ -103,7 +103,7 @@ Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], funct
 
     // Options
     Route::get('v1/admin/void-status', [AdminController::class, 'getVoidStatus']);
-    Route::get('/admin/ingredients-name/{branch_id}', [AdminController::class, 'getIngredientsName']);
+    Route::get('v1/admin/ingredients-name/{branch_id}', [AdminController::class, 'getIngredientsName']);
     Route::get('v1/admin/product-temperature-option', [AdminController::class, 'getProductTemperatures']);
     Route::get('v1/admin/product-size-option', [AdminController::class, 'getProductSizes']);
     Route::get('v1/admin/product-category-option', [AdminController::class, 'getProductCategories']);
