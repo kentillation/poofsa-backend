@@ -41,6 +41,7 @@ use App\Models\VoidStatusModel;
 use App\Models\SalesModel;
 use App\Models\IngredientsModel;
 use App\Models\StockBatchesModel;
+use App\Models\ProductBaseCategoryModel;
 use App\Services\ShopService;
 use App\Services\ProductService;
 use App\Services\StockService;
@@ -1132,34 +1133,6 @@ class AdminController extends Controller
         return StockHistoryResource::collection($result);
     }
 
-    // DONE
-    public function getIngredientsName($branchId)
-    {
-        try {
-            $shopId = $this->getShopId();
-            $data = IngredientsModel::select(
-                'tbl_ingredients.ingredient_id',
-                'tbl_ingredients.ingredient_name',
-            )
-                ->where('tbl_ingredients.shop_id', $shopId)
-                ->where('tbl_ingredients.branch_id', $branchId)
-                ->orderBy('tbl_ingredients.ingredient_name')
-                ->get();
-
-            return response()->json([
-                'status' => true,
-                'message' => $data->isEmpty() ? 'No items found!' : 'Items fetched successfully!',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching items!',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     // UPDATED
     public function getStocksReport($branchId, Request $request)
     {
@@ -1563,6 +1536,24 @@ class AdminController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Error fetching void statuses!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getProductBaseCategories()
+    {
+        try {
+            $data = ProductBaseCategoryModel::orderBy('product_base_category_id', 'asc')->get();
+            return response()->json([
+                'success' => true,
+                'message' => $data->isEmpty() ? 'No product base category found!' : 'Product base categories fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product base categories!',
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -45,20 +45,7 @@ Route::post('v1/public/verify-email', [PublicController::class, 'verifyEmail']);
 Route::post('v1/public/verify-recovery-code', [PublicController::class, 'verifyRecoveryCode']);
 Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
 
-// Unused
-Route::get('v1/public/product-base-category', [PublicController::class, 'getProductBaseCategories']);
-
-// To be use
-//Route::get('v1/public/all-shops', [PublicController::class, 'getAllPublicShops']); // new structure
-//Route::get('v1/public/all-products', [PublicController::class, 'getAllPublicProductsFromShop']); // new structure
-//Route::get('v1/public/new-products', [PublicController::class, 'getAllNewPublicProducts']); // new structure
-//Route::get('v1/public/products-by-meal-type', [PublicController::class, 'getAllPublicProductsByMealType']); // new structure
-//Route::get('v1/public/categories-by-new-products', [PublicController::class, 'getAllCategoriesByNewProducts']); // new structure
-//Route::get('v1/public/categories-by-meal-type', [PublicController::class, 'getAllCategoriesByMealType']); // new structure
-//Route::get('v1/public/product-category', [PublicController::class, 'getAllProductCategories']);
-
 // Login and others
-Route::post('/admin/login', [AdminAuthController::class, 'adminLogin']);
 Route::post('/cashier/login', [CashierAuthController::class, 'login']);
 Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
 Route::post('/barista/login', [BaristaAuthController::class, 'login']);
@@ -67,63 +54,62 @@ Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class,
 Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
 
 // Admin management
+Route::post('v1/admin/login', [AdminAuthController::class, 'adminLogin']);
 Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], function () {
-    // Route::group(['middleware' => 'auth:sanctum'], function () {
-    Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
+    Route::post('v1/admin/logout', [AdminAuthController::class, 'logout']);
     Route::get('v1/admin/verify-token', [AdminController::class, 'verifyAdmin']);
 
     // Shop
-    Route::get('/admin/shop-details/{shopId}', [AdminController::class, 'getShopDetails']);
-    Route::post('/admin/update-shop/{shopId}', [AdminController::class, 'updateShop']);
+    Route::get('v1/admin/shop-details/{shopId}', [AdminController::class, 'getShopDetails']);
+    Route::post('v1/admin/update-shop/{shopId}', [AdminController::class, 'updateShop']);
 
     // Branch
-    Route::post('/admin/save-branch', [AdminController::class, 'saveBranch']);
-    Route::get('/admin/shop-branches', [AdminController::class, 'getShopBranches']);
-    Route::get('/admin/branch-details/{branchName}', [AdminController::class, 'getBranchDetails']);
+    Route::post('v1/admin/save-branch', [AdminController::class, 'saveBranch']);
+    Route::get('v1/admin/shop-branches', [AdminController::class, 'getShopBranches']);
+    Route::get('v1/admin/branch-details/{branchName}', [AdminController::class, 'getBranchDetails']);
     Route::put('v1/admin/update-branch', [AdminController::class, 'updateBranchDetails']);
 
     // Orders
-    Route::get('/admin/orders', [AdminController::class, 'getOrders']);
-    Route::get('/admin/orders-report', [AdminController::class, 'getOrdersReport']);
-    Route::get('/admin/total-orders', [AdminController::class, 'getTotalOrdersCount']);
-    Route::get('/admin/void-orders/{branchId}', [AdminController::class, 'getVoidOrders']);
-    Route::put('/admin/update-void/{branch_id}', [AdminController::class, 'updateVoidOrder']);
+    Route::get('v1/admin/orders', [AdminController::class, 'getOrders']);
+    Route::get('v1/admin/orders-report', [AdminController::class, 'getOrdersReport']);
+    Route::get('v1/admin/total-orders', [AdminController::class, 'getTotalOrdersCount']);
+    Route::get('v1/admin/void-orders/{branchId}', [AdminController::class, 'getVoidOrders']); //In frontend, place it to ordersApi
+    Route::put('v1/admin/update-void-order/{branch_id}', [AdminController::class, 'updateVoidOrder']); //In frontend, place it to ordersApi
 
     // Sales
-    Route::get('/admin/gross-sales-by-date/{branchId}', [AdminController::class, 'getSalesByDateType']);
-    Route::get('/admin/gross-sales-only/{branchId}', [AdminController::class, 'getGrossSalesOnly']);
-    Route::get('/admin/sales-by-month/{branchId}', [AdminController::class, 'getSalesByMonth']);
-    Route::get('/admin/total-sales', [AdminController::class, 'getTotalSalesCount']);
+    Route::get('v1/admin/gross-sales-by-date/{branchId}', [AdminController::class, 'getSalesByDateType']); // In frontend, Place it to salesApi
+    Route::get('v1/admin/gross-sales-only/{branchId}', [AdminController::class, 'getGrossSalesOnly']);
+    Route::get('v1/admin/sales-by-month/{branchId}', [AdminController::class, 'getSalesByMonth']);
+    Route::get('v1/admin/total-sales', [AdminController::class, 'getTotalSalesCount']);
 
     // Products
-    Route::post('/admin/save-product', [AdminController::class, 'saveProducts']);
-    Route::post('/admin/save-product-items', [AdminController::class, 'saveProductIngredients']);
-    Route::get('/admin/products', [AdminController::class, 'getProducts']);
-    Route::get('/admin/products-history', [AdminController::class, 'getProductsHistory']);
-    Route::get('/admin/product-items/{product_id}', [AdminController::class, 'getProductItems']);
-    Route::get('/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
-    Route::post('/admin/update-product/{product_id}', [AdminController::class, 'updateProduct']);
-    Route::put('/admin/update-product-items/{ingredient_id}', [AdminController::class, 'updateProductItems']);
+    Route::post('v1/admin/save-product', [AdminController::class, 'saveProducts']);
+    Route::post('v1/admin/save-product-items', [AdminController::class, 'saveProductIngredients']);
+    Route::post('v1/admin/update-product/{product_id}', [AdminController::class, 'updateProduct']);
+    Route::put('v1/admin/update-product-items/{ingredient_id}', [AdminController::class, 'updateProductItems']);
+    Route::get('v1/admin/products', [AdminController::class, 'getProducts']);
+    Route::get('v1/admin/products-history', [AdminController::class, 'getProductsHistory']);
+    Route::get('v1/admin/product-items/{product_id}', [AdminController::class, 'getProductItems']);
+    Route::get('v1/admin/total-products-count/{branchId}', [AdminController::class, 'getTotalProductsCount']);
 
     // Stocks
-    Route::post('/admin/save-stock', [AdminController::class, 'saveStock']);
-    Route::get('/admin/ingredients-name/{branch_id}', [AdminController::class, 'getIngredientsName']);
-    Route::get('/admin/stocks', [AdminController::class, 'getStocks']);
-    Route::get('/admin/stocks-report/{branch_id}', [AdminController::class, 'getStocksReport']);
-    Route::get('/admin/stocks-history', [AdminController::class, 'getStocksHistory']);
-    Route::get('/admin/low-stocks/{branch_id}', [AdminController::class, 'getLowStock']);
-    Route::get('/admin/stocks-only/{branchId}', [AdminController::class, 'getStocksOnly']);
-    Route::put('/admin/update-stock/{stock_id}', [AdminController::class, 'updateStock']);
-    // Route::get('/admin/{branchId}/low-stocks', [AdminController::class, 'getLowStock']);
+    Route::post('v1/admin/save-stock', [AdminController::class, 'saveStock']);
+    Route::put('v1/admin/update-stock/{stock_id}', [AdminController::class, 'updateStock']);
+    Route::get('v1/admin/stocks', [AdminController::class, 'getStocks']);
+    Route::get('v1/admin/stocks-report/{branch_id}', [AdminController::class, 'getStocksReport']);
+    Route::get('v1/admin/stocks-history', [AdminController::class, 'getStocksHistory']);
+    Route::get('v1/admin/low-stocks/{branch_id}', [AdminController::class, 'getLowStock']);
+    Route::get('v1/admin/stocks-only/{branchId}', [AdminController::class, 'getStocksOnly']);
 
     // Options
-    Route::get('/admin/void-status', [AdminController::class, 'getVoidStatus']);
-    Route::get('/admin/product-temperature-option', [AdminController::class, 'getProductTemperatures']);
-    Route::get('/admin/product-size-option', [AdminController::class, 'getProductSizes']);
-    Route::get('/admin/product-category-option', [AdminController::class, 'getProductCategories']);
-    Route::get('/admin/product-availability-option', [AdminController::class, 'getAvailabilities']); // to change
-    Route::get('/admin/product-station-option', [AdminController::class, 'getProductStation']);
-    Route::get('/admin/unit-option', [AdminController::class, 'getUnits']);
+    Route::get('v1/admin/void-status', [AdminController::class, 'getVoidStatus']);
+    Route::get('v1/admin/product-temperature-option', [AdminController::class, 'getProductTemperatures']);
+    Route::get('v1/admin/product-size-option', [AdminController::class, 'getProductSizes']);
+    Route::get('v1/admin/product-category-option', [AdminController::class, 'getProductCategories']);
+    Route::get('v1/admin/product-base-category', [AdminController::class, 'getProductBaseCategories']);
+    Route::get('v1/admin/product-availability-option', [AdminController::class, 'getAvailabilities']); // to change
+    Route::get('v1/admin/product-station-option', [AdminController::class, 'getProductStation']);
+    Route::get('v1/admin/unit-option', [AdminController::class, 'getUnits']);
 });
 
 // Employees (Cashier, Kitchen Personnel, and Barista)
