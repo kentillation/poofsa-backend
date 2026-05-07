@@ -1501,6 +1501,34 @@ class AdminController extends Controller
     }
 
     // UPDATED
+    public function getIngredientsName($branchId)
+    {
+        try {
+            $shopId = $this->getShopId();
+            $data = IngredientsModel::select(
+                'tbl_ingredients.ingredient_id',
+                'tbl_ingredients.ingredient_name',
+            )
+                ->where('tbl_ingredients.shop_id', $shopId)
+                ->where('tbl_ingredients.branch_id', $branchId)
+                ->orderBy('tbl_ingredients.ingredient_name')
+                ->get();
+
+            return response()->json([
+                'status' => true,
+                'message' => $data->isEmpty() ? 'No items found!' : 'Items fetched successfully!',
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching items!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // UPDATED
     public function getAvailabilities()
     {
         try {
