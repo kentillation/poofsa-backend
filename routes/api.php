@@ -20,35 +20,13 @@ use App\Http\Controllers\DevController;
 use App\Http\Controllers\PaymentController;
 use App\Models\DevModel;
 
-// Customer management
-Route::post('v1/customer/login', [CustomerAuthController::class, 'customerLogin']);
-Route::post('v1/customer/registration', [CustomerController::class, 'customerRegistration']);
-Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
-
-Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
-    Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
-    Route::get('v1/customer/verify', [CustomerController::class, 'verifyAdmin']);
-    Route::get('v1/customer/shops', [CustomerController::class, 'getShops']);
-    Route::get('v1/customer/shops-location', [CustomerController::class, 'getShopLocation']);
-    Route::get('v1/customer/products', [CustomerController::class, 'getProducts']);
-    Route::get('v1/customer/new-products', [CustomerController::class, 'getNewProducts']);
-    Route::get('v1/customer/categories-by-new-products', [CustomerController::class, 'getCategoriesByNewProducts']);
-    Route::get('v1/customer/products-by-meal-type', [CustomerController::class, 'getProductsByMealType']);
-    Route::get('v1/customer/categories-by-meal-type', [CustomerController::class, 'getCategoriesByMealType']);
-    Route::get('v1/customer/product-category', [CustomerController::class, 'getProductCategories']);
-    Route::get('v1/customer/product-base-category', [CustomerController::class, 'getProductBaseCategories']);
-});
-
 // Public
 Route::post('v1/public/shop-registration', [PublicController::class, 'shopRegistration']);
 Route::post('v1/public/verify-email', [PublicController::class, 'verifyEmail']);
 Route::post('v1/public/verify-recovery-code', [PublicController::class, 'verifyRecoveryCode']);
 Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccount']);
 
-// Login and others
-Route::post('/cashier/login', [CashierAuthController::class, 'login']);
-Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
-Route::post('/barista/login', [BaristaAuthController::class, 'login']);
+// Open
 Route::post('/open/submit-message', [OpenController::class, 'submitMessage']);
 Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
 Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
@@ -113,32 +91,59 @@ Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], funct
     Route::get('v1/admin/unit-option', [AdminController::class, 'getUnits']);
 });
 
-// Employees (Cashier, Kitchen Personnel, and Barista)
+// Customer management
+Route::post('v1/customer/login', [CustomerAuthController::class, 'customerLogin']);
+Route::post('v1/customer/registration', [CustomerController::class, 'customerRegistration']);
+Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
+Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
+    Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
+    Route::get('v1/customer/verify', [CustomerController::class, 'verifyAdmin']);
+    Route::get('v1/customer/shops', [CustomerController::class, 'getShops']);
+    Route::get('v1/customer/shops-location', [CustomerController::class, 'getShopLocation']);
+    Route::get('v1/customer/products', [CustomerController::class, 'getProducts']);
+    Route::get('v1/customer/new-products', [CustomerController::class, 'getNewProducts']);
+    Route::get('v1/customer/categories-by-new-products', [CustomerController::class, 'getCategoriesByNewProducts']);
+    Route::get('v1/customer/products-by-meal-type', [CustomerController::class, 'getProductsByMealType']);
+    Route::get('v1/customer/categories-by-meal-type', [CustomerController::class, 'getCategoriesByMealType']);
+    Route::get('v1/customer/product-category', [CustomerController::class, 'getProductCategories']);
+    Route::get('v1/customer/product-base-category', [CustomerController::class, 'getProductBaseCategories']);
+});
+
+// Cashier Management
+Route::post('/cashier/login', [CashierAuthController::class, 'login']);
 Route::group(['middleware' => 'auth:sanctum'], function () {
-    // CASHIER
     Route::post('/cashier/logout', [CashierAuthController::class, 'logout']);
     Route::post('/cashier/submit-transaction', [CashierController::class, 'submitTransaction']);
     Route::post('/cashier/save-void', [CashierController::class, 'saveVoid']);
-    Route::get('/cashier/current-orders', [CashierController::class, 'getCurrentOrders']);
     Route::put('/cashier/update-order-status', [CashierController::class, 'updateOrderStatus']);
+    Route::get('/cashier/current-orders', [CashierController::class, 'getCurrentOrders']);
+});
 
-    // KITCHEN PERSONNEL
+// Kitchen Personnel Management
+Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
+Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/kitchen/logout', [KitchenAuthController::class, 'logout']);
+    Route::put('/kitchen/update-kitchen-product-status', [KitchenController::class, 'updateKitchenProductStatus']);
+    Route::put('/kitchen/update-order-status', [KitchenController::class, 'updateOrderStatus']);
     Route::get('/kitchen/current-orders', [KitchenController::class, 'getCurrentOrders']);
     Route::get('/kitchen/kitchen-product-details/{transactionId}', [KitchenController::class, 'getKitchenProductDetails']);
     Route::get('/kitchen/station-status', [KitchenController::class, 'getStationStatus']);
-    Route::put('/kitchen/update-kitchen-product-status', [KitchenController::class, 'updateKitchenProductStatus']);
-    Route::put('/kitchen/update-order-status', [KitchenController::class, 'updateOrderStatus']);
+});
 
-    // BARISTA
+// Barista Management
+Route::post('/barista/login', [BaristaAuthController::class, 'login']);
+Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/barista/logout', [BaristaAuthController::class, 'logout']);
+    Route::put('/barista/update-barista-product-status', [BaristaController::class, 'updateBaristaProductStatus']); // Unused
+    Route::put('/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
     Route::get('/barista/current-orders', [BaristaController::class, 'getCurrentOrders']);
     Route::get('/barista/barista-product-details/{transactionId}', [BaristaController::class, 'getBaristaProductDetails']);
     Route::get('/barista/station-status', [BaristaController::class, 'getStationStatus']);
-    Route::put('/barista/update-barista-product-status', [BaristaController::class, 'updateBaristaProductStatus']); // Unused
-    Route::put('/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
+});
 
-    // OPEN
+
+// Open
+Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/open/account-registration', [OpenController::class, 'accountRegistration']);
     Route::get('/open/shop-branches', [OpenController::class, 'getShopBranches']);
     Route::get('/open/branch-details/{branchName}', [OpenController::class, 'getBranchDetails']);
@@ -192,6 +197,7 @@ Route::post('/dev/registration', function (Request $request) {
         ], 500);
     }
 });
+
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/dev/logout', [DevController::class, 'logout']);
     Route::post('/dev/save-shop', [DevController::class, 'saveShop']);
