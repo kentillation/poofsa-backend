@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'cashiers',
         ],
+        'cashier_api' => [  // Add this for cashier API token auth
+            'driver' => 'sanctum',
+            'provider' => 'cashiers',
+        ],
         'kitchen' => [
             'driver' => 'session',
             'provider' => 'kitchens',

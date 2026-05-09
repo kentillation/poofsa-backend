@@ -16,13 +16,24 @@ class PaymentRepository
         $this->secret  = config('services.paymongo.secret_key');
     }
 
+    // protected function client()
+    // {
+    //     return Http::withHeaders([
+    //         'Accept'       => 'application/json',
+    //         'Content-Type' => 'application/json',
+    //     ])->withBasicAuth($this->secret, '')
+    //     ->retry(3, 500); // 3 tries, 500ms delay;
+    // }
+
     protected function client()
     {
-        return Http::withHeaders([
-            'Accept'       => 'application/json',
-            'Content-Type' => 'application/json',
-        ])->withBasicAuth($this->secret, '')
-        ->retry(3, 500); // 3 tries, 500ms delay;
+        return Http::acceptJson()
+            ->withBasicAuth($this->secret, '')
+            ->timeout(30)
+            ->connectTimeout(15)
+            ->retry(3, 500, function ($exception, $request) {
+                return $exception instanceof \Illuminate\Http\Client\ConnectionException;
+            });
     }
 
     // Circuit Breaker
@@ -87,7 +98,7 @@ class PaymentRepository
                 'amount'     => $data['attributes']['amount'],
                 'data'       => $data,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('PayMongo create Payment Intent exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

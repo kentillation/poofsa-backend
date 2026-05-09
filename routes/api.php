@@ -110,8 +110,8 @@ Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'],
 });
 
 // Cashier Management
-Route::post('/cashier/login', [CashierAuthController::class, 'login']);
-Route::group(['middleware' => 'auth:sanctum'], function () {
+Route::post('/cashier/login', [CashierAuthController::class, 'cashierLogin']);
+Route::group(['middleware' => 'auth:cashier_api', 'abilities:customer:access'], function () {
     Route::post('/cashier/logout', [CashierAuthController::class, 'logout']);
     Route::post('/cashier/submit-transaction', [CashierController::class, 'submitTransaction']);
     Route::post('/cashier/save-void', [CashierController::class, 'saveVoid']);

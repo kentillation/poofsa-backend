@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
-use App\Models\ShopModel;
-use App\Models\AdminModel;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Carbon;
+use App\Models\ShopModel;
+use App\Models\AdminModel;
 
 class AdminAuthController extends Controller
 {
@@ -209,12 +209,6 @@ class AdminAuthController extends Controller
         }
     }
 
-    /**
-     * Format lockout time from seconds to human-readable minutes and seconds
-     *
-     * @param int $seconds
-     * @return string
-     */
     protected function formatLockoutTime($seconds)
     {
         $minutes = floor($seconds / 60);
