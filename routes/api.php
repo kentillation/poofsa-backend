@@ -28,8 +28,8 @@ Route::post('v1/public/recover-account', [PublicController::class, 'recoverAccou
 
 // Open
 Route::post('/open/submit-message', [OpenController::class, 'submitMessage']);
-Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']);
-Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']);
+Route::get('/open/order-details-temp/{referenceNumber}', [OpenController::class, 'getOrderDetailsTemp']); // copy to
+Route::get('/open/get-qr-temp/{referenceNumber}', [OpenController::class, 'getQRTemp']); // copy to
 
 // Admin management
 Route::post('v1/admin/login', [AdminAuthController::class, 'adminLogin']);
@@ -110,13 +110,20 @@ Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'],
 });
 
 // Cashier Management
-Route::post('/cashier/login', [CashierAuthController::class, 'cashierLogin']);
-Route::group(['middleware' => 'auth:cashier_api', 'abilities:customer:access'], function () {
-    Route::post('/cashier/logout', [CashierAuthController::class, 'logout']);
-    Route::post('/cashier/submit-transaction', [CashierController::class, 'submitTransaction']);
-    Route::post('/cashier/save-void', [CashierController::class, 'saveVoid']);
-    Route::put('/cashier/update-order-status', [CashierController::class, 'updateOrderStatus']);
-    Route::get('/cashier/current-orders', [CashierController::class, 'getCurrentOrders']);
+Route::post('v1/cashier/login', [CashierAuthController::class, 'cashierLogin']);
+Route::group(['middleware' => 'auth:cashier_api', 'abilities:cashier:access'], function () {
+    Route::post('v1/cashier/logout', [CashierAuthController::class, 'logout']);
+    Route::post('v1/cashier/submit-transaction', [CashierController::class, 'submitTransaction']);
+    Route::post('v1/cashier/save-void', [CashierController::class, 'saveVoid']);
+    Route::put('v1/cashier/update-order-status', [CashierController::class, 'updateOrderStatus']);
+    Route::get('v1/cashier/products', [CashierController::class, 'getProducts']);
+    Route::get('v1/cashier/product-category-option', [CashierController::class, 'getProductCategories']);
+    Route::get('v1/cashier/current-orders', [CashierController::class, 'getCurrentOrders']);
+    Route::get('v1/cashier/order-details/{referenceNumber}', [CashierController::class, 'getOrderDetails']);
+    Route::get('v1/cashier/order-details-temp/{referenceNumber}', [CashierController::class, 'getOrderDetailsTemp']);
+    Route::get('v1/cashier/get-qr-code/{referenceNumber}', [CashierController::class, 'getQRCode']);
+    Route::get('v1/cashier/order-status', [CashierController::class, 'getOrderStatus']);
+    Route::get('v1/cashier/void-orders', [CashierController::class, 'getVoid']);
 });
 
 // Kitchen Personnel Management
@@ -148,16 +155,16 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/open/shop-branches', [OpenController::class, 'getShopBranches']);
     Route::get('/open/branch-details/{branchName}', [OpenController::class, 'getBranchDetails']);
     Route::get('/open/shop-name', [OpenController::class, 'getShopName']);
-    Route::get('/open/products', [OpenController::class, 'getProducts']);
+    Route::get('/open/products', [OpenController::class, 'getProducts']); // copy to
     Route::get('/open/stocks/{branch_id}', [OpenController::class, 'getStocks']);
     Route::get('/open/low-stocks/{branch_id}', [OpenController::class, 'getStockNotifQty']);
     Route::get('/open/product-temperature-option', [OpenController::class, 'getProductTemperatures']);
     Route::get('/open/product-size-option', [OpenController::class, 'getProductSizes']);
-    Route::get('/open/product-category-option', [OpenController::class, 'getProductCategories']);
+    Route::get('/open/product-category-option', [OpenController::class, 'getProductCategories']); // copy to
     Route::get('/open/product-availability-option', [OpenController::class, 'getProductAvailabilities']);
-    Route::get('/open/order-status', [OpenController::class, 'getOrderStatus']);
-    Route::get('/open/order-details/{referenceNumber}', [OpenController::class, 'getOrderDetails']);
-    Route::get('/open/void-orders', [OpenController::class, 'getVoid']);
+    Route::get('/open/order-status', [OpenController::class, 'getOrderStatus']); // copy to
+    Route::get('/open/order-details/{referenceNumber}', [OpenController::class, 'getOrderDetails']); // copy to
+    Route::get('/open/void-orders', [OpenController::class, 'getVoid']); // copy to
     Route::get('/open/get-qr/{referenceNumber}', [OpenController::class, 'getQR']);
 });
 
