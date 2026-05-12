@@ -406,6 +406,8 @@ class AdminController extends Controller
                 'tbl_shop_branch.branch_address',
                 'tbl_shop_branch.branch_manager_name',
                 'tbl_shop_branch.branch_contact_number',
+                'tbl_shop_branch.open_at',
+                'tbl_shop_branch.close_at',
                 'tbl_shop_branch.updated_at',
                 'tbl_admin.admin_name',
                 // 'tbl_cashier.cashier_name',
@@ -456,6 +458,8 @@ class AdminController extends Controller
             'branch_longitude' => 'nullable|numeric',
             'branch_manager_name' => 'required|string|max:255',
             'branch_contact_number' => 'required|string|max:20',
+            'open_at' => 'required|string|max:8',
+            'close_at' => 'required|string|max:8',
         ]);
 
         if ($validator->fails()) {
@@ -489,7 +493,9 @@ class AdminController extends Controller
                 'branch_latitude',
                 'branch_longitude',
                 'branch_manager_name',
-                'branch_contact_number'
+                'branch_contact_number',
+                'open_at',
+                'close_at',
             ]);
 
             // Update branch
@@ -499,6 +505,8 @@ class AdminController extends Controller
             $branch->branch_longitude = $request->input('branch_longitude');
             $branch->branch_manager_name = $request->input('branch_manager_name');
             $branch->branch_contact_number = $request->input('branch_contact_number');
+            $branch->open_at = $request->input('open_at');
+            $branch->close_at = $request->input('close_at');
             $branch->updated_at = now();
             $branch->save();
 
@@ -508,7 +516,9 @@ class AdminController extends Controller
                 'branch_latitude',
                 'branch_longitude',
                 'branch_manager_name',
-                'branch_contact_number'
+                'branch_contact_number',
+                'open_at',
+                'close_at',
             ]);
 
             // Log the changes (optional - if you have a branch history table)
@@ -524,8 +534,7 @@ class AdminController extends Controller
 
             Log::info('Branch updated', [
                 'branch_id' => $branchId,
-                'branch_latitude' => $branch->branch_latitude,
-                'branch_longitude' => $branch->branch_longitude,
+                'branch_name' => $branch->branch_name,
                 'shop_id' => $shopId,
                 'user_id' => $userId,
                 'changes' => $changes

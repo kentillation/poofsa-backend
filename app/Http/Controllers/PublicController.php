@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Mail\SendRecoveryCode;
 use App\Mail\SendSuccessMessage;
 use App\Http\Requests\GetPublicProductsRequest;
@@ -168,7 +169,7 @@ class PublicController extends Controller
             }
 
             // Generate recovery code
-            $recoveryCode = rand(100000, 999999);
+            $recoveryCode = random_int(100000, 999999);
 
             // Save recovery code (IMPORTANT)
             $admin->recovery_code = $recoveryCode;
@@ -317,33 +318,26 @@ class PublicController extends Controller
                 Log::error('Mail error: ' . $e->getMessage());
             }
 
-            Auth::guard('admin')->login($admin);
+            // Clear the rate limiter after successful recovering account
+            RateLimiter::clear(
+                Str::transliterate(
+                    Str::lower($validated['admin_email']) . '|' . $request->ip()
+                )
+            );
 
-            $token = $admin->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+            $remember = $request->boolean('remember');
+            $token = $admin->createToken('auth_token', ['admin:access'], $this->getTokenExpiration($remember))->plainTextToken;
 
             DB::commit();
-
-            $cookie = cookie(
-                'XSRF-TOKEN',
-                $token,
-                config('session.lifetime'),
-                '/',
-                config('session.domain', null),
-                config('session.secure', true),
-                true,
-                false,
-                'Strict'
-            );
 
             return response()->json([
                 'message' => "You've successfully reset your password",
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'expires_in' => 60 * 24 * 30, // 30 days
                 'shop_id' => $admin->shop_id,
                 'shop_name' => $shop->shop_name,
                 'user_id' => $admin->admin_id,
-            ])->withCookie($cookie);
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Server error: ' . $e->getMessage());
