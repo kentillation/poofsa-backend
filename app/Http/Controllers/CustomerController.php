@@ -386,11 +386,11 @@ class CustomerController extends Controller
                 ->get()
                 ->map(function ($product) use ($shop) {
                     return [
-                        'thumbnail_url' => $shop->thumbnail_url,
                         'branch_name' => $product->branch_name,
                         'branch_address' => $product->branch_address,
                         'branch_latitude' => $product->branch_latitude,
                         'branch_longitude' => $product->branch_longitude,
+                        'thumbnail_url' => $shop->thumbnail_url,
                     ];
                 });
 
