@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Mail\SendRecoveryCode;
+use App\Mail\SendSuccessMessage;
 use App\Models\CustomerModel;
 use App\Models\ShopModel;
 use App\Models\BranchModel;
@@ -139,6 +142,152 @@ class CustomerController extends Controller
                 'success' => false,
                 'message' => 'Server error. Please try again.',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verifyRecoveryCode(Request $request)
+    {
+        $request->validate([
+            'customer_email' => 'required|email',
+            'recovery_code' => 'required'
+        ]);
+
+        $customer = CustomerModel::where('customer_email', $request->customer_email)
+            ->where('recovery_code', $request->recovery_code)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid recovery code. Try again!'
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Recovery code has been verified.'
+        ]);
+    }
+
+    public function recoverAccount(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_email' => 'required|email',
+            'recovery_code' => 'required',
+            'new_password' => 'required|string|min:8',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $customer = CustomerModel::where('customer_email', $validated['customer_email'])->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email not found.'
+                ], 404);
+            }
+
+            // Validate recovery code
+            if (!$customer->recovery_code) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recovery code already used. Please request a new one.'
+                ], 400);
+            }
+
+            // Check expiration
+            if (!$customer->recovery_code_expires_at || now()->gt($customer->recovery_code_expires_at)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recovery code expired.'
+                ], 400);
+            }
+
+            // Max attempts
+            $MAX_ATTEMPTS = 3;
+
+            // Already used
+            // if ($customer->recovery_code_used_at) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Recovery code already used. Please try again.'
+            //     ], 400);
+            // }
+
+            // Too many attempts
+            if ($customer->recovery_attempts >= $MAX_ATTEMPTS) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many attempts. Please request a new recovery code.'
+                ], 429);
+            }
+
+            // Invalid code
+            if ($customer->recovery_code !== $validated['recovery_code']) {
+
+                // Increment attempts
+                $customer->increment('recovery_attempts');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid recovery code.'
+                ], 400);
+            }
+
+            // Expired
+            if (!$customer->recovery_code_expires_at || now()->gt($customer->recovery_code_expires_at)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recovery code expired.'
+                ], 400);
+            }
+
+            // Update password
+            $customer->customer_password = Hash::make($validated['new_password']);
+            $customer->recovery_code = null;
+            $customer->recovery_code_expires_at = null;
+            $customer->recovery_code_used_at = now();
+            $customer->recovery_attempts = 0;
+            $customer->save();
+
+            $shop = ShopModel::where('shop_id', $customer->shop_id)->first();
+
+            // Send email (non-blocking)
+            try {
+                Mail::to($customer->customer_email)->send(new SendSuccessMessage());
+            } catch (\Exception $e) {
+                Log::error('Mail error: ' . $e->getMessage());
+            }
+
+            // Clear the rate limiter after successful recovering account
+            RateLimiter::clear(
+                Str::transliterate(
+                    Str::lower($validated['customer_email']) . '|' . $request->ip()
+                )
+            );
+
+            $remember = $request->boolean('remember');
+            $token = $customer->createToken('auth_token', ['customer:access'], $this->getTokenExpiration($remember))->plainTextToken;
+
+            DB::commit();
+
+            return response()->json([
+                'message' => "You've successfully reset your password",
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user_id' => $customer->customer_id,
+                'first_name' => $customer->first_name,
+                'email' => $customer->customer_email,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Server error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error. Try again.'
             ], 500);
         }
     }

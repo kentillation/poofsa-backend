@@ -173,7 +173,7 @@ class PublicController extends Controller
 
             // Save recovery code (IMPORTANT)
             $admin->recovery_code = $recoveryCode;
-            $admin->recovery_code_expires_at = now()->addMinutes(10); // optional
+            $admin->recovery_code_expires_at = now()->addMinutes(10);
             $admin->save();
 
             // Send email

@@ -38,7 +38,6 @@ class SendRecoveryCode extends Mailable
                             <tr>
                                 <td>
                                     <div style="font-family: \'Poppins\', Arial, sans-serif; font-size: 14px; color: rgb(255, 249, 244);">
-                                        <!-- Logo or Header -->
                                         <div style="text-align: center; margin-bottom: 20px;">
                                             <h1 style="color: #ffe9c1; margin: 0;">Locinder</h1>
                                             <p style="color: #d3bb8e; margin: 5px 0 0 0;">Your Local Food Finder Buddy</p>
@@ -51,7 +50,6 @@ class SendRecoveryCode extends Mailable
                                             Note: This is a system-generated email. Please do not reply!
                                         </p>
 
-                                        <!-- Footer -->
                                         <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; text-align: center; color: #ddddddff; font-size: 12px;">
                                             <p style="margin: 0;">© ' . date('Y') . ' Locinder. All rights reserved.</p>
                                             <p style="margin: 5px 0;">Sagay City 6122 Negros Island, Philippines</p>

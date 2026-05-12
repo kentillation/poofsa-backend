@@ -95,6 +95,9 @@ Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], funct
 Route::post('v1/customer/login', [CustomerAuthController::class, 'customerLogin']);
 Route::post('v1/customer/registration', [CustomerController::class, 'customerRegistration']);
 Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
+Route::post('v1/customer/verify-recovery-code', [CustomerController::class, 'verifyRecoveryCode']);
+Route::post('v1/customer/recover-account', [CustomerController::class, 'recoverAccount']);
+
 Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
     Route::get('v1/customer/verify', [CustomerController::class, 'verifyAdmin']);
