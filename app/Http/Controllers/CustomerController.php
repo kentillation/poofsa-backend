@@ -379,11 +379,14 @@ class CustomerController extends Controller
             $shopId = $request->shop_id;
             $branchId = $request->branch_id;
 
-            $data = BranchModel::where('shop_id', $shopId)
+            $shop = ShopModel::find($shopId);
+
+            $branch = BranchModel::where('shop_id', $shopId)
                 ->where('branch_id', $branchId)
                 ->get()
-                ->map(function ($product) {
+                ->map(function ($product) use ($shop) {
                     return [
+                        'thumbnail_url' => $shop->thumbnail_url,
                         'branch_name' => $product->branch_name,
                         'branch_address' => $product->branch_address,
                         'branch_latitude' => $product->branch_latitude,
@@ -393,8 +396,8 @@ class CustomerController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $data->isEmpty() ? 'No location found!' : 'Location fetched successfully!',
-                'data' => $data
+                'message' => $branch->isEmpty() ? 'No location found!' : 'Location fetched successfully!',
+                'data' => $branch
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
