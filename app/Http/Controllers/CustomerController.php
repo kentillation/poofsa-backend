@@ -406,6 +406,7 @@ class CustomerController extends Controller
                     'branch_id' => $branchId,
                     'shop_name' => $shop->shop_name,
                     'shop_type' => $shop->shop_type,
+                    'shop_image' => $shop->thumbnail_url,
                     'shop_address' => optional($selectedBranch)->branch_address,
                     'open_at' => optional($selectedBranch)->open_at,
                     'close_at' => optional($selectedBranch)->close_at,
