@@ -1,0 +1,27 @@
+I figured it out now!
+
+public function getThumbnailUrlAttribute()
+    {
+        if (!$this->thumbnail_path) {
+            return null;
+        }
+        return Storage::disk('public')->exists($this->thumbnail_path)
+            ? asset('storage/' . $this->thumbnail_path)
+            : null;
+    }
+
+This accessor works in local
+
+- - - - - -
+
+public function getThumbnailUrlAttribute()
+    {
+        if (!$this->thumbnail_path) {
+            return null;
+        }
+        return Storage::disk('public')->exists($this->thumbnail_path)
+            ? asset('storage/app/public/' . $this->thumbnail_path)
+            : null;
+    }
+
+This accessor works is production

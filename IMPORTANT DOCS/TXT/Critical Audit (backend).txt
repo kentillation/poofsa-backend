@@ -1,0 +1,89 @@
+# Backend QA Audit Report
+
+Date: 2026-05-06
+Scope: Static review of API routing, authentication boundaries, payment webhook flow, and baseline testability.
+
+## Executive Summary
+
+The backend has a solid Laravel 12 structure and clear domain segmentation (admin, customer, employee, public, payment). However, there are several QA and reliability gaps that should be prioritized:
+
+1. **Security exposure risk** from unguarded dev endpoints in production routes.
+2. **Authorization consistency risk** where some staff routes rely only on `auth:sanctum` without explicit ability checks.
+3. **Payment webhook trust risk** due to missing request signature verification.
+4. **Operational QA risk** because automated tests could not be executed in this environment (dependency install blocked by network restrictions).
+
+## Findings
+
+### 1) Unguarded developer endpoints are publicly routable (High)
+- `/dev/login` and `/dev/registration` are publicly exposed.
+- `/dev/registration` directly creates privileged developer records and returns API tokens.
+
+**Why this matters**
+- If enabled in production, this can create an attack path for unauthorized system-level access.
+
+**Recommendation**
+- Restrict all `/dev/*` routes behind environment checks (`local`, `staging`) and/or feature flags.
+- Disable developer self-registration in production.
+- Enforce role/ability guards for all dev endpoints.
+
+### 2) Employee route group lacks fine-grained ability checks (Medium)
+- Employee APIs are grouped under `auth:sanctum` only.
+- No explicit ability middleware (e.g., cashier-only vs kitchen-only vs barista-only) is enforced at route level.
+
+**Why this matters**
+- Tokened users may access cross-role endpoints if controller-level checks are absent or incomplete.
+
+**Recommendation**
+- Add route-level ability middleware per role (e.g., `abilities:cashier:access`) and separate route groups.
+- Add negative authorization tests to verify role isolation.
+
+### 3) PayMongo webhook does not verify origin authenticity (High)
+- Webhook handler accepts request payload and processes status updates.
+- No signature/header verification is performed before updating payment status.
+
+**Why this matters**
+- Attackers could forge webhook calls and alter payment state.
+
+**Recommendation**
+- Validate webhook signatures using provider secret.
+- Reject unsigned/invalid requests with 401/403.
+- Store idempotency/event IDs to prevent replay issues.
+
+### 4) Verbose logging of webhook payloads may leak sensitive data (Medium)
+- `Log::info('PayMongo Webhook Received', $payload);` logs full payload.
+
+**Why this matters**
+- Sensitive payment metadata can be persisted to logs.
+
+**Recommendation**
+- Log minimal fields (event type, intent id, trace id) and redact sensitive values.
+
+### 5) API path versioning is inconsistent (Low)
+- Mix of `/v1/...` and unversioned endpoints (`/admin/login`, `/cashier/login`, `/dev/login`, `/paymongo/...`).
+
+**Why this matters**
+- Inconsistent contracts increase client integration complexity and rollout risk.
+
+**Recommendation**
+- Standardize on a single versioning strategy for all public APIs.
+
+## QA Execution Notes
+
+### Commands attempted
+- `composer test` failed because dependencies were not installed.
+- `composer install` failed due network restrictions (403 when downloading from GitHub), preventing automated test execution.
+
+### Impact
+- Functional and regression test results are **inconclusive** in this environment.
+- Findings in this report are based on static code inspection only.
+
+## Suggested Next QA Sprint Checklist
+
+1. Add route ability guards for employee/dev scopes.
+2. Implement PayMongo webhook signature verification + idempotency.
+3. Protect or remove dev registration endpoints outside non-production environments.
+4. Add tests:
+   - auth boundary tests (cross-role forbidden cases)
+   - webhook signature validation tests
+   - webhook idempotency/replay tests
+5. Normalize API versioning and update API docs.

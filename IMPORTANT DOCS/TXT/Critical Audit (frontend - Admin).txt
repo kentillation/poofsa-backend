@@ -1,0 +1,99 @@
+# Frontend QA Audit (Admin)
+
+**Date:** 2026-05-06  
+**Scope:** Vue 3 admin frontend (`locinder-admin`)  
+**Method:** Static code review + lint/build verification
+
+## Executive Summary
+
+The admin frontend is generally stable and buildable, with no lint errors and a successful production build. The most important QA risks are:
+
+1. **Security/session risk:** auth token and profile identifiers are persisted in `localStorage`, increasing XSS blast radius.
+2. **Navigation/auth UX risk:** route guard includes an unconditional artificial delay and can cause avoidable latency and timing issues.
+3. **Performance risk:** production bundle currently exceeds webpack asset/entrypoint recommended size limits.
+4. **Operational quality risk:** extensive `console.*` logging remains in production paths.
+
+---
+
+## Audit Checks Performed
+
+- `npm run lint` ✅ (no lint errors)
+- `npm run build` ✅ (build succeeded, with bundle-size warnings)
+
+---
+
+## Findings
+
+## 1) Authentication data persisted in `localStorage` (High)
+
+### Evidence
+- Auth token and identity fields are read from `localStorage` at startup and saved there on login/registration/recovery.
+
+### Risk
+- `localStorage` is script-readable; any successful XSS can exfiltrate long-lived session tokens.
+
+### Recommendation
+- Move auth token handling to secure, HttpOnly, SameSite cookies on the backend session flow where possible.
+- If bearer token must be client-side, reduce token lifetime and enforce refresh-token rotation.
+- Add CSP and input/output sanitization hardening to reduce XSS probability.
+
+---
+
+## 2) Route guard introduces fixed 100ms delay on every navigation (Medium)
+
+### Evidence
+- Router `beforeEach` adds `await new Promise(resolve => setTimeout(resolve, 100));`
+
+### Risk
+- Slower perceived navigation and potential race-condition masking instead of deterministic auth initialization.
+
+### Recommendation
+- Replace fixed delay with explicit initialization promise/state synchronization in auth store.
+- Initialize auth once in app bootstrap before mounting router-sensitive views.
+
+---
+
+## 3) Build size warnings in production artifacts (Medium)
+
+### Evidence
+- Vendor JS/CSS and entrypoint exceed webpack recommended thresholds during `npm run build`.
+
+### Risk
+- Slower initial load, especially on constrained networks/devices.
+
+### Recommendation
+- Audit and tree-shake dependencies; defer heavy views via route-level code splitting.
+- Optimize static image assets (notably large logo PNG).
+- Consider dynamic import boundaries for chart/report modules.
+
+---
+
+## 4) Production-path console logging (Low/Medium)
+
+### Evidence
+- Widespread `console.error`, `console.warn`, and `console.log` in stores/components.
+
+### Risk
+- Noise in production diagnostics, possible leakage of operational details, harder monitoring signal quality.
+
+### Recommendation
+- Replace direct console calls with environment-gated logger utility.
+- Strip verbose logs in production builds; keep structured error telemetry.
+
+---
+
+## Priority Action Plan
+
+1. **Security first:** redesign session/token storage strategy.
+2. **Stability/UX:** remove fixed route-guard delay and make auth init deterministic.
+3. **Performance:** reduce vendor and entrypoint size via lazy-loading and asset optimization.
+4. **Observability hygiene:** standardize logging levels and production behavior.
+
+---
+
+## Suggested Regression Test Focus (Post-fix)
+
+- Login/logout/session-expiration flows across refresh and deep-link routes.
+- Route protection and redirect behavior for unauthenticated/authenticated users.
+- First-load performance on throttled network profiles.
+- Error handling and user-facing messaging consistency (without raw console dependence).
