@@ -40,9 +40,9 @@ class GenerateQrPaymentAction
         abort_if(!$intent['ok'], 500, 'Payment intent failed');
 
         $qr = $this->paymongo->attachQrph($intent['id'], [
-            'name' => 'Poofsa Cashier',
-            'email' => 'cashier@poofsa.com',
-            'phone' => '09453145499',
+            'name' => 'Customer',
+            'email' => 'customer@example.com',
+            'phone' => '09123456789',
         ]);
 
         abort_if(!$qr['ok'], 500, 'QR generation failed');
