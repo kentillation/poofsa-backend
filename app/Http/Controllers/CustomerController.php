@@ -275,7 +275,7 @@ class CustomerController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => "You've successfully reset your password",
+                'message' => 'Account recovery successful',
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'user_id' => $customer->customer_id,
