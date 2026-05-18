@@ -77,9 +77,16 @@ class ShopModel extends Authenticatable
         if (!$this->thumbnail_path) {
             return null;
         }
+
+        // Local
         return Storage::disk('public')->exists($this->thumbnail_path)
             ? asset('storage/' . $this->thumbnail_path)
             : null;
+
+        // Production
+        // return Storage::disk('public')->exists($this->thumbnail_path)
+        //     ? asset('storage/app/public/' . $this->thumbnail_path)
+        //     : null;
     }
 
     public function getStandardImageUrlAttribute()
@@ -87,16 +94,30 @@ class ShopModel extends Authenticatable
         if (!$this->standard_image_path) {
             return null;
         }
+
+        // Local
         return Storage::disk('public')->exists($this->standard_image_path)
             ? asset('storage/' . $this->standard_image_path)
             : null;
+
+        // Production
+        // return Storage::disk('public')->exists($this->standard_image_path)
+        //     ? asset('storage/app/public/' . $this->standard_image_path)
+        //     : null;
     }
 
     // Accessor to check if shop has image
     public function getHasImageAttribute()
     {
+        // Local
         return !is_null($this->thumbnail_path) &&
             Storage::disk('public')->exists($this->thumbnail_path);
+
+        // Production
+        // return !is_null($this->thumbnail_path) &&
+        //     Storage::disk('public')->exists($this->thumbnail_path)
+		// 	? asset('storage/app/public/' . $this->thumbnail_path)
+        //     : null;
     }
 
     public function branches()
