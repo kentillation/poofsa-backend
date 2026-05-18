@@ -357,7 +357,20 @@ class ProductService
             return [
                 'success' => true,
                 'message' => 'Product updated successfully',
-                'data' => $product,
+                'data' => [
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'base_price' => $product->base_price,
+                    'cost_estimate' => $product->cost_estimate,
+                    'availability_id' => $product->availability_id,
+                    'category_id' => $product->category_id,
+                    'size_id' => $product->size_id,
+                    'temp_id' => $product->temp_id,
+                    'thumbnail_url' => $product->thumbnail_url,
+                    'standard_image_url' => $product->standard_image_url,
+                    'has_image' => $product->has_image,
+                    'updated_at' => $product->updated_at,
+                ],
                 'changes' => [
                     'has_image_change' => $hasImage || $removeImage,
                     'image_updated' => $hasImage,
