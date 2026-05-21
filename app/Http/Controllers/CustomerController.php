@@ -408,6 +408,8 @@ class CustomerController extends Controller
                     'shop_type' => $shop->shop_type,
                     'shop_image' => $shop->thumbnail_url,
                     'shop_address' => optional($selectedBranch)->branch_address,
+                    'branch_latitude' => optional($selectedBranch)->branch_latitude,
+                    'branch_longitude' => optional($selectedBranch)->branch_longitude,
                     'open_at' => optional($selectedBranch)->open_at,
                     'close_at' => optional($selectedBranch)->close_at,
                     'has_products' => $allProducts->isNotEmpty(),

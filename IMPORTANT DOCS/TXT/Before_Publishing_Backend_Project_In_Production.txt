@@ -1,0 +1,2 @@
+- Change the accessor of image in ProductsModel and ShopModel
+- In Production, under the "bootstrap > cache", remove the config.php and routes7x.php files
