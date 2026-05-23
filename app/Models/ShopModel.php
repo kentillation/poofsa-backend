@@ -24,52 +24,18 @@ class ShopModel extends Authenticatable
         'shop_name',
         'shop_type',
         'shop_owner',
-        'shop_address',
         'shop_email',
         'shop_contact_number',
+        'shop_accent_color',
         'thumbnail_path',
         'standard_image_path',
         'image_size_kb',
         'is_active',
-        'open_at',
-        'close_at',
-        'is_overnight'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'is_overnight' => 'boolean',
     ];
-
-    // Mutator for open_at - ensures proper format for database storage
-    public function setOpenAtAttribute($value)
-    {
-        if (!$value) {
-            $this->attributes['open_at'] = null;
-            return;
-        }
-
-        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
-            $this->attributes['open_at'] = $value . ':00';
-        } else {
-            $this->attributes['open_at'] = $value;
-        }
-    }
-
-    // Mutator for close_at - ensures proper format for database storage
-    public function setCloseAtAttribute($value)
-    {
-        if (!$value) {
-            $this->attributes['close_at'] = null;
-            return;
-        }
-
-        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
-            $this->attributes['close_at'] = $value . ':00';
-        } else {
-            $this->attributes['close_at'] = $value;
-        }
-    }
 
     // Accessors for URLs
     public function getThumbnailUrlAttribute()

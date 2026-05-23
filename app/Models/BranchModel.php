@@ -31,6 +31,36 @@ class BranchModel extends Model
         'is_active',
     ];
 
+    // Mutator for open_at - ensures proper format for database storage
+    public function setOpenAtAttribute($value)
+    {
+        if (!$value) {
+            $this->attributes['open_at'] = null;
+            return;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
+            $this->attributes['open_at'] = $value . ':00';
+        } else {
+            $this->attributes['open_at'] = $value;
+        }
+    }
+
+    // Mutator for close_at - ensures proper format for database storage
+    public function setCloseAtAttribute($value)
+    {
+        if (!$value) {
+            $this->attributes['close_at'] = null;
+            return;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
+            $this->attributes['close_at'] = $value . ':00';
+        } else {
+            $this->attributes['close_at'] = $value;
+        }
+    }
+
     public function shop()
     {
         return $this->belongsTo(ShopModel::class, 'shop_id', 'shop_id');

@@ -540,9 +540,11 @@ class CustomerController extends Controller
                     return [
                         'branch_name' => $product->branch_name,
                         'branch_address' => $product->branch_address,
+                        'branch_contact_number' => $product->branch_contact_number,
                         'branch_latitude' => $product->branch_latitude,
                         'branch_longitude' => $product->branch_longitude,
                         'thumbnail_url' => $shop->thumbnail_url,
+                        'shop_accent_color' => $shop->shop_accent_color,
                     ];
                 });
 
