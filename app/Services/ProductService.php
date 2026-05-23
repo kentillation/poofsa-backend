@@ -127,6 +127,7 @@ class ProductService
                         'thumbnail_path' => $thumbnailPath,
                         'standard_image_path' => $standardPath,
                         'image_size_kb' => $imageSizeKb,
+                        'is_new' => $item['is_new'],
                     ]);
 
                     // Save history
