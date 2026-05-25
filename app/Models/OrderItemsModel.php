@@ -26,9 +26,16 @@ class OrderItemsModel extends Model
         'station_status_id'
     ];
 
-    // protected $casts = ('quantity')->int;
+    protected $casts = [
+        'order_id' => 'int',
+        'product_id' => 'int',
+        'variant_id' => 'int',
+        'quantity' => 'int',
+        'shop_station_id' => 'int',
+        'station_status_id' => 'int'
+    ];
 
-    public function order()
+    public function orders()
     {
         return $this->belongsTo(OrdersModel::class, 'order_id');
     }
@@ -38,7 +45,7 @@ class OrderItemsModel extends Model
         return $this->belongsTo(ProductsModel::class, 'product_id');
     }
 
-    public function variant()
+    public function variants()
     {
         return $this->belongsTo(ProductVariantModel::class, 'variant_id');
     }

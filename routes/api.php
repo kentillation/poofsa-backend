@@ -130,14 +130,14 @@ Route::group(['middleware' => 'auth:cashier_api', 'abilities:cashier:access'], f
 });
 
 // Barista Management
-Route::post('/barista/login', [BaristaAuthController::class, 'login']);
-Route::group(['middleware' => 'auth:sanctum'], function () {
-    Route::post('/barista/logout', [BaristaAuthController::class, 'logout']);
-    Route::put('/barista/update-barista-product-status', [BaristaController::class, 'updateBaristaProductStatus']); // Unused
-    Route::put('/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
-    Route::get('/barista/current-orders', [BaristaController::class, 'getCurrentOrders']);
-    Route::get('/barista/barista-product-details/{transactionId}', [BaristaController::class, 'getBaristaProductDetails']);
-    Route::get('/barista/station-status', [BaristaController::class, 'getStationStatus']);
+Route::post('v1/barista/login', [BaristaAuthController::class, 'baristaLogin']);
+Route::group(['middleware' => 'auth:barista_api', 'abilities:barista:access'], function () {
+    Route::post('v1/barista/logout', [BaristaAuthController::class, 'logout']);
+    Route::put('v1/barista/update-barista-product-status', [BaristaController::class, 'updateBaristaProductStatus']); // Unused
+    Route::put('v1/barista/update-order-status', [BaristaController::class, 'updateOrderStatus']);
+    Route::get('v1/barista/current-orders', [BaristaController::class, 'getCurrentOrders']);
+    Route::get('v1/barista/barista-product-details/{transactionId}', [BaristaController::class, 'getBaristaProductDetails']);
+    Route::get('v1/barista/station-status', [BaristaController::class, 'getStationStatus']);
 });
 
 // Kitchen Personnel Management

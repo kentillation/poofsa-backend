@@ -94,6 +94,7 @@ class BaristaController extends Controller
     public function getBaristaProductDetails($orderId)
     {
         try {
+
             if (!$orderId) {
                 return response()->json([
                     'status' => false,
@@ -101,57 +102,68 @@ class BaristaController extends Controller
                 ], 400);
             }
 
-            $shopId = $this->getShopId();
-            $branchId = $this->getBranchId();
-
-            $orders = OrdersModel::where('order_id', $orderId)
-                ->where('shop_id', $shopId)
-                ->where('branch_id', $branchId)
-                // ->with(['orders' => function ($query) { $query->where('shop_station_id', 1);}]) // if order is for Barista only
-                ->with(['orders.product.temperature', 'orders.product.size'])
-                ->orderBy('created_at')
+            // Get order with items
+            $order = OrdersModel::with([
+                'items.products.temperature',
+                'items.products.size'
+            ])
+                ->where('order_id', $orderId)
                 ->first();
 
-            if (!$orders) {
+            if (!$order) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Order not found'
                 ], 404);
             }
 
-            $formattedOrders = $orders->orders
-                // ->filter(function ($order) { return $order->shop_station_id == 1; }) // if order is for Barista only
-                ->map(function ($order) {
+            // Filter Barista items only
+            $baristaItems = $order->items
+                ->where('shop_station_id', 1)
+                ->map(function ($item) {
+
+                    $price = $item->products->base_price ?? 0;
+                    $subtotal = $price * $item->quantity;
+
                     return [
-                        'order_id' => $order->order_id ?? 'N/A',
-                        'shop_station_id' => $order->shop_station_id ?? 'N/A',
-                        'product_id' => $order->product->product_id ?? 'N/A',
-                        'product_name' => $order->product->product_name ?? 'N/A',
-                        'temp_label' => $order->product->temperature->temp_label ?? 'N/A',
-                        'size_label' => $order->product->size->size_label ?? 'N/A',
-                        'quantity' => $order->quantity,
-                        'created_at' => $order->created_at,
-                        'station_status_id' => $order->station_status_id,
+                        'order_item_id' => $item->order_item_id,
+                        'order_id' => $item->order_id,
+                        'shop_station_id' => $item->shop_station_id,
+                        'product_id' => $item->products->product_id ?? null,
+                        'product_name' => $item->products->product_name ?? 'N/A',
+                        'temp_label' => $item->products->temperature->temp_label ?? 'N/A',
+                        'size_label' => $item->products->size->size_label ?? 'N/A',
+                        'quantity' => $item->quantity,
+                        'price' => $price,
+                        'subtotal' => $subtotal,
+                        'station_status_id' => $item->station_status_id,
+                        'created_at' => $item->created_at,
                     ];
-                });
+                })
+                ->values();
 
             return response()->json([
                 'status' => true,
                 'message' => 'Barista product details fetched successfully',
                 'data' => [
-                    'order_id' => $orders->order_id,
-                    'table_number' => $orders->table_number,
-                    'order_status_id' => $orders->order_status_id,
-                    'order_note' => $orders->order_note,
-                    'all_orders' => $formattedOrders,
-                    'customer_name' => $orders->customer_name,
-                    'customer_cash' => $orders->customer_cash,
-                    'customer_change' => $orders->customer_change,
-                    'total_quantity' => $orders->total_quantity,
-                    'total_amount' => $formattedOrders->sum('subtotal')
+
+                    'order_id' => $order->order_id,
+                    'table_number' => $order->table_number,
+                    'order_status_id' => $order->order_status_id,
+                    'order_note' => $order->order_note,
+
+                    'customer_name' => $order->customer_name,
+                    'customer_cash' => $order->customer_cash,
+                    'customer_change' => $order->customer_change,
+
+                    'total_quantity' => $baristaItems->sum('quantity'),
+                    'total_amount' => $baristaItems->sum('subtotal'),
+
+                    'all_orders' => $baristaItems
                 ]
             ], 200);
         } catch (\Exception $e) {
+
             return response()->json([
                 'status' => false,
                 'message' => 'Error fetching order details',

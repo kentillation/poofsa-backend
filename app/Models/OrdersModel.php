@@ -55,6 +55,16 @@ class OrdersModel extends Model
         return $this->belongsTo(OrderStatusModel::class, 'order_status_id');
     }
 
+    public function shop()
+    {
+        return $this->belongsTo(ShopModel::class, 'shop_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(BranchModel::class, 'branch_id');
+    }
+
     public function cashier()
     {
         return $this->belongsTo(CashierModel::class, 'user_id');

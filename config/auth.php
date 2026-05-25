@@ -44,13 +44,17 @@ return [
             'driver' => 'sanctum',
             'provider' => 'cashiers',
         ],
-        'kitchen' => [
-            'driver' => 'session',
-            'provider' => 'kitchens',
-        ],
         'barista' => [
             'driver' => 'session',
             'provider' => 'baristas',
+        ],
+        'barista_api' => [  // Add this for barista API token auth
+            'driver' => 'sanctum',
+            'provider' => 'baristas',
+        ],
+        'kitchen' => [
+            'driver' => 'session',
+            'provider' => 'kitchens',
         ],
     ],
 
@@ -71,13 +75,13 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\CashierModel::class,
         ],
-        'kitchen_personnel' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\KitchenPersonnelModel::class,
-        ],
         'baristas' => [
             'driver' => 'eloquent',
             'model' => App\Models\BaristaModel::class,
+        ],
+        'kitchen_personnel' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\KitchenPersonnelModel::class,
         ],
     ],
 
@@ -100,14 +104,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
-        'kitchen_personnel' => [
-            'provider' => 'kitchen_personnel',
+        'baristas' => [
+            'provider' => 'baristas',
             'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,
         ],
-        'baristas' => [
-            'provider' => 'baristas',
+        'kitchen_personnel' => [
+            'provider' => 'kitchen_personnel',
             'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,

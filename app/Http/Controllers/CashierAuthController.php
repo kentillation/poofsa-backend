@@ -231,7 +231,7 @@ class CashierAuthController extends Controller
     protected function throttleKey(Request $request)
     {
         return Str::transliterate(
-            Str::lower($request->input('admin_email')) . '|' . $request->ip()
+            Str::lower($request->input('cashier_email')) . '|' . $request->ip()
         );
     }
 

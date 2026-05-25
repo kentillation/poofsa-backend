@@ -12,6 +12,7 @@ use App\Models\ShopModel;
 use App\Models\BranchModel;
 use App\Models\ProductsModel;
 use App\Models\StocksModel;
+use App\Models\IngredientsModel;
 use App\Models\TemperatureModel;
 use App\Models\SizeModel;
 use App\Models\CategoryModel;
@@ -181,7 +182,7 @@ class OpenController extends Controller
                 'tbl_stocks.stock_unit',
                 'tbl_stocks.stock_in',
                 'tbl_stocks.stock_unit_cost',
-                'tbl_stocks.stock_alert_qty',
+                'tbl_stocks.alert_quantity',
                 'tbl_stocks.availability_id',
                 'tbl_stocks.shop_id',
                 'tbl_stocks.branch_id',
@@ -399,9 +400,16 @@ class OpenController extends Controller
     {
         try {
             $shopId = $this->getShopId();
-            $count = StocksModel::where('branch_id', $branch_id)
-                ->where('shop_id', $shopId)
-                ->whereColumn('stock_in', '<=', 'stock_alert_qty')
+            $count = IngredientsModel::select(
+                'tbl_ingredients.branch_id',
+                'tbl_ingredients.shop_id',
+                'tbl_ingredients.alert_quantity',
+                'tbl_stock_batches.quantity_received',
+                )
+                ->join('tbl_stock_batches', 'tbl_ingredients.ingredient_id', '=', 'tbl_stock_batches.ingredient_id')
+                ->where('tbl_ingredients.branch_id', $branch_id)
+                ->where('tbl_ingredients.shop_id', $shopId)
+                ->whereColumn('tbl_stock_batches.quantity_received', '<=', 'tbl_ingredients.alert_quantity')
                 ->count();
             return response()->json([
                 'status' => true,
