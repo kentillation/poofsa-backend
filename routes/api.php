@@ -129,17 +129,6 @@ Route::group(['middleware' => 'auth:cashier_api', 'abilities:cashier:access'], f
     Route::get('v1/cashier/void-orders', [CashierController::class, 'getVoid']);
 });
 
-// Kitchen Personnel Management
-Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
-Route::group(['middleware' => 'auth:sanctum'], function () {
-    Route::post('/kitchen/logout', [KitchenAuthController::class, 'logout']);
-    Route::put('/kitchen/update-kitchen-product-status', [KitchenController::class, 'updateKitchenProductStatus']);
-    Route::put('/kitchen/update-order-status', [KitchenController::class, 'updateOrderStatus']);
-    Route::get('/kitchen/current-orders', [KitchenController::class, 'getCurrentOrders']);
-    Route::get('/kitchen/kitchen-product-details/{transactionId}', [KitchenController::class, 'getKitchenProductDetails']);
-    Route::get('/kitchen/station-status', [KitchenController::class, 'getStationStatus']);
-});
-
 // Barista Management
 Route::post('/barista/login', [BaristaAuthController::class, 'login']);
 Route::group(['middleware' => 'auth:sanctum'], function () {
@@ -149,6 +138,17 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/barista/current-orders', [BaristaController::class, 'getCurrentOrders']);
     Route::get('/barista/barista-product-details/{transactionId}', [BaristaController::class, 'getBaristaProductDetails']);
     Route::get('/barista/station-status', [BaristaController::class, 'getStationStatus']);
+});
+
+// Kitchen Personnel Management
+Route::post('/kitchen/login', [KitchenAuthController::class, 'login']);
+Route::group(['middleware' => 'auth:sanctum'], function () {
+    Route::post('/kitchen/logout', [KitchenAuthController::class, 'logout']);
+    Route::put('/kitchen/update-kitchen-product-status', [KitchenController::class, 'updateKitchenProductStatus']);
+    Route::put('/kitchen/update-order-status', [KitchenController::class, 'updateOrderStatus']);
+    Route::get('/kitchen/current-orders', [KitchenController::class, 'getCurrentOrders']);
+    Route::get('/kitchen/kitchen-product-details/{transactionId}', [KitchenController::class, 'getKitchenProductDetails']);
+    Route::get('/kitchen/station-status', [KitchenController::class, 'getStationStatus']);
 });
 
 
