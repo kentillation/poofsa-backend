@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Carbon;
 use App\Models\CustomerModel;
+use App\Models\RefreshTokenModel;
 
 class CustomerAuthController extends Controller
 {
@@ -162,7 +163,7 @@ class CustomerAuthController extends Controller
             throw ValidationException::withMessages([
                 'user_error' => [
                     "Too many login attempts. Your account is temporarily locked for {$totalLockoutMinutes} minutes. " .
-                    "Please try again in {$formattedTime}."
+                        "Please try again in {$formattedTime}."
                 ],
             ])->status(429);
         }
@@ -188,7 +189,7 @@ class CustomerAuthController extends Controller
             throw ValidationException::withMessages([
                 'user_error' => [
                     "Invalid credentials. You have {$remainingAttempts} more attempt" .
-                    ($remainingAttempts > 1 ? "s" : "") . " before temporary lockout."
+                        ($remainingAttempts > 1 ? "s" : "") . " before temporary lockout."
                 ],
             ]);
         }
@@ -202,12 +203,6 @@ class CustomerAuthController extends Controller
         }
     }
 
-    /**
-     * Format lockout time from seconds to human-readable minutes and seconds
-     *
-     * @param int $seconds
-     * @return string
-     */
     protected function formatLockoutTime($seconds)
     {
         $minutes = floor($seconds / 60);
@@ -232,8 +227,88 @@ class CustomerAuthController extends Controller
         );
     }
 
-    protected function getTokenExpiration($remember = false)
+    protected function getTokenExpiration()
     {
-        return $remember ? now()->addDays(30) : now()->addDays(7);
+        return now()->addMinutes(2);
+        // return now()->addSeconds(5); // For testing only
+    }
+
+    public function refreshToken(Request $request)
+    {
+        $refreshToken = $request->cookie('refresh_token');
+
+        if (!$refreshToken) {
+            return response()->json([
+                'message' => 'Missing refresh token'
+            ], 401);
+        }
+
+        // Find token in DB
+        $hashed = hash('sha256', $refreshToken);
+
+        $tokenRecord = RefreshTokenModel::where('token_hash', $hashed)
+            ->whereNull('revoked_at')
+            ->first();
+
+        // Invalid token
+        if (!$tokenRecord) {
+            return response()->json([
+                'message' => 'Invalid refresh token'
+            ], 401);
+        }
+
+        // Expired token
+        if ($tokenRecord->expires_at < now()) {
+            $tokenRecord->update(['revoked_at' => now()]);
+
+            return response()->json([
+                'message' => 'Refresh token expired'
+            ], 401);
+        }
+
+        // Get user
+        $user = CustomerModel::find($tokenRecord->user_id);
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 401);
+        }
+
+        // ROTATE refresh token (invalidate old one)
+        $tokenRecord->update([
+            'revoked_at' => now()
+        ]);
+
+        $newRefreshToken = Str::random(64);
+
+        RefreshTokenModel::create([
+            'user_id' => $user->customer_id,
+            'token_hash' => hash('sha256', $newRefreshToken),
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        // Create new access token (SHORT LIVED)
+        $accessToken = $user->createToken(
+            'access_token',
+            ['customer:access'],
+            now()->addMinutes(15)
+        )->plainTextToken;
+
+        // Send new refresh cookie
+        return response()->json([
+            'access_token' => $accessToken,
+            'expires_in' => 900,
+        ])->cookie(
+            'refresh_token',
+            $newRefreshToken,
+            60 * 24 * 30, // 30 days
+            null,
+            null,
+            true,  // Secure
+            true,  // HttpOnly
+            false,
+            'Strict'
+        );
     }
 }

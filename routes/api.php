@@ -97,6 +97,7 @@ Route::post('v1/customer/registration', [CustomerController::class, 'customerReg
 Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
 Route::post('v1/customer/verify-recovery-code', [CustomerController::class, 'verifyRecoveryCode']);
 Route::post('v1/customer/recover-account', [CustomerController::class, 'recoverAccount']);
+Route::post('v1/customer/refresh-token', [CustomerAuthController::class, 'refreshToken']); // for future
 
 Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
