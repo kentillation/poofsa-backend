@@ -227,9 +227,10 @@ class CustomerAuthController extends Controller
         );
     }
 
-    protected function getTokenExpiration()
+    protected function getTokenExpiration($remember = false)
     {
-        return now()->addMinutes(2);
+        return $remember ? now()->addDays(30) : now()->addDays(7);
+        // return now()->addMinutes(2);
         // return now()->addSeconds(5); // For testing only
     }
 
