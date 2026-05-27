@@ -778,6 +778,7 @@ class CustomerController extends Controller
     {
         try {
             $mealType = $request->meal_type;
+            $categoryLabel = $request->category_label; // Add this line
             $itemsPerPage = $request->items_per_page ?? 20;
 
             if (!$mealType) {
@@ -791,8 +792,16 @@ class CustomerController extends Controller
                 ->where('availability_id', 1)
                 ->whereHas('category.baseCategory', function ($query) use ($mealType) {
                     $query->whereJsonContains('meal_type', $mealType);
-                })
-                ->orderBy('product_name')
+                });
+
+            // Apply category filter if provided
+            if ($categoryLabel) {
+                $products = $products->whereHas('category', function ($query) use ($categoryLabel) {
+                    $query->where('category_label', $categoryLabel);
+                });
+            }
+
+            $products = $products->orderBy('product_name')
                 ->paginate($itemsPerPage);
 
             // Transform only items
