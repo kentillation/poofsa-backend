@@ -1,5 +1,0 @@
-Xendit Secret API Key:
-xnd_development_G8xIDjqHGUYjNtnlR0AoA9d4Kpe0SmM0A2DAKhDZxpV0Agv7KZCmakSeRepXPVR
-
-Xendit Public API Key:
-xnd_public_development_v4Qug6c6YkBaYAgepjjRQUVJIUna0nAaNVp9qID1Y4bQm8vuHJrGwM08xgwhLR

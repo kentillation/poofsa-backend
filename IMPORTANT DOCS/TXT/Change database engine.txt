@@ -1,1 +1,0 @@
-ALTER TABLE tbl_orders ENGINE=InnoDB;
