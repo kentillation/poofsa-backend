@@ -66,7 +66,6 @@ class AdminController extends Controller
     {
         return response()->json([
             'valid' => true,
-            'admin' => $request->user(),
             'shop_id' => $request->user()->shop_id,
             'shop_name' => $request->user()->shop->shop_name ?? null
         ]);

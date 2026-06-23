@@ -92,6 +92,14 @@ class CustomerController extends Controller
         }
     }
 
+    public function verifyCustomerToken(Request $request)
+    {
+        return response()->json([
+            'valid' => true,
+            'first_name' => $request->user()->first_name ?? null
+        ]);
+    }
+
     public function verifyEmail(Request $request)
     {
         try {

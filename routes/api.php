@@ -101,7 +101,7 @@ Route::post('v1/customer/refresh-token', [CustomerAuthController::class, 'refres
 
 Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
-    Route::get('v1/customer/verify', [CustomerController::class, 'verifyAdmin']);
+    Route::get('v1/customer/verify-token', [CustomerController::class, 'verifyCustomerToken']);
     Route::get('v1/customer/shops', [CustomerController::class, 'getShops']);
     Route::get('v1/customer/shops-location', [CustomerController::class, 'getShopLocation']);
     Route::get('v1/customer/products', [CustomerController::class, 'getProducts']);
@@ -176,37 +176,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 Route::prefix('paymongo')->group(function () {
     Route::post('/generate-qr', [PaymentController::class, 'generatingQRCode']);
     Route::post('/webhook/paymongo', [PaymentController::class, 'handlePayment']);
-});
-
-// Dev
-Route::post('/dev/login', [DevController::class, 'login']);
-Route::post('/dev/registration', function (Request $request) {
-    $validated = $request->validate([
-        'dev_name' => 'required|string|max:191',
-        'dev_email' => 'required|string|email|max:191|unique:tbl_dev,dev_email',
-        'dev_password' => 'required|string|min:8',
-    ]);
-    DB::beginTransaction();
-    try {
-        $dev = DevModel::create([
-            'dev_name' => $validated['dev_name'],
-            'dev_email' => $validated['dev_email'],
-            'dev_password' => Hash::make($validated['dev_password']),
-        ]);
-        $token = $dev->createToken('auth-token')->plainTextToken;
-        DB::commit();
-        return response()->json([
-            'message' => 'Developer registration successful',
-            'data' => $dev,
-            'token' => $token,
-        ], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'Registration failed!',
-            'error' => $e->getMessage()
-        ], 500);
-    }
 });
 
 Route::group(['middleware' => 'auth:sanctum'], function () {
