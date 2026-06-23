@@ -870,7 +870,7 @@ class AdminController extends Controller
             Log::error('Product update failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'product_name' => $result->product_name ?? null,
+                'product_name' => $result['product_name'] ?? null,
                 'user_id' => $userId,
             ]);
 
@@ -1091,10 +1091,9 @@ class AdminController extends Controller
 
     public function updateStock(Request $request, $ingredientId)
     {
+        $userId = $this->getUserId();
+        $shopId = $this->getShopId();
         try {
-            $userId = $this->getUserId();
-            $shopId = $this->getShopId();
-
             $result = StockService::updateStockService($request, $ingredientId, $shopId, $userId);
             return response()->json([
                 'success' => true,
