@@ -373,7 +373,7 @@ class CustomerController extends Controller
 
                 $branchQuery->with(['products' => function ($productQuery) use ($requestedCategory, $requestedMealType) {
                     $productQuery->where('availability_id', 1)
-                        ->select('product_id', 'branch_id', 'base_price', 'product_name', 'category_id');
+                        ->select('branch_id', 'base_price', 'product_name', 'category_id');
                     if ($requestedCategory) {
                         $productQuery->whereHas('category', function ($cat) use ($requestedCategory) {
                             $cat->where('category_label', $requestedCategory);
@@ -424,7 +424,6 @@ class CustomerController extends Controller
                     'has_branches' => $shop->branches->isNotEmpty(),
                     'lowest_price' => $lowestProduct->base_price ?? null,
                     'product_name' => $lowestProduct->product_name ?? null,
-                    'product_id' => $lowestProduct->product_id ?? null,
                     'category_label' => $lowestProduct->category->category_label ?? null,
                 ];
             })->values();
@@ -593,19 +592,14 @@ class CustomerController extends Controller
             // Transform only items
             $products->getCollection()->transform(function ($product) {
                 return [
-                    'branch_id' => $product->branch_id,
-                    'shop_id' => $product->shop_id,
                     'product_id' => $product->product_id,
                     'product_name' => $product->product_name,
-                    'base_price' => $product->base_price,
-                    'availability_id' => $product->availability_id,
-                    'station_id' => $product->station_id,
+                    'base_price' => (float) $product->base_price,
                     'temp_label' => $product->temperature->temp_label ?? null,
                     'size_label' => $product->size->size_label ?? null,
                     'category_label' => $product->category->category_label ?? null,
                     'is_new' => $product->is_new,
                     'thumbnail_url' => $product->thumbnail_url,
-                    'standard_image_url' => $product->standard_image_url,
                     'image_size_kb' => $product->image_size_kb,
                     'has_image' => $product->has_image,
                 ];
