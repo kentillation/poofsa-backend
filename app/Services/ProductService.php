@@ -181,67 +181,6 @@ class ProductService
         }
     }
 
-    // public static function saveProductsService($request, $shopId, $userId)
-    // {
-    //     $request->validate([
-    //         '*.product_name' => 'required|string',
-    //         '*.base_price' => 'required|numeric',
-    //         '*.size_id' => 'required|integer',
-    //         '*.temp_id' => 'required|integer',
-    //         '*.category_id' => 'required|integer',
-    //         '*.station_id' => 'required|integer',
-    //         '*.branch_id' => 'required|integer',
-    //     ]);
-
-    //     foreach ($request->all() as $item) {
-    //         $baseCategory = ProductBaseCategoryModel::find($item['category_id']);
-
-    //         if (!$baseCategory) {
-    //             throw new \Exception("Category with ID {$item['category_id']} not found");
-    //         }
-
-    //         $category = CategoryModel::firstOrCreate(
-    //             [
-    //                 'product_base_category_id' => $baseCategory->product_base_category_id,
-    //                 'shop_id' => $shopId,
-    //             ],
-    //             [
-    //                 'category_label' => $baseCategory->product_base_category,
-    //                 'product_base_category_id' => $baseCategory->product_base_category_id,
-    //                 'shop_id' => $shopId,
-    //             ]
-    //         );
-
-    //         $product = new ProductsModel();
-    //         $product->product_name = $item['product_name'];
-    //         $product->base_price = $item['base_price'];
-    //         $product->cost_estimate = 0;
-    //         $product->size_id = $item['size_id'];
-    //         $product->temp_id = $item['temp_id'];
-    //         $product->category_id = $category->product_category_id;
-    //         $product->availability_id = 1;
-    //         $product->station_id = $item['station_id'];
-    //         $product->shop_id = $shopId;
-    //         $product->branch_id = $item['branch_id'];
-    //         $product->user_id = $userId;
-
-    //         $product->save();
-
-    //         ProductsHistoryModel::create([
-    //             'product_id' => $product->product_id,
-    //             'modified_type_id' => 1, // SAVE
-    //             'description' => 'New Product Saved',
-    //             'shop_id' => $shopId,
-    //             'branch_id' => $product->branch_id,
-    //             'user_id' => $userId,
-    //         ]);
-    //     }
-
-    //     return true;
-    // }
-
-    // ProductService.php
-
     public static function updateProductService($request, $productId, $shopId, $userId)
     {
         DB::beginTransaction();

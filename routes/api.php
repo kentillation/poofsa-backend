@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CustomerController;
@@ -18,7 +18,6 @@ use App\Http\Controllers\OpenController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\DevController;
 use App\Http\Controllers\PaymentController;
-use App\Models\DevModel;
 
 // Public
 Route::post('v1/public/shop-registration', [PublicController::class, 'shopRegistration']);
@@ -92,6 +91,12 @@ Route::group(['middleware' => 'auth:admin_api', 'abilities:admin:access'], funct
 });
 
 // Customer management
+
+// Define rate limiter for customer API
+RateLimiter::for('customer_api', function (Request $request) {
+    return $request->user() ? Limit::perMinute(60)->by($request->user()->id) : Limit::perMinute(30)->by($request->ip());
+});
+
 Route::post('v1/customer/login', [CustomerAuthController::class, 'customerLogin']);
 Route::post('v1/customer/registration', [CustomerController::class, 'customerRegistration']);
 Route::post('v1/customer/verify-email', [CustomerController::class, 'verifyEmail']);
@@ -99,7 +104,8 @@ Route::post('v1/customer/verify-recovery-code', [CustomerController::class, 'ver
 Route::post('v1/customer/recover-account', [CustomerController::class, 'recoverAccount']);
 Route::post('v1/customer/refresh-token', [CustomerAuthController::class, 'refreshToken']); // for future
 
-Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'], function () {
+// Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access', 'throttle:customer_api'], function () {
+Route::group(['middleware' => 'auth:customer_api', 'throttle:customer_api'], function () {
     Route::post('v1/customer/logout', [CustomerAuthController::class, 'logout']);
     Route::get('v1/customer/verify-token', [CustomerController::class, 'verifyCustomerToken']);
     Route::get('v1/customer/shops', [CustomerController::class, 'getShops']);
@@ -111,6 +117,9 @@ Route::group(['middleware' => 'auth:customer_api', 'abilities:customer:access'],
     Route::get('v1/customer/categories-by-meal-type', [CustomerController::class, 'getCategoriesByMealType']);
     Route::get('v1/customer/product-category', [CustomerController::class, 'getProductCategories']);
     Route::get('v1/customer/product-base-category', [CustomerController::class, 'getProductBaseCategories']);
+
+    // Optional: Clear cache endpoint (you may want to keep this separate or add admin check)
+    Route::post('v1/customer/shops/clear-cache', [CustomerController::class, 'clearShopCache']);
 });
 
 // Cashier Management

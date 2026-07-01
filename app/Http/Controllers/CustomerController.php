@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use App\Services\ShopService;
+use App\Http\Requests\GetShopRequest;
+use App\Http\Resources\GetShopResource;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +25,13 @@ use App\Models\ProductBaseCategoryModel;
 
 class CustomerController extends Controller
 {
+    protected ShopService $shopService;
+
+    public function __construct(ShopService $shopService)
+    {
+        $this->shopService = $shopService;
+    }
+
     protected function getTokenExpiration($remember = false)
     {
         return $remember ? now()->addDays(30) : now()->addDays(7);
@@ -300,237 +311,213 @@ class CustomerController extends Controller
         }
     }
 
-    public function getShops(Request $request)
+    // public function getShops(Request $request)
+    // {
+    //     try {
+    //         $requestedCategory = $request->input('requested_category');
+    //         $requestedMealType = $request->input('requested_meal_type');
+    //         $requestedTimeBetween = $request->input('requested_time_between');
+    //         $perPage = $request->input('items_per_page');
+
+    //         $query = ShopModel::query();
+
+    //         if ($requestedCategory || $requestedMealType || $requestedTimeBetween) {
+    //             $query->whereHas('branches.products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+    //                 $q->where('availability_id', 1);
+
+    //                 if ($requestedCategory) {
+    //                     $q->whereHas('category', function ($cat) use ($requestedCategory) {
+    //                         $cat->where('category_label', $requestedCategory);
+    //                     });
+    //                 }
+
+    //                 if ($requestedMealType) {
+    //                     $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+    //                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+    //                     });
+    //                 }
+
+    //                 if ($requestedTimeBetween) {
+    //                     $q->whereHas('branch', function ($branchQuery) use ($requestedTimeBetween) {
+    //                         $branchQuery->where(function ($query) use ($requestedTimeBetween) {
+    //                             $query->where(function ($q0) {
+    //                                 $q0->whereColumn('open_at', '=', 'close_at');
+    //                             })
+    //                                 ->orWhere(function ($q1) use ($requestedTimeBetween) {
+    //                                     $q1->where('is_overnight', 0)
+    //                                         ->whereTime('open_at', '<=', $requestedTimeBetween)
+    //                                         ->whereTime('close_at', '>=', $requestedTimeBetween);
+    //                                 })
+    //                                 ->orWhere(function ($q2) use ($requestedTimeBetween) {
+    //                                     $q2->where('is_overnight', 1)
+    //                                         ->where(function ($q3) use ($requestedTimeBetween) {
+    //                                             $q3->whereTime('open_at', '<=', $requestedTimeBetween)
+    //                                                 ->orWhereTime('close_at', '>=', $requestedTimeBetween);
+    //                                         });
+    //                                 });
+    //                         });
+    //                     });
+    //                 }
+    //             });
+    //         }
+
+    //         $query->with(['branches' => function ($branchQuery) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
+    //             if ($requestedTimeBetween) {
+    //                 $branchQuery->where(function ($query) use ($requestedTimeBetween) {
+    //                     $query->where(function ($q0) {
+    //                         $q0->whereColumn('open_at', '=', 'close_at');
+    //                     })
+    //                     ->orWhere(function ($q1) use ($requestedTimeBetween) {
+    //                         $q1->where('is_overnight', 0)
+    //                         ->whereTime('open_at', '<=', $requestedTimeBetween)
+    //                         ->whereTime('close_at', '>=', $requestedTimeBetween);
+    //                     })
+    //                     ->orWhere(function ($q2) use ($requestedTimeBetween) {
+    //                         $q2->where('is_overnight', 1)
+    //                         ->where(function ($q3) use ($requestedTimeBetween) {
+    //                             $q3->whereTime('open_at', '<=', $requestedTimeBetween)
+    //                                 ->orWhereTime('close_at', '>=', $requestedTimeBetween);
+    //                         });
+    //                     });
+    //                 });
+    //             }
+
+    //             $branchQuery->with(['products' => function ($productQuery) use ($requestedCategory, $requestedMealType) {
+    //                 $productQuery->where('availability_id', 1)
+    //                     ->select('branch_id', 'base_price', 'product_name', 'category_id');
+    //                 if ($requestedCategory) {
+    //                     $productQuery->whereHas('category', function ($cat) use ($requestedCategory) {
+    //                         $cat->where('category_label', $requestedCategory);
+    //                     });
+    //                 }
+    //                 if ($requestedMealType) {
+    //                     $productQuery->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
+    //                         $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
+    //                     });
+    //                 }
+    //             }]);
+    //         }]);
+
+    //         $shops = $query->paginate($perPage);
+
+    //         // Transform data
+    //         $filteredShops = collect($shops->items())->map(function ($shop) {
+    //             $allProducts = $shop->branches->flatMap(function ($branch) {
+    //                 return $branch->products;
+    //             });
+
+    //             $lowestProduct = $allProducts->sortBy('base_price')->first();
+
+    //             // Determine branch_id based on whether shop has products
+    //             $branchId = null;
+    //             if ($lowestProduct) {
+    //                 // Has products - use branch_id from the lowest price product
+    //                 $branchId = $lowestProduct->branch_id;
+    //             } elseif ($shop->branches->isNotEmpty()) {
+    //                 // No products but has branches - use the first branch's ID
+    //                 $branchId = $shop->branches->first()->branch_id;
+    //             }
+
+    //             $selectedBranch = $shop->branches->firstWhere('branch_id', $branchId);
+
+    //             return [
+    //                 'shop_id' => $shop->shop_id,
+    //                 'branch_id' => $branchId,
+    //                 'shop_name' => $shop->shop_name,
+    //                 'shop_type' => $shop->shop_type,
+    //                 'shop_image' => $shop->thumbnail_url,
+    //                 'shop_address' => optional($selectedBranch)->branch_address,
+    //                 'branch_latitude' => optional($selectedBranch)->branch_latitude,
+    //                 'branch_longitude' => optional($selectedBranch)->branch_longitude,
+    //                 'open_at' => optional($selectedBranch)->open_at,
+    //                 'close_at' => optional($selectedBranch)->close_at,
+    //                 'has_products' => $allProducts->isNotEmpty(),
+    //                 'has_branches' => $shop->branches->isNotEmpty(),
+    //                 'lowest_price' => $lowestProduct->base_price ?? null,
+    //                 'product_name' => $lowestProduct->product_name ?? null,
+    //                 'category_label' => $lowestProduct->category->category_label ?? null,
+    //             ];
+    //         })->values();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => $filteredShops->isEmpty() ? 'No shops found!' : 'Shops fetched successfully!',
+    //             'data' => $filteredShops,
+    //             'pagination' => [
+    //                 'current_page' => $shops->currentPage(),
+    //                 'last_page' => $shops->lastPage(),
+    //                 'per_page' => $shops->perPage(),
+    //                 'total' => $shops->total(),
+    //                 'next_page_url' => $shops->nextPageUrl(),
+    //                 'prev_page_url' => $shops->previousPageUrl(),
+    //             ]
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error fetching shops!',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+
+    public function getShops(GetShopRequest $request): JsonResponse
     {
-        try {
-            $requestedCategory = $request->input('requested_category');
-            $requestedMealType = $request->input('requested_meal_type');
-            $requestedTimeBetween = $request->input('requested_time_between');
-            $perPage = $request->input('per_page', 20);
+        // Apply rate limiting
+        $key = $request->rateLimitKey();
+        $attempts = $request->rateLimitAttempts();
 
-            $query = ShopModel::query();
-
-            if ($requestedCategory || $requestedMealType || $requestedTimeBetween) {
-                $query->whereHas('branches.products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-                    $q->where('availability_id', 1);
-
-                    if ($requestedCategory) {
-                        $q->whereHas('category', function ($cat) use ($requestedCategory) {
-                            $cat->where('category_label', $requestedCategory);
-                        });
-                    }
-
-                    if ($requestedMealType) {
-                        $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                            $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-                        });
-                    }
-
-                    if ($requestedTimeBetween) {
-                        $q->whereHas('branch', function ($branchQuery) use ($requestedTimeBetween) {
-                            $branchQuery->where(function ($query) use ($requestedTimeBetween) {
-                                $query->where(function ($q0) {
-                                    $q0->whereColumn('open_at', '=', 'close_at');
-                                })
-                                    ->orWhere(function ($q1) use ($requestedTimeBetween) {
-                                        $q1->where('is_overnight', 0)
-                                            ->whereTime('open_at', '<=', $requestedTimeBetween)
-                                            ->whereTime('close_at', '>=', $requestedTimeBetween);
-                                    })
-                                    ->orWhere(function ($q2) use ($requestedTimeBetween) {
-                                        $q2->where('is_overnight', 1)
-                                            ->where(function ($q3) use ($requestedTimeBetween) {
-                                                $q3->whereTime('open_at', '<=', $requestedTimeBetween)
-                                                    ->orWhereTime('close_at', '>=', $requestedTimeBetween);
-                                            });
-                                    });
-                            });
-                        });
-                    }
-                });
-            }
-
-            $query->with(['branches' => function ($branchQuery) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-                if ($requestedTimeBetween) {
-                    $branchQuery->where(function ($query) use ($requestedTimeBetween) {
-                        $query->where(function ($q0) {
-                            $q0->whereColumn('open_at', '=', 'close_at');
-                        })
-                        ->orWhere(function ($q1) use ($requestedTimeBetween) {
-                            $q1->where('is_overnight', 0)
-                            ->whereTime('open_at', '<=', $requestedTimeBetween)
-                            ->whereTime('close_at', '>=', $requestedTimeBetween);
-                        })
-                        ->orWhere(function ($q2) use ($requestedTimeBetween) {
-                            $q2->where('is_overnight', 1)
-                            ->where(function ($q3) use ($requestedTimeBetween) {
-                                $q3->whereTime('open_at', '<=', $requestedTimeBetween)
-                                    ->orWhereTime('close_at', '>=', $requestedTimeBetween);
-                            });
-                        });
-                    });
-                }
-
-                $branchQuery->with(['products' => function ($productQuery) use ($requestedCategory, $requestedMealType) {
-                    $productQuery->where('availability_id', 1)
-                        ->select('branch_id', 'base_price', 'product_name', 'category_id');
-                    if ($requestedCategory) {
-                        $productQuery->whereHas('category', function ($cat) use ($requestedCategory) {
-                            $cat->where('category_label', $requestedCategory);
-                        });
-                    }
-                    if ($requestedMealType) {
-                        $productQuery->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                            $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-                        });
-                    }
-                }]);
-            }]);
-
-            $shops = $query->paginate($perPage);
-
-            // Transform data
-            $filteredShops = collect($shops->items())->map(function ($shop) {
-                $allProducts = $shop->branches->flatMap(function ($branch) {
-                    return $branch->products;
-                });
-
-                $lowestProduct = $allProducts->sortBy('base_price')->first();
-
-                // Determine branch_id based on whether shop has products
-                $branchId = null;
-                if ($lowestProduct) {
-                    // Has products - use branch_id from the lowest price product
-                    $branchId = $lowestProduct->branch_id;
-                } elseif ($shop->branches->isNotEmpty()) {
-                    // No products but has branches - use the first branch's ID
-                    $branchId = $shop->branches->first()->branch_id;
-                }
-
-                $selectedBranch = $shop->branches->firstWhere('branch_id', $branchId);
-
-                return [
-                    'shop_id' => $shop->shop_id,
-                    'branch_id' => $branchId,
-                    'shop_name' => $shop->shop_name,
-                    'shop_type' => $shop->shop_type,
-                    'shop_image' => $shop->thumbnail_url,
-                    'shop_address' => optional($selectedBranch)->branch_address,
-                    'branch_latitude' => optional($selectedBranch)->branch_latitude,
-                    'branch_longitude' => optional($selectedBranch)->branch_longitude,
-                    'open_at' => optional($selectedBranch)->open_at,
-                    'close_at' => optional($selectedBranch)->close_at,
-                    'has_products' => $allProducts->isNotEmpty(),
-                    'has_branches' => $shop->branches->isNotEmpty(),
-                    'lowest_price' => $lowestProduct->base_price ?? null,
-                    'product_name' => $lowestProduct->product_name ?? null,
-                    'category_label' => $lowestProduct->category->category_label ?? null,
-                ];
-            })->values();
-
-            return response()->json([
-                'success' => true,
-                'message' => $filteredShops->isEmpty() ? 'No shops found!' : 'Shops fetched successfully!',
-                'data' => $filteredShops,
-                'pagination' => [
-                    'current_page' => $shops->currentPage(),
-                    'last_page' => $shops->lastPage(),
-                    'per_page' => $shops->perPage(),
-                    'total' => $shops->total(),
-                    'next_page_url' => $shops->nextPageUrl(),
-                    'prev_page_url' => $shops->previousPageUrl(),
-                ]
-            ], 200);
-        } catch (\Exception $e) {
+        if (RateLimiter::tooManyAttempts($key, $attempts)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching shops!',
-                'error' => $e->getMessage()
+                'message' => 'Too many requests. Please try again later.',
+                'retry_after' => RateLimiter::availableIn($key),
+            ], 429);
+        }
+
+        // Increment rate limit counter
+        RateLimiter::hit($key, 60);
+
+        try {
+            // Get shops from service
+            $result = $this->shopService->getShopService($request);
+
+            return response()->json($result, 200);
+        } catch (\Exception $e) {
+            Log::error('Error in getShopService: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching shops! Please try again later.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
 
-    /* public function getShops(Request $request)
+    /**
+     * Clear shop cache (optional admin endpoint).
+     */
+    public function clearShopCache(): JsonResponse
     {
         try {
-            $requestedCategory = $request->input('requested_category');
-            $requestedMealType = $request->input('requested_meal_type');
-            $requestedTimeBetween = $request->input('requested_time_between'); // between 'open_at' and 'close_at'
-
-            $query = ShopModel::query();
-
-            $query->whereHas('products', function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-                $q->where('availability_id', 1);
-
-                if ($requestedCategory) {
-                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
-                        $cat->where('category_label', $requestedCategory);
-                    });
-                }
-
-                if ($requestedMealType) {
-                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-                    });
-                }
-
-                if ($requestedTimeBetween) {
-                    $q->whereHas('branches', function ($shopQuery) use ($requestedTimeBetween) {
-                        $shopQuery->whereTime('open_at', '<=', $requestedTimeBetween)
-                            ->whereTime('close_at', '>=', $requestedTimeBetween);
-                    });
-                }
-            });
-
-            $shops = $query->with(['products' => function ($q) use ($requestedCategory, $requestedMealType, $requestedTimeBetween) {
-                $q->where('availability_id', 1);
-
-                if ($requestedCategory) {
-                    $q->whereHas('category', function ($cat) use ($requestedCategory) {
-                        $cat->where('category_label', $requestedCategory);
-                    });
-                }
-
-                if ($requestedMealType) {
-                    $q->whereHas('category.baseCategory', function ($base) use ($requestedMealType) {
-                        $base->whereRaw('JSON_CONTAINS(meal_type, ?)', [json_encode($requestedMealType)]);
-                    });
-                }
-            }])->get();
-
-            $filteredShops = $shops->map(function ($shop) {
-                $lowestProduct = $shop->products->sortBy('base_price')->first();
-                $branchId = $shop->products->first()->branch_id ?? null;
-
-                if ($lowestProduct) {
-                    return [
-                        'shop_id' => $shop->shop_id,
-                        'branch_id' => $branchId,
-                        'shop_name' => $shop->shop_name,
-                        'shop_type' => $shop->shop_type,
-                        'lowest_price' => $lowestProduct->base_price,
-                        'product_name' => $lowestProduct->product_name,
-                        'product_id' => $lowestProduct->product_id,
-                        'category_label' => $lowestProduct->category->category_label ?? null,
-                    ];
-                }
-
-                return null;
-            })->filter()->values();
+            $this->shopService->clearCache();
 
             return response()->json([
                 'success' => true,
-                'message' => $filteredShops->isEmpty() ? 'No shop found!' : 'Shops fetched successfully!',
-                'data' => $filteredShops
+                'message' => 'Shop cache cleared successfully!',
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Error clearing shop cache: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching shops!',
-                'error' => $e->getMessage()
+                'message' => 'Error clearing cache!',
             ], 500);
         }
-    }*/
+    }
 
     public function getShopLocation(Request $request)
     {
