@@ -26,7 +26,7 @@ class PaymentSucceeded implements ShouldBroadcast
 
     public function broadcastAs()
     {
-        return 'payment.succeeded';
+        return 'payment.paid';
     }
 
     public function broadcastWith()
