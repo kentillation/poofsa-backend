@@ -21,7 +21,7 @@ class PaymentSucceeded implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new PrivateChannel('payments.' . $this->referenceNumber);
+        return new PrivateChannel('eWalletPaymentSuccessBroadcast');
     }
 
     public function broadcastAs()
@@ -32,7 +32,7 @@ class PaymentSucceeded implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
-            'referenceNumber' => $this->referenceNumber,
+            'message' => 'Payment successfully processed',
         ];
     }
 }

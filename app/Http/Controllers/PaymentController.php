@@ -8,6 +8,8 @@ use App\Http\Resources\GenerateQrResource;
 use App\Http\Requests\GenerateQrRequest;
 use App\Models\PaymentModel;
 use App\Events\PaymentSucceeded;
+// use App\Events\PaymentFailed;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -33,93 +35,157 @@ class PaymentController extends Controller
 
     public function handlePayment(Request $request)
     {
-        $message = [
-            'invalidPaymentIntentId' => 'Invalid payment intent id',
-            'invalidReferenceNumber' => 'Invalid reference number',
-            'paymentNotFound' => 'Payment not found',
-            'noDateForPaidPayment' => 'No date for paid payment',
-            'realTimeUpdateFailed' => 'Real-time update failed',
-            'paymentSuccess' => 'Payment successfully proccessed',
-            'paymentFailed' => 'Payment has been failed',
-            'webhookFailed' => 'An error occurred with the third-party payment gateway'
-        ];
+        $payload = $request->all();
+
+        $paymentIntentId = "pi_x67tmadUPUEhTAZBtddqqNKC";
+        // $paymentIntentId = data_get(
+        //     $payload,
+        //     'data.attributes.data.attributes.payment_intent_id'
+        // );
+
+        $referenceNumber = "867896185543";
+        // $referenceNumber = data_get(
+        //     $payload,
+        //     'data.attributes.data.attributes.metadata.reference_number'
+        // );
+
+        if (!$paymentIntentId || !$referenceNumber) {
+            Log::warning('Invalid PayMongo webhook payload', [
+                'payment_intent_id' => $paymentIntentId,
+                'reference_number' => $referenceNumber,
+            ]);
+
+            // Insert error event
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal server error',
+            ], 500);
+        }
 
         try {
 
-            $payload = $request->all();
-
-            $paymentIntentId = data_get($payload, 'data.attributes.data.attributes.payment_intent_id');
-            if (empty($paymentIntentId)) {
-                return response()->json(['message' => $message['invalidPaymentIntentId']], 404);
-            }
-
-            $referenceNumber = data_get($payload, 'data.attributes.data.attributes.metadata.reference_number');
-            if (empty($referenceNumber)) {
-                return response()->json(['message' => $message['invalidReferenceNumber']], 404);
-            }
-
-            $payment = PaymentModel::where('payment_intent_id', $paymentIntentId)->first();
+            $payment = PaymentModel::where(
+                'payment_intent_id',
+                $paymentIntentId
+            )->first();
 
             if (!$payment) {
-                return response()->json(['message' => $message['paymentNotFound']], 404);
+                Log::warning('Payment not found', [
+                    'payment_intent_id' => $paymentIntentId,
+                    'reference_number' => $referenceNumber,
+                ]);
+
+                // Insert error event
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Internal server error',
+                ], 500);
             }
 
-            $eventType = data_get($payload, 'data.attributes.type');
+            $eventType = 'payment.paid';
+            // $eventType = data_get($payload, 'data.attributes.type');
 
             switch ($eventType) {
 
                 case 'payment.paid':
 
-                    $paidAt = data_get($payload, 'data.attributes.data.attributes.paid_at');
+                    $paidAt = now();
+                    // $paidAt = data_get(
+                    //     $payload,
+                    //     'data.attributes.data.attributes.paid_at'
+                    // );
 
-                    if (empty($paidAt)) {
-                        return response()->json(['message' => $message['noDateForPaidPayment']], 404);
-                    } else {
+                    if (!$paidAt) {
+                        Log::warning('Missing payment date', [
+                            'paid_at' => $paidAt,
+                        ]);
+
+                        // Insert error event
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Internal server error',
+                        ], 500);
+                    }
+
+                    // Prevent duplicate processing.
+                    if ($payment->status === PaymentModel::STATUS_PAID) {
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Payment already processed',
+                        ], 200);
+                    }
+
+                    DB::transaction(function () use ($payment, $paidAt) {
                         $payment->update([
                             'status' => PaymentModel::STATUS_PAID,
-                            'paid_at' => $paidAt
+                            'paid_at' => $paidAt,
                         ]);
+                    });
 
-                        Log::info('Succeed payment has been save in database: ', [
-                            'reference_number' => $referenceNumber,
-                            'paid_at' => $paidAt
-                        ]);
+                    Log::info('Payment successfully processed', [
+                        'reference_number' => $referenceNumber,
+                        'paid_at' => $paidAt,
+                    ]);
 
-                        $updateUI = broadcast(new PaymentSucceeded($referenceNumber));
-
-                        if (!$updateUI) {
-                            Log::error('Failed to broadcast PaymentSucceeded event', [
-                                'reference_number' => $referenceNumber
-                            ]);
-                            return response()->json(['message' => $message['realTimeUpdateFailed']], 400);
-                        } else {
-                            Log::info('PaymentSucceeded event broadcasted successfully', [
-                                'reference_number' => $referenceNumber
-                            ]);
-                            return response()->json(['message' => $message['paymentSuccess']], 201);
-                        }
-                    }
+                    broadcast(new PaymentSucceeded($referenceNumber));
 
                     break;
 
                 case 'payment.failed':
-                    Log::error('Payment failed for payment intent ID: ' . $paymentIntentId);
 
                     $payment->update([
-                        'status' => PaymentModel::STATUS_FAILED
+                        'status' => PaymentModel::STATUS_FAILED,
                     ]);
 
-                    return response()->json(['message' => $message['paymentFailed'] . 'with reference number: ' . $referenceNumber], 404);
+                    Log::warning('Payment failed', [
+                        'reference_number' => $referenceNumber,
+                        'payment_intent_id' => $paymentIntentId,
+                    ]);
+
+                    // broadcast(
+                    //     new PaymentFailed($referenceNumber)
+                    // );
+
+                    return response()->json([
+                        'success' => true,
+                        'event' => 'payment.failed',
+                        'message' => 'Payment has failed',
+                        'data' => [
+                            'reference_number' => $referenceNumber,
+                            'status' => PaymentModel::STATUS_FAILED,
+                        ],
+                    ], 200);
+
+                    break;
+
+                default:
+
+                    Log::warning('Unhandled PayMongo webhook event', [
+                        'event_type' => $eventType,
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Internal server error',
+                    ], 500);
 
                     break;
             }
         } catch (\Throwable $e) {
 
-            Log::error('PayMongo Webhook Error', [
-                'error' => $e->getMessage()
+            Log::error('PayMongo webhook processing failed', [
+                'error' => $e->getMessage(),
+                'payment_intent_id' => $paymentIntentId,
+                'reference_number' => $referenceNumber,
             ]);
 
-            return response()->json(['message' => $message['webhookFailed']], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing payment',
+            ], 500);
         }
     }
 }

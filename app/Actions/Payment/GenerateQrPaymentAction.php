@@ -4,6 +4,7 @@ namespace App\Actions\Payment;
 
 use App\Repositories\PaymentRepository;
 use App\Models\PaymentModel;
+use Illuminate\Support\Facades\Log;
 
 class GenerateQrPaymentAction
 {
@@ -52,13 +53,15 @@ class GenerateQrPaymentAction
             'payment_intent_id' => $intent['id'],
             'reference_number' => $referenceNumber,
             'amount' => $amountInCentavos,
-            'status' => 'pending',
+            'status' => $intent['status'],
         ]);
+
+        Log::info('Paymongo Response: ' . json_encode($intent));
 
         return [
             'payment_intent_id' => $intent['id'],
             'qr_image' => $qr['qr_image'],
-            'status' => 'Pending',
+            'status' => $intent['status'],
         ];
     }
 }

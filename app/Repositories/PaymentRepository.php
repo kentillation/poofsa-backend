@@ -147,6 +147,12 @@ class PaymentRepository
             return $this->fail('QRPh attach failed', $attach);
         }
 
+        $qrImage = $attach->json('data.attributes.next_action.code.image_url');
+
+        if(empty($qrImage)) {
+            return $this->fail('QR image is empty. Try again!', $attach);
+        }
+
         return [
             'ok' => true,
             'qr_image' => $attach->json('data.attributes.next_action.code.image_url'),

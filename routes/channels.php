@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('payments.{referenceNumber}', function ($user, $referenceNumber) {
+Broadcast::channel('eWalletPaymentSuccessBroadcast', function ($user) {
+    return true;
+});
+
+Broadcast::channel('eWalletPaymentFailedBroadcast', function ($user) {
     return true;
 });
